@@ -32,30 +32,6 @@ const Report = ({ chatHistory, onClose, reportBool }: Props) => {
       if (reportBool) {
         setLoading(true);
         try {
-          const preprompt = `Please generate a detailed session report based on the following chat messages. The report should include the following sections:
-
-          Session Overview: Provide a brief summary of the session, including the date, key topics discussed, and the overall focus.
-          
-          Goals Discussed and Next Steps: Outline the short-term and long-term goals identified during the session, along with actionable steps or plans to achieve them.
-          
-          Personalized Recommendations: Summarize specific suggestions or strategies provided during the session, such as drills, exercises, or techniques to improve performance or mental preparedness.
-          
-          Progress Metrics: Highlight key performance indicators or areas for tracking progress, based on the athlete's focus and development goals.
-          
-          Recent Wins and Positives: Mention any achievements, standout moments, or positive feedback discussed to motivate the athlete.
-          
-          Resources for Improvement: Suggest relevant resources, such as articles, video tutorials, apps, or tools, to help the athlete with their next steps.
-          
-          Wellness Overview: Summarize any discussion around mental or physical well-being, including stress management techniques, injury prevention tips, or recovery strategies.
-          
-          Parent Notes: Provide insights specifically for the athlete’s parents, such as ways they can support their child or observations about their progress.
-          
-          Follow-Up Plan: Outline the next steps for follow-up, including when the next session should occur and what to prepare for it.
-          
-          Motivational Note: End the report with an encouraging and inspiring message tailored to the athlete, reinforcing their strengths and potential.
-          
-          Use a clear, professional, and structured tone for the report. Ensure the report is concise, actionable, and easy to understand for the athlete and their parents.`;
-
           const prepromptAlpha = `
           Persona
 Name: Kroni
@@ -140,9 +116,6 @@ Recovery/Injury Management: Check for past or present injuries and suggest tailo
           
           Use a structured, professional tone, and ensure the report is concise, actionable, and easily understood by both the athlete and their parents. Focus on creating a motivational and supportive document that provides clear value and direction for the athlete’s development.
           `;
-
-          const preprompt2 =
-            "Please summarize the following chat messages into a concise and meaningful summary:";
 
           // Preprocess chatHistory
           const formattedMessages = preprocessChatHistory(chatHistory);
@@ -398,9 +371,7 @@ Only provide the comprehensive session report, and do not include any additional
         <div>
           {/* Check if report exists */}
           {report ? (
-            <div
-              className="bg-gray-100 p-4 rounded-md shadow-sm text-gray-800 overflow-auto"
-            >
+            <div className="bg-gray-100 p-4 rounded-md shadow-sm text-gray-800 overflow-auto">
               <ReactMarkdown
                 children={report}
                 remarkPlugins={[remarkGfm]}
