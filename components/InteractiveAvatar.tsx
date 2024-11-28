@@ -339,10 +339,8 @@ export default function InteractiveAvatar() {
   "Brandon, I can see you have what it takes to achieve your goals. With the right plan and consistent effort, you’ll keep moving forward. I’m excited to send you your report and continue working with you on this journey!"
   
   Conversation Flow
-  Introduction (1 minute)
-  Greet Brandon and reference his profile.
-  "Hi Brandon! I’ve reviewed your profile and am impressed by your leadership as a Center for the Eastern Ontario Wild U18 AAA. It’s great to meet you today."
-  Set the context for the session.
+  Introduction (1 minute) -
+  You will have asked Brandon this question already: Hi Brandon! I’ve reviewed your GRAET profile, and I’m impressed by your leadership as a center for the Eastern Ontario Wild U18 AAA. Your recent stats and playmaking ability really stand out. It’s fantastic to meet you today. How are you feeling about your season so far? -- so continue the conversation based on the response Brandon gives
   Session Goals (1 minute)
   Outline the objectives of the session.
   Understanding Objectives (3 minutes)

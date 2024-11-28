@@ -2,9 +2,6 @@ import openai from "./chatgpt";
 import OpenAI from "openai";
 
 const query = async (
-  prompt: string,
-  chatId: string,
-  model: string,
   messages: any
 ): Promise<OpenAI.Chat.ChatCompletion | string> => {
   const handleError = (error: any): string => {

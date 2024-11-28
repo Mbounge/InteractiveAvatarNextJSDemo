@@ -6,24 +6,17 @@ import query from "@/public/lib/query";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json(); // Parse JSON body
-    const { prompt, chatId, model, messages } = body;
+    const { messages } = body;
 
-    if (!prompt) {
+    if (!messages) {
       return NextResponse.json(
         { error: "Please provide a prompt!" },
         { status: 400 }
       );
     }
 
-    if (!chatId) {
-      return NextResponse.json(
-        { error: "Please provide a valid chat ID!" },
-        { status: 400 }
-      );
-    }
-
     // Call your query function
-    const response = await query(prompt, chatId, model, messages);
+    const response = await query(messages);
 
     return NextResponse.json({ answer: response }, { status: 200 });
   } catch (error) {

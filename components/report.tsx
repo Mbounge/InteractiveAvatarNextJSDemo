@@ -173,7 +173,7 @@ Recovery/Injury Management: Check for past or present injuries and suggest tailo
 
 6. **Motivational Note**: Conclude with an encouraging message to inspire the athlete, emphasizing their potential and the importance of consistency in their efforts.
 
-Only provide the comprehensive session report, and do not include any additional commentary or context.`,
+Only provide the comprehensive session report, and do not include any additional commentary or context. Give response with Markdown`,
           });
 
           const response = await fetch("/api/chat", {
@@ -182,9 +182,6 @@ Only provide the comprehensive session report, and do not include any additional
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              chatId: "abcd",
-              model: "gpt4-mini",
-              prompt: "here",
               messages: [
                 { role: "system", content: prepromptAlpha }, // Add the preprompt
                 ...formattedMessages, // Add formatted chatHistory
@@ -403,7 +400,6 @@ Only provide the comprehensive session report, and do not include any additional
           {report ? (
             <div
               className="bg-gray-100 p-4 rounded-md shadow-sm text-gray-800 overflow-auto"
-            
             >
               <ReactMarkdown
                 children={report}
@@ -417,27 +413,6 @@ Only provide the comprehensive session report, and do not include any additional
           )}
         </div>
       )}
-      {/* Chat history debug */}
-      <div className="mt-4">
-        <p className="font-medium text-lg mb-2">Chat Transcript:</p>
-        {chatHistory.length !== 0 ? (
-          <div
-            className="bg-gray-100 p-4 rounded-md shadow-sm text-gray-800 overflow-auto"
-            style={{ maxHeight: "300px" }} // Limit the height for scrollability
-          >
-            {chatHistory.map((message, index) => (
-              <div key={index} className="mb-4">
-                <p className="font-bold text-indigo-600">
-                  {message.type === "user" ? "User" : "Avatar"}:
-                </p>
-                <p className="ml-4">{message.message}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500">Chat history is empty.</p>
-        )}
-      </div>
     </div>
   );
 };
