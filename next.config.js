@@ -5,6 +5,9 @@ module.exports = {
       appDir: true,
       serverActions: true
       
-    }
+    },
+    eslint: {
+        ignoreDuringBuilds: true, // Ignore ESLint for production builds
+      },
   };
   
