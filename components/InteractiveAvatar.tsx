@@ -149,7 +149,7 @@ export default function InteractiveAvatar({
       });
       const token = await response.text();
 
-      console.log("Access Token:", token); // Log the token to verify
+      //console.log("Access Token:", token); // Log the token to verify
 
       return token;
     } catch (error) {
@@ -319,7 +319,7 @@ export default function InteractiveAvatar({
     }
   
     // Send email after stopping the avatar
-    //await sendChatHistory();
+    await sendChatHistory();
   
     // Reset stream state
     setStream(undefined);

@@ -353,7 +353,7 @@ const Welcome: React.FC<WelcomeProps> = ({
         <form onSubmit={handleNextStep} className="w-full flex justify-center">
           <button
             type="submit"
-            className="px-6 py-3 text-sm font-medium text-white bg-[#2B21C1] rounded-md hover:bg-blue-700 transition"
+            className="px-6 py-3 text-sm font-medium text-white bg-[#2B21C1] rounded-full hover:bg-blue-700 transition"
           >
             Next step
           </button>

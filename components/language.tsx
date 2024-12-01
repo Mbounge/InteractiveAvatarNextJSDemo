@@ -152,7 +152,7 @@ const Languages: React.FC<LanguagesProps> = ({ info, user }) => {
             </p>
             <button
               type="submit"
-              className="w-full py-3 text-sm font-medium text-white bg-[#2B21C1] rounded-md hover:bg-blue-700 transition"
+              className="w-full py-3 text-sm font-medium text-white bg-[#2B21C1] rounded-full hover:bg-blue-700 transition"
             >
               Submit
             </button>
