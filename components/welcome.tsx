@@ -139,7 +139,7 @@ const Welcome: React.FC<WelcomeProps> = ({
                question and follow up questions found in the conversation structure of the proactive workflow to make them more engaging and to provide a good experience
                 for the athlete - when this sports advisor starts a session with the user - the sports advisor will have been already given a introduction to user - the sports advisor 
                 should respond to the users based on the greeting that will have been provided prior - so the introduction (building rapport and trust) should just be continuing the conversation from that point and leading to the rest of the 
-                conversation flow -- here's the base template: ${baseTemplatePlayer} -- here's the athletes data: ${formattedPlayerData} -- only provide the transformed personalized sports advisor for the user - do not say anything else`,
+                conversation flow -- here's the base template: ${baseTemplatePlayer} -- here's the athletes data: players firstname: ${info.firstName}, players lastname: ${info.lastName}, players sport stats: ${formattedPlayerData} -- only provide the transformed personalized sports advisor for the user - do not say anything else`,
             },
           ],
         }),
@@ -254,8 +254,8 @@ const Welcome: React.FC<WelcomeProps> = ({
              The sports advisor main objective is to go through the entire workflow stated in the base template, also personalize the initial 
              question and follow up questions found in the conversation structure of the proactive workflow to make them more engaging and to provide a good experience
               for the parent - be respectful - when this sports advisor starts a session with the parent- The sports advisor will only be talking to one of the parents - the sports advisor will have been already given a introduction to parent - the sports advisor 
-              should respond to the parents based on the greeting that will have been provided prior - so the introduction (building rapport and trust) should just be continuing the conversation from that point and leading to the rest of the 
-              conversation flow -- here's the base template: ${baseTemplateParent} -- here's the parents childs data: ${formattedPlayerData} -- only provide the transformed personalized sports advisor for the user - do not say anything else`,
+              should respond to the parents based on the greeting that will have been provided prior (change the base template such that it understands to not repeat the greeting and just continue the conversation towards the objectives of the conversation) - so the introduction (building rapport and trust) should just be continuing the conversation from that point and leading to the rest of the 
+              conversation flow -- here's the base template: ${baseTemplateParent} -- here's the parents childs data: parent firstname: ${info.firstName}, parent lastname: ${info.lastName}, childs data: ${formattedPlayerData} -- only provide the transformed personalized sports advisor for the user - do not say anything else`,
             },
           ],
         }),
@@ -281,7 +281,7 @@ const Welcome: React.FC<WelcomeProps> = ({
             //{ role: "system", content: '' }, // Add the preprompt
             {
               role: "user",
-              content: `Assume this prompt and look at the introduction and give me a personalized greeting for the parent based on all the information you know about them -- You are only meeting with one of the parents, most likely the father, follow the same instructions in the prompt ${resultPersonal.answer} -- I want this greeting in this language: ${selectedLanguageLabel} -- only provide the greeting in your response - do not say anything else`,
+              content: `Assume this prompt and look at the introduction and give me a personalized greeting for the parent based on all the information you know about them -- remember the parent's first name is ${info.firstName} and last name is ${info.lastName} -- You are only meeting with one of the parents - follow the same instructions in the prompt ${resultPersonal.answer} -- I want this greeting in this language: ${selectedLanguageLabel} -- only provide the greeting in your response - do not say anything else`,
             },
           ],
         }),
