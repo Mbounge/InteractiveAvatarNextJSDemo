@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import InteractiveAvatar from "./InteractiveAvatar"; // Import the InteractiveAvatar component
 import Image from "next/image";
-import logo from "../public/logo-1.svg"; // Replace with your actual logo
+import logo from "../public/GraetAI.svg"; 
 import {
   baseTemplatePlayer,
   STT_LANGUAGE_LIST,
@@ -267,7 +267,7 @@ const Welcome: React.FC<WelcomeProps> = ({
 
       const resultPersonal = await response.json();
       //setReport(result.answer || "No report generated.");
-      console.log(resultPersonal);
+      //console.log(resultPersonal);
       setPersonalized(resultPersonal.answer);
 
       // generate greeting -  now that we have the system prompt
@@ -288,7 +288,7 @@ const Welcome: React.FC<WelcomeProps> = ({
       });
 
       const resultGreeting = await responseGreeting.json();
-      console.log("greeting, ", resultGreeting);
+      //console.log("greeting, ", resultGreeting);
       setGreet(resultGreeting.answer);
     } catch (err) {
       console.error("API call failed:", err);
@@ -327,12 +327,12 @@ const Welcome: React.FC<WelcomeProps> = ({
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-white">
       {/* Logo */}
-      <div className="flex justify-center mb-16">
+      <div className="flex justify-center absolute top-6">
         <Image
           src={logo}
           alt="Graet Logo"
-          height={220} // Increased height for better visual impact
-          width={220} // Increased width to maintain proportions
+          height={300} // Increased height for better visual impact
+          width={300} // Increased width to maintain proportions
         />
       </div>
 

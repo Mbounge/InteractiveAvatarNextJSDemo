@@ -3,8 +3,8 @@
 import React, { useState } from "react";
 import Languages from "./language";
 import Image from "next/image";
-import kroni from "../public/kroni.svg"; // Replace with your actual image
-import logo from "../public/logo-1.svg"; // Replace with your actual logo
+import kroni from "../public/kroni.svg";
+import logo from "../public/GraetAI.svg"; 
 
 const Home: React.FC = () => {
   const [userType, setUserType] = useState("parent");
@@ -57,8 +57,8 @@ const Home: React.FC = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-white">
-      <div className="flex justify-center mt-12 mb-3">
-        <Image src={logo} alt="Graet Logo" height={300} width={300} />
+      <div className="flex justify-center absolute top-6">
+        <Image src={logo} alt="Graet Logo" height={300} width={300}  />
       </div>
 
       <div className="flex flex-row items-center justify-between w-full max-w-6xl mt-8">

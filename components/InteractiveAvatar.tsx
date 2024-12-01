@@ -26,7 +26,7 @@ import Report from "./report";
 
 import Image from "next/image";
 import kroni from "../public/kroni.svg"; // Replace with your actual image
-import logo from "../public/logo-1.svg"; // Replace with your actual logo
+import logo from "../public/GraetAI.svg"; 
 
 import { AVATARS, STT_LANGUAGE_LIST } from "@/app/lib/constants";
 import { read } from "fs";
@@ -396,13 +396,12 @@ export default function InteractiveAvatar({
   return (
     <div className="w-full h-screen flex flex-col items-center justify-center bg-white gap-6">
       {/* Logo Section */}
-      <div className="flex justify-center w-full mb-6">
+      <div className="flex justify-center absolute top-6">
         <Image
           src={logo}
           alt="Graet Logo"
-          height={180} // Adjust logo size as needed
-          width={180}
-          className="hover:scale-105 transition-transform duration-300 object-contain"
+          height={300} // Adjust logo size as needed
+          width={300}
         />
       </div>
   

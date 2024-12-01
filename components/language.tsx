@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Confidentiality from "./confident"; // Import the Confidentiality component
 import Image from "next/image";
 import kroni from "../public/kroni.svg"; // Replace with your actual image
-import logo from "../public/logo-1.svg"; // Replace with your actual logo
+import logo from "../public/GraetAI.svg"; 
 import { playerDatabase } from "@/app/lib/constants"; // Import the player database
 
 interface LanguagesProps {
@@ -79,12 +79,12 @@ const Languages: React.FC<LanguagesProps> = ({ info, user }) => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-white">
       {/* Logo */}
-      <div className="flex justify-center mb-16">
+      <div className="flex justify-center absolute top-6">
         <Image
           src={logo}
           alt="Graet Logo"
-          height={220} // Increased height for better visual impact
-          width={220} // Increased width to maintain proportions
+          height={300} // Increased height for better visual impact
+          width={300} // Increased width to maintain proportions
         />
       </div>
 

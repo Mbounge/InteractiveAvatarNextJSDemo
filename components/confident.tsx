@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Welcome from "./welcome";
 import warning from '../public/warning1.svg'
-import logo from "../public/logo-1.svg"; // Replace with your actual logo
+import logo from "../public/GraetAI.svg"; 
 
 interface ConfidentialityProps {
     info: {
@@ -36,12 +36,12 @@ const Confidentiality: React.FC<ConfidentialityProps> = ({info, user, selectedLa
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-white">
       {/* Logo */}
-      <div className="flex justify-center mb-16">
+      <div className="flex justify-center absolute top-6">
         <Image
           src={logo}
           alt="Graet Logo"
-          height={220} // Increased height for better visual impact
-          width={220} // Increased width to maintain proportions
+          height={300} // Increased height for better visual impact
+          width={300} // Increased width to maintain proportions
         />
       </div>
 
