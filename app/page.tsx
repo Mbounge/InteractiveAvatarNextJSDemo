@@ -1,13 +1,15 @@
 "use client";
+import Image from "next/image";
+import logo from "../public/logo-1.svg";
 
-import InteractiveAvatar from "@/components/InteractiveAvatar";
+import Home from "@/components/home";
+
 export default function App() {
-
   return (
     <div className="w-screen h-screen flex flex-col">
-      <div className="w-[900px] flex flex-col items-start justify-start gap-5 mx-auto pt-4 pb-20">
+      <div className="w-[900px] flex flex-col items-start justify-start mx-auto">
         <div className="w-full">
-          <InteractiveAvatar />
+          <Home />
         </div>
       </div>
     </div>

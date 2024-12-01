@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     template: `%s - HeyGen Interactive Avatar SDK Demo`,
   },
   icons: {
-    icon: "/heygen-logo.png",
+    icon: "/icon.svg",
   },
 };
 
@@ -49,7 +49,7 @@ export default function RootLayout({
       <body className={clsx("min-h-screen bg-background antialiased")}>
         <Providers themeProps={{ attribute: "class", defaultTheme: "white" }}>
           <main className="relative flex flex-col h-screen w-screen">
-            <NavBar />
+            
             {children}
           </main>
         </Providers>
