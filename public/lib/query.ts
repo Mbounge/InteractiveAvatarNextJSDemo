@@ -34,7 +34,7 @@ const query = async (
     messages: messages,
     model: "gpt-4o-mini",
     temperature: 1,
-    max_tokens: 4000,
+    max_tokens: 8000,
     top_p: 1,
     frequency_penalty: 0.0,
     presence_penalty: 0.0,

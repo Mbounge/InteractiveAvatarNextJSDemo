@@ -404,6 +404,83 @@ export const playerDatabase = {
       },
     },
   },
+
+  'SIMc8shX': {
+    fullName: "Simon Cseh",
+    position: "Center",
+    playingStyle: "Two-way",
+    shoots: "Right",
+    height: "173cm",
+    weight: "66kg",
+    nationality: "AT",
+    dateOfBirth: "January 21, 2008",
+    institution: "Bundes-Oberstufenrealgymnasium Klagenfurt",
+    graduation: "2027",
+    joinedGraet: "May 17, 2024",
+    currentTeam: "EC-KAC U20",
+    stats: {
+        '24/25 (EC-KAC U20)': {
+            team: "EC-KAC U20",
+            league: "Austria U20i",
+            gamesPlayed: 10,
+            goals: 1,
+            assists: 1,
+            totalPoints: 2,
+            pim: 0,
+            plusMinus: 0,
+        },
+        '24/25 (EC-KAC U18)': {
+            team: "EC-KAC U18",
+            league: "Austria U18i",
+            gamesPlayed: 11,
+            goals: 8,
+            assists: 6,
+            totalPoints: 14,
+            pim: 8,
+            plusMinus: 14,
+        },
+        '23/24 (EC-KAC U17)': {
+            team: "EC-KAC U17",
+            league: "Austria U17",
+            gamesPlayed: 7,
+            goals: 2,
+            assists: 3,
+            totalPoints: 5,
+            pim: 8,
+            plusMinus: 0,
+        },
+        '23/24 (EC-KAC U18)': {
+            team: "EC-KAC U18",
+            league: "Austria U18i",
+            gamesPlayed: 24,
+            goals: 3,
+            assists: 10,
+            totalPoints: 13,
+            pim: 6,
+            plusMinus: 19,
+        },
+        '22/23 (EC-KAC U17)': {
+            team: "EC-KAC U17",
+            league: "Austria U17",
+            gamesPlayed: 12,
+            goals: 1,
+            assists: 4,
+            totalPoints: 5,
+            pim: 2,
+            plusMinus: 0,
+        },
+        '21/22 (HOBA Bratislava U16)': {
+            team: "HOBA Bratislava U16",
+            league: "Slovakia U16",
+            gamesPlayed: 2,
+            goals: 0,
+            assists: 1,
+            totalPoints: 1,
+            pim: 0,
+            plusMinus: -4,
+        },
+    },
+},
 };
 
 export const STT_LANGUAGE_LIST = [
@@ -579,7 +656,7 @@ Encouragement:
 
 Key Points
 Interactive Dialogue:The advisor should naturally guide the conversation through each topic, engaging the athlete in meaningful discussion. The advisor does not need to state all the topics to the user in the beginning. The topics need to just flow seamlessly throughout the whole conversation
-The Sports Advisor should not have long paragraphs of responses - responses need to be normal and appropriate for dialogue exchanges
+The advisor should not have long paragraphs of responses - responses need to be normal and appropriate for dialogue exchanges. Avoid listing many questions, options or bullet points to the user during the conversations - if listing possible options - keep it to 2-3 options for recommendations - not questions - during the advisors responses to the user - it should limit the number of recommendations or options to 2-3 - only ever ask one question at a time in its responses - do not list out questions for the user to respond to
 Avoid Pre-Listing:Do not state all sections or questions upfront in the beginning. Introduce each topic seamlessly.
 Smooth Transitions:Use transitions to move from one topic to the next, maintaining flow.
 Engagement and Adaptability:Be responsive to the athlete's answers, adapting questions as needed.
@@ -706,6 +783,7 @@ Encouragement:
 
 Key Points
 Interactive Dialogue:The advisor should naturally guide the conversation through each topic, engaging the parents in meaningful discussion without overwhelming them.
+The advisor should not have long paragraphs of responses - responses need to be normal and appropriate for dialogue exchanges. Avoid listing many questions, options or bullet points to the user during the conversations - if listing possible options - keep it to 2-3 options for recommendations - not questions - during the advisors responses to the user - it should limit the number of recommendations or options to 2-3 - only ever ask one question at a time in its responses - do not list out questions for the user to respond to
 Avoid Pre-Listing:Do not state all topics or questions upfront. Introduce each topic seamlessly.
 Smooth Transitions:Use transitions to move from one topic to the next, maintaining a natural flow.
 Engagement and Adaptability:Be responsive to the parents' answers, adapting questions as needed.

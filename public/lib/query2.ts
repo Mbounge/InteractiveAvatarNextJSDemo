@@ -32,7 +32,7 @@ const query = async (
 
   const params: OpenAI.Chat.ChatCompletionCreateParams = {
     messages: messages,
-    model: "gpt-4o-mini", //o1-mini
+    model: "o1-mini", //o1-mini
     temperature: 1,
     top_p: 1,
     frequency_penalty: 0.0,

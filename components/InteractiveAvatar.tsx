@@ -93,6 +93,7 @@ export default function InteractiveAvatar({
   useEffect(() => {
     //console.log("personalized, ", personalized);
     //console.log("greeting, ", greet);
+    console.log(personalized)
 
     // Check if both personalized and greet are not empty strings
     if (personalized.trim() !== "" && greet.trim() !== "") {
