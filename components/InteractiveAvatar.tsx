@@ -89,6 +89,7 @@ export default function InteractiveAvatar({
   //   console.log("Chat History Changed: ", chatHistroy);
   // }, [chatHistroy]);
 
+  // TODO: improve this logic for personalized and greet
   useEffect(() => {
     //console.log("personalized, ", personalized);
     //console.log("greeting, ", greet);
@@ -182,7 +183,7 @@ export default function InteractiveAvatar({
     });
 
     avatar.current.on(StreamingEvents.AVATAR_TALKING_MESSAGE, (message) => {
-      console.log("Avatar talking message:", message.detail.message);
+      //console.log("Avatar talking message:", message.detail.message);
 
       // Append to the mutable buffer
       mutableAvatarBuffer += ` ${message.detail.message}`;
@@ -372,6 +373,53 @@ export default function InteractiveAvatar({
       console.warn("No chat history to send.");
     }
   };
+
+  // send chatHistory transcript to our emails 
+  // even when the user closes the window
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Prepare the chat history for sending
+      if (chatHistoryRef.current.length > 0) {
+        const formattedChatHistory = chatHistoryRef.current
+          .map((chat: ChatMessage) => {
+            const date = new Date(chat.date).toLocaleString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            });
+            return `${date} - [${chat.type.toUpperCase()}]: ${chat.message}`;
+          })
+          .join("\n");
+  
+        // Prepare the payload
+        const payload = {
+          subject: `${info.firstName} ${info.lastName} (${user.toUpperCase()})`,
+          user_info: `Name: ${info.firstName} ${info.lastName}\nEmail: ${info.email}\nGRAET Profile: ${info.graetLink}\nUser Type: ${user}`,
+          chat_history: formattedChatHistory,
+          to_email: ["kroni+avatar@graet.com", "bo+avatar@graet.com"],
+        };
+  
+        // Use navigator.sendBeacon to send the data
+        const url = "/api/email"; // Replace with your endpoint
+        const blob = new Blob([JSON.stringify(payload)], {
+          type: "application/json",
+        });
+        navigator.sendBeacon(url, blob);
+      }
+    };
+  
+    // Add the event listener
+    window.addEventListener("beforeunload", handleBeforeUnload);
+  
+    // Cleanup the event listener when the component unmounts
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
+  
   
   
   const previousText = usePrevious(text);
