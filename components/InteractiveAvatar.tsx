@@ -341,7 +341,7 @@ export default function InteractiveAvatar({
               minute: "2-digit",
               second: "2-digit",
             });
-            return `${date} - [${chat.type.toUpperCase()}]: ${chat.message}`;
+            return `${date} - [${chat.type.toUpperCase()}]: ${chat.message}\n`;
           })
           .join("\n");
   
@@ -350,6 +350,7 @@ export default function InteractiveAvatar({
           subject: `${info.firstName} ${info.lastName} (${user.toUpperCase()})`,
           user_info: `Name: ${info.firstName} ${info.lastName}\nEmail: ${info.email}\nGRAET Profile: ${info.graetLink}\nUser Type: ${user}`,
           chat_history: formattedChatHistory,
+          personalized: personalized,
           to_email: ["kroni+avatar@graet.com", "bo+avatar@graet.com"], // Add both recipients
         };
   
@@ -400,6 +401,7 @@ export default function InteractiveAvatar({
           subject: `${info.firstName} ${info.lastName} (${user.toUpperCase()})`,
           user_info: `Name: ${info.firstName} ${info.lastName}\nEmail: ${info.email}\nGRAET Profile: ${info.graetLink}\nUser Type: ${user}`,
           chat_history: formattedChatHistory,
+          personalized: personalized,
           to_email: ["kroni+avatar@graet.com", "bo+avatar@graet.com"],
         };
   

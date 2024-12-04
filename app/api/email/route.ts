@@ -9,20 +9,22 @@ export async function POST(req: Request) {
     const body = await req.json();
 
     // Extract email details from the request body
-    const { subject, user_info, chat_history, to_email } = body;
+    const { subject, user_info, chat_history, personalized, to_email } = body;
 
     // Send the email
     await sendgrid.send({
       to: to_email, // Recipient email
       from: "bo@graet.com", // Verified sender email
       subject: subject,
-      text: `User Info:\n${user_info}\n\nChat History:\n${chat_history}`,
+      text: `User Info:\n${user_info}\n\nChat History:\n${chat_history}\n\nSystem Prompt:\n${personalized}`,
       html: `
         <h1>${subject}</h1>
         <p><strong>User Info:</strong></p>
         <pre>${user_info}</pre>
         <p><strong>Chat History:</strong></p>
         <pre>${chat_history}</pre>
+        <p><strong>System Prompt:</strong></p>
+        <pre>${personalized}</pre>
       `,
     });
 
