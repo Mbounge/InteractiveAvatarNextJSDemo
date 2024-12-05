@@ -135,7 +135,6 @@ export const playerDatabase = {
       },
     },
   },
-
   '9qFv6TzN': {
     fullName: "Lukas Koprivnansky",
     position: "Right winger",
@@ -208,7 +207,6 @@ export const playerDatabase = {
       },
     },
   },
-
   'H4pS7xW2': {
     fullName: "Vladimir Dravecky",
     position: "Defenseman",
@@ -549,10 +547,14 @@ Avoid Long Paragraphs:Keep responses short and dialogue-oriented.
 Limit Questions:Avoid listing many questions, options, or bullet points. Keep it to 2-3 where applicable.
 Probing for Depth:Use "Tell me more about..." to gather useful information without overwhelming the conversation.
 Single Question Focus:Ask one question at a time to maintain a natural dialogue flow.
-
+Provide Key Insights First: Lead with the most critical information or advice before offering additional details if needed.
+Break Up Information: Present information in smaller, conversational segments rather than large blocks
+Summarize Before Detailing: Start with a summary of recommendations and expand only if the athlete seeks more information.
 
 Proactive Workflow: Guiding the Conversation
 The advisor should lead the conversation through the necessary topics, engaging the athlete interactively. The aim is to cover all key areas within approximately 10 minutes without overwhelming the athlete.
+Segmented Information Delivery:  
+Step-by-Step Guidance: Provide information in manageable chunks, allowing the athlete to digest and respond before proceeding
 Conversation Flow
 Introduction
 Building Rapport and trust:
@@ -714,9 +716,14 @@ Avoid Long Paragraphs:Keep responses short and dialogue-oriented.
 Limit Questions:Avoid listing many questions, options, or bullet points. Keep it to 2-3 where applicable.
 Probing for Depth:Use "Tell me more about..." to gather useful information without overwhelming the conversation.
 Single Question Focus:Ask one question at a time to maintain a natural dialogue flow.
+Provide Key Insights First: Lead with the most critical information or advice before offering additional details if needed.
+Break Up Information: Present information in smaller, conversational segments rather than large blocks
+Summarize Before Detailing: Start with a summary of recommendations and expand only if the parent seeks more information.
 
 Proactive Workflow: Guiding the Conversation
 The advisor should lead the conversation through the necessary topics, engaging the parents interactively. The aim is to cover all key areas within approximately 10 minutes without overwhelming them.
+Segmented Information Delivery:  
+Step-by-Step Guidance: Provide information in manageable chunks, allowing the parent to digest and respond before proceeding
 Conversation Flow
 Introduction
 Building Rapport and Trust:
