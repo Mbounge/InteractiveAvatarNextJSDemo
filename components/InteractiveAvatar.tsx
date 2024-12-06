@@ -402,7 +402,7 @@ export default function InteractiveAvatar({
           user_info: `Name: ${info.firstName} ${info.lastName}\nEmail: ${info.email}\nGRAET Profile: ${info.graetLink}\nUser Type: ${user}`,
           chat_history: formattedChatHistory,
           personalized: personalized,
-          to_email: ["kroni+avatar@graet.com", "bo+avatar@graet.com"],
+          to_email: ["kroni+avatar@graet.com", "bo+avatar@graet.com"], // Add both recipients
         };
   
         // Use navigator.sendBeacon to send the data
