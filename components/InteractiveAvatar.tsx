@@ -91,9 +91,9 @@ export default function InteractiveAvatar({
 
   // TODO: improve this logic for personalized and greet
   useEffect(() => {
-    //console.log("personalized, ", personalized);
-    //console.log("greeting, ", greet);
-    console.log(personalized)
+    // console.log("personalized, ", personalized);
+    // console.log("greeting, ", greet);
+    // console.log(personalized)
 
     // Check if both personalized and greet are not empty strings
     if (personalized.trim() !== "" && greet.trim() !== "") {
@@ -303,7 +303,7 @@ export default function InteractiveAvatar({
     // Avatar initiates the start of the conversation
     // Need to use an LLM to generate specialized good personalized introductions - language specific
     // The start of the conversation sets the tone for how the rest of the conversation will go
-    //"Hi Brandon! I’ve reviewed your GRAET profile, and I’m impressed by your leadership as a center for the Eastern Ontario Wild U18 AAA. Your recent stats and playmaking ability really stand out. It’s fantastic to meet you today. How are you feeling about your season so far?"
+    // "Hi Brandon! I’ve reviewed your GRAET profile, and I’m impressed by your leadership as a center for the Eastern Ontario Wild U18 AAA. Your recent stats and playmaking ability really stand out. It’s fantastic to meet you today. How are you feeling about your season so far?"
     await avatar.current
       .speak({
         text: greet,
@@ -313,6 +313,23 @@ export default function InteractiveAvatar({
       .catch((e) => {
         setDebug(e.message);
       });
+  }
+
+  // This is the function to take into consideration for making our own LLM pipeline 
+  // just need to handle voice + LLM workflow - then take result here
+  // For avatar to speak
+  async function handleSpeak() {
+    setIsLoadingRepeat(true);
+    if (!avatar.current) {
+      setDebug("Avatar API not initialized");
+
+      return;
+    }
+    // speak({ text: text, task_type: TaskType.REPEAT })
+    await avatar.current.speak({ text: text, taskType: TaskType.REPEAT, taskMode: TaskMode.SYNC }).catch((e) => {
+      setDebug(e.message);
+    });
+    setIsLoadingRepeat(false);
   }
 
   async function endSession() {

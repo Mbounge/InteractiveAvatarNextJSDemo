@@ -22,7 +22,7 @@ export const AVATARS = [
 ];
 
 export const playerDatabase = {
-  'X7a9B3kQ': {
+  X7a9B3kQ: {
     fullName: "Matej Matějček",
     position: "Center",
     playingStyle: "Two-way",
@@ -36,41 +36,41 @@ export const playerDatabase = {
     joinedGraet: "May 7, 2024",
     currentTeam: "Bílí Tygři Liberec U15",
     stats: {
-      '24/25': {
+      "24/25": {
         team: "Bílí Tygři Liberec U15",
-        league: 'Czechia U15',
+        league: "Czechia U15",
         gamesPlayed: 3,
         goals: 2,
         assists: 2,
         totalPoints: 4,
       },
-      '23/24': {
+      "23/24": {
         team: "Bílí Tygři Liberec U14",
-        league: 'cz Czechia U14',
+        league: "cz Czechia U14",
         gamesPlayed: 7,
         goals: 2,
         assists: 2,
         totalPoints: 4,
       },
-      '23/24 (U13)': {
+      "23/24 (U13)": {
         team: "Bílí Tygři Liberec U13",
-        league: 'cz Czechia U13',
+        league: "cz Czechia U13",
         gamesPlayed: 6,
         goals: 9,
         assists: 6,
         totalPoints: 15,
       },
-      '22/23 (U13)': {
+      "22/23 (U13)": {
         team: "Bílí Tygři Liberec U13",
-        league: 'cz Czechia U13',
+        league: "cz Czechia U13",
         gamesPlayed: 8,
         goals: 2,
         assists: 2,
         totalPoints: 4,
       },
-      '22/23 (U12)': {
+      "22/23 (U12)": {
         team: "Bílí Tygři Liberec U12",
-        league: 'cz Czechia U12',
+        league: "cz Czechia U12",
         gamesPlayed: 25,
         goals: 17,
         assists: 15,
@@ -79,7 +79,7 @@ export const playerDatabase = {
     },
   },
 
-  'PZl2n8Y5': {
+  PZl2n8Y5: {
     fullName: "Jerguš Dunajčík",
     position: "Defenseman",
     playingStyle: "Two-way",
@@ -93,41 +93,41 @@ export const playerDatabase = {
     joinedGraet: "April 16, 2024",
     currentTeam: "New Jersey Jr. Titans 16U AAA",
     stats: {
-      '24/25': {
+      "24/25": {
         team: "New Jersey Jr. Titans 16U AAA",
-        league: 'us BEAST 16U - us AYHL 16U',
+        league: "us BEAST 16U - us AYHL 16U",
         gamesPlayed: 3,
         goals: 0,
         assists: 0,
         totalPoints: 0,
       },
-      '23/24': {
+      "23/24": {
         team: "Krefelder EV 1981 U17",
-        league: 'de Germany U17',
+        league: "de Germany U17",
         gamesPlayed: 25,
         goals: 2,
         assists: 9,
         totalPoints: 11,
       },
-      '22/23 (U16)': {
+      "22/23 (U16)": {
         team: "HC Slovan Bratislava U16",
-        league: 'sk Slovakia U16',
+        league: "sk Slovakia U16",
         gamesPlayed: 13,
         goals: 9,
         assists: 10,
         totalPoints: 19,
       },
-      '22/23 (U16 2)': {
+      "22/23 (U16 2)": {
         team: "HC Slovan Bratislava U16 2",
-        league: 'Slovakia U16 2',
+        league: "Slovakia U16 2",
         gamesPlayed: 16,
         goals: 7,
         assists: 14,
         totalPoints: 21,
       },
-      '21/22': {
+      "21/22": {
         team: "HC Slovan Bratislava U14",
-        league: 'sk Slovakia U14',
+        league: "sk Slovakia U14",
         gamesPlayed: 23,
         goals: 5,
         assists: 12,
@@ -135,7 +135,7 @@ export const playerDatabase = {
       },
     },
   },
-  '9qFv6TzN': {
+  "9qFv6TzN": {
     fullName: "Lukas Koprivnansky",
     position: "Right winger",
     playingStyle: "Playmaker",
@@ -149,57 +149,57 @@ export const playerDatabase = {
     joinedGraet: "April 16, 2024",
     currentTeam: "Maine Jr. Mariners 16U AAA",
     stats: {
-      '24/25': {
+      "24/25": {
         team: "Maine Jr. Mariners 16U AAA",
-        league: 'us 16U AAA - us EP Cup Series 16U',
+        league: "us 16U AAA - us EP Cup Series 16U",
         gamesPlayed: 4,
         goals: 1,
         assists: 1,
         totalPoints: 2,
       },
-      '23/24 (Team 1)': {
+      "23/24 (Team 1)": {
         team: "Maine Jr. Mariners 16U AAA",
-        league: 'us THF 16U',
+        league: "us THF 16U",
         gamesPlayed: 33,
         goals: 13,
         assists: 12,
         totalPoints: 25,
       },
-      '23/24 (Team 2)': {
+      "23/24 (Team 2)": {
         team: "HK Dukla Trencin U16",
-        league: 'sk Slovakia U16',
+        league: "sk Slovakia U16",
         gamesPlayed: 31,
         goals: 13,
         assists: 10,
         totalPoints: 23,
       },
-      '23/24': {
+      "23/24": {
         team: "HK Dukla Trencin U16 2",
-        league: 'us Slovakia U16 2',
+        league: "us Slovakia U16 2",
         gamesPlayed: 1,
         goals: 0,
         assists: 1,
         totalPoints: 1,
       },
-      '22/23': {
+      "22/23": {
         team: "HK Dukla Trencin U16 2",
-        league: 'us Slovakia U16 2',
+        league: "us Slovakia U16 2",
         gamesPlayed: 28,
         goals: 20,
         assists: 14,
         totalPoints: 34,
       },
-      '21/22 (Team 1)': {
+      "21/22 (Team 1)": {
         team: "HK Dukla Trencin U16 2",
-        league: 'sk Slovakia U16',
+        league: "sk Slovakia U16",
         gamesPlayed: 5,
         goals: 8,
         assists: 5,
         totalPoints: 13,
       },
-      '21/22 (Team 2)': {
+      "21/22 (Team 2)": {
         team: "HK Dukla Trencin U14",
-        league: 'sk Slovakia U14',
+        league: "sk Slovakia U14",
         gamesPlayed: 22,
         goals: 10,
         assists: 22,
@@ -207,7 +207,7 @@ export const playerDatabase = {
       },
     },
   },
-  'H4pS7xW2': {
+  H4pS7xW2: {
     fullName: "Vladimir Dravecky",
     position: "Defenseman",
     playingStyle: "Offensive",
@@ -221,7 +221,7 @@ export const playerDatabase = {
     joinedGraet: "June 24, 2024",
     currentTeam: "Czechia U18",
     stats: {
-      '24/25 (Czechia U18)': {
+      "24/25 (Czechia U18)": {
         team: "Czechia U18 (all)",
         league: "International-Jr",
         gamesPlayed: 8,
@@ -231,7 +231,7 @@ export const playerDatabase = {
         pim: 0,
         plusMinus: 0,
       },
-      '24/25 (Rogle BK J20)': {
+      "24/25 (Rogle BK J20)": {
         team: "Rogle BK J20",
         league: "Sweden J20 Nationell",
         gamesPlayed: 16,
@@ -241,7 +241,7 @@ export const playerDatabase = {
         pim: 0,
         plusMinus: 3,
       },
-      '24/25 (Rogle BK J18)': {
+      "24/25 (Rogle BK J18)": {
         team: "Rogle BK J18",
         league: "Sweden J18 Region",
         gamesPlayed: 3,
@@ -251,7 +251,7 @@ export const playerDatabase = {
         pim: 2,
         plusMinus: 0,
       },
-      '23/24 (Slovakia U18)': {
+      "23/24 (Slovakia U18)": {
         team: "Slovakia U18 (all)",
         league: "International-Jr",
         gamesPlayed: 12,
@@ -261,7 +261,7 @@ export const playerDatabase = {
         pim: 8,
         plusMinus: 0,
       },
-      '23/24 (Slovakia U17)': {
+      "23/24 (Slovakia U17)": {
         team: "Slovakia U17 (all)",
         league: "International-Jr",
         gamesPlayed: 4,
@@ -271,7 +271,7 @@ export const playerDatabase = {
         pim: 0,
         plusMinus: 0,
       },
-      '23/24 (HC Kosice)': {
+      "23/24 (HC Kosice)": {
         team: "HC Kosice",
         league: "Slovakia",
         gamesPlayed: 16,
@@ -281,7 +281,7 @@ export const playerDatabase = {
         pim: 2,
         plusMinus: 2,
       },
-      '23/24 (HC Kosice U20)': {
+      "23/24 (HC Kosice U20)": {
         team: "HC Kosice U20",
         league: "Slovakia U20",
         gamesPlayed: 3,
@@ -291,7 +291,7 @@ export const playerDatabase = {
         pim: 0,
         plusMinus: 5,
       },
-      '23/24 (Team Slovakia U18)': {
+      "23/24 (Team Slovakia U18)": {
         team: "Team Slovakia U18",
         league: "Slovakia 2",
         gamesPlayed: 15,
@@ -301,7 +301,7 @@ export const playerDatabase = {
         pim: 2,
         plusMinus: -21,
       },
-      '22/23 (Slovakia U17)': {
+      "22/23 (Slovakia U17)": {
         team: "Slovakia U17 (all)",
         league: "International-Jr",
         gamesPlayed: 3,
@@ -311,7 +311,7 @@ export const playerDatabase = {
         pim: 0,
         plusMinus: 0,
       },
-      '22/23 (HC Ocelari Trinec U17)': {
+      "22/23 (HC Ocelari Trinec U17)": {
         team: "HC Ocelari Trinec U17",
         league: "Czechia U17",
         gamesPlayed: 29,
@@ -321,7 +321,7 @@ export const playerDatabase = {
         pim: 4,
         plusMinus: 8,
       },
-      '21/22 (HC Ocelari Trinec U17)': {
+      "21/22 (HC Ocelari Trinec U17)": {
         team: "HC Ocelari Trinec U17",
         league: "Czechia U17",
         gamesPlayed: 13,
@@ -333,7 +333,7 @@ export const playerDatabase = {
       },
     },
     tournaments: {
-      '23/24 (5-Ntn Zuchwil)': {
+      "23/24 (5-Ntn Zuchwil)": {
         team: "Slovakia U18",
         league: "5-Ntn Zuchwil",
         gamesPlayed: 4,
@@ -346,7 +346,7 @@ export const playerDatabase = {
     },
   },
 
-  'm3Lk1B8s': {
+  m3Lk1B8s: {
     fullName: "Owen Sanchez",
     position: "Defenseman",
     playingStyle: "Offensive",
@@ -360,7 +360,7 @@ export const playerDatabase = {
     joinedGraet: "October 12, 2024",
     currentTeam: "Maine Jr. Mariners 16U AAA",
     stats: {
-      '24/25 (THF 16U)': {
+      "24/25 (THF 16U)": {
         team: "Maine Jr. Mariners 16U AAA",
         league: "THF 16U",
         gamesPlayed: 5,
@@ -370,7 +370,7 @@ export const playerDatabase = {
         pim: 2,
         plusMinus: 0,
       },
-      '24/25 (EP Cup Series 16U)': {
+      "24/25 (EP Cup Series 16U)": {
         team: "Maine Jr. Mariners 16U AAA",
         league: "EP Cup Series 16U",
         gamesPlayed: 4,
@@ -380,7 +380,7 @@ export const playerDatabase = {
         pim: 2,
         plusMinus: 0,
       },
-      '23/24': {
+      "23/24": {
         team: "Carolina Premier Hockey 15U AAA",
         league: "15U AAA",
         gamesPlayed: 51,
@@ -390,7 +390,7 @@ export const playerDatabase = {
         pim: 0,
         plusMinus: 0,
       },
-      '22/23': {
+      "22/23": {
         team: "Dallas Penguins 14U AA",
         league: "14U AA",
         gamesPlayed: 21,
@@ -403,7 +403,7 @@ export const playerDatabase = {
     },
   },
 
-  'SIMc8shX': {
+  SIMc8shX: {
     fullName: "Simon Cseh",
     position: "Center",
     playingStyle: "Two-way",
@@ -417,99 +417,135 @@ export const playerDatabase = {
     joinedGraet: "May 17, 2024",
     currentTeam: "EC-KAC U20",
     stats: {
-        '24/25 (EC-KAC U20)': {
-            team: "EC-KAC U20",
-            league: "Austria U20i",
-            gamesPlayed: 10,
-            goals: 1,
-            assists: 1,
-            totalPoints: 2,
-            pim: 0,
-            plusMinus: 0,
-        },
-        '24/25 (EC-KAC U18)': {
-            team: "EC-KAC U18",
-            league: "Austria U18i",
-            gamesPlayed: 11,
-            goals: 8,
-            assists: 6,
-            totalPoints: 14,
-            pim: 8,
-            plusMinus: 14,
-        },
-        '23/24 (EC-KAC U17)': {
-            team: "EC-KAC U17",
-            league: "Austria U17",
-            gamesPlayed: 7,
-            goals: 2,
-            assists: 3,
-            totalPoints: 5,
-            pim: 8,
-            plusMinus: 0,
-        },
-        '23/24 (EC-KAC U18)': {
-            team: "EC-KAC U18",
-            league: "Austria U18i",
-            gamesPlayed: 24,
-            goals: 3,
-            assists: 10,
-            totalPoints: 13,
-            pim: 6,
-            plusMinus: 19,
-        },
-        '22/23 (EC-KAC U17)': {
-            team: "EC-KAC U17",
-            league: "Austria U17",
-            gamesPlayed: 12,
-            goals: 1,
-            assists: 4,
-            totalPoints: 5,
-            pim: 2,
-            plusMinus: 0,
-        },
-        '21/22 (HOBA Bratislava U16)': {
-            team: "HOBA Bratislava U16",
-            league: "Slovakia U16",
-            gamesPlayed: 2,
-            goals: 0,
-            assists: 1,
-            totalPoints: 1,
-            pim: 0,
-            plusMinus: -4,
-        },
+      "24/25 (EC-KAC U20)": {
+        team: "EC-KAC U20",
+        league: "Austria U20i",
+        gamesPlayed: 10,
+        goals: 1,
+        assists: 1,
+        totalPoints: 2,
+        pim: 0,
+        plusMinus: 0,
+      },
+      "24/25 (EC-KAC U18)": {
+        team: "EC-KAC U18",
+        league: "Austria U18i",
+        gamesPlayed: 11,
+        goals: 8,
+        assists: 6,
+        totalPoints: 14,
+        pim: 8,
+        plusMinus: 14,
+      },
+      "23/24 (EC-KAC U17)": {
+        team: "EC-KAC U17",
+        league: "Austria U17",
+        gamesPlayed: 7,
+        goals: 2,
+        assists: 3,
+        totalPoints: 5,
+        pim: 8,
+        plusMinus: 0,
+      },
+      "23/24 (EC-KAC U18)": {
+        team: "EC-KAC U18",
+        league: "Austria U18i",
+        gamesPlayed: 24,
+        goals: 3,
+        assists: 10,
+        totalPoints: 13,
+        pim: 6,
+        plusMinus: 19,
+      },
+      "22/23 (EC-KAC U17)": {
+        team: "EC-KAC U17",
+        league: "Austria U17",
+        gamesPlayed: 12,
+        goals: 1,
+        assists: 4,
+        totalPoints: 5,
+        pim: 2,
+        plusMinus: 0,
+      },
+      "21/22 (HOBA Bratislava U16)": {
+        team: "HOBA Bratislava U16",
+        league: "Slovakia U16",
+        gamesPlayed: 2,
+        goals: 0,
+        assists: 1,
+        totalPoints: 1,
+        pim: 0,
+        plusMinus: -4,
+      },
     },
-},
+  },
+  VL8k3shC: {
+    fullName: "Václav Lochman",
+    position: "Defenseman",
+    playingStyle: "Offensive",
+    shoots: "Right",
+    height: "167cm",
+    weight: "56kg",
+    nationality: "CZ",
+    dateOfBirth: "November 14, 2010",
+    institution: "Škola u školy",
+    graduation: "2026",
+    joinedGraet: "May 10, 2024",
+    currentTeam: "Bílí Tygři Liberec U15",
+    stats: {
+      "24/25": {
+        team: "Bílí Tygři Liberec U15",
+        league: "Czechia U15",
+        gamesPlayed: 18,
+        goals: 6,
+        assists: 8,
+        totalPoints: 14,
+        pim: 0,
+        plusMinus: 1,
+      },
+      "23/24": {
+        team: "Bílí Tygři Liberec U15",
+        league: "Czechia U15",
+        gamesPlayed: 3,
+        goals: 0,
+        assists: 0,
+        totalPoints: 0,
+        pim: 0,
+        plusMinus: 1,
+      },
+    },
+  },
 };
 
 export const STT_LANGUAGE_LIST = [
-  { label: 'Bulgarian', value: 'bg', key: 'bg' },
-  { label: 'Chinese', value: 'zh', key: 'zh' },
-  { label: 'Czech', value: 'cs', key: 'cs' },
-  { label: 'Danish', value: 'da', key: 'da' },
-  { label: 'Dutch', value: 'nl', key: 'nl' },
-  { label: 'English', value: 'en', key: 'en' },
-  { label: 'Finnish', value: 'fi', key: 'fi' },
-  { label: 'French', value: 'fr', key: 'fr' },
-  { label: 'German', value: 'de', key: 'de' },
-  { label: 'Greek', value: 'el', key: 'el' },
-  { label: 'Hindi', value: 'hi', key: 'hi' },
-  { label: 'Hungarian', value: 'hu', key: 'hu' },
-  { label: 'Indonesian', value: 'id', key: 'id' },
-  { label: 'Italian', value: 'it', key: 'it' },
-  { label: 'Japanese', value: 'ja', key: 'ja' },
-  { label: 'Korean', value: 'ko', key: 'ko' },
-  { label: 'Malay', value: 'ms', key: 'ms' },
-  { label: 'Norwegian', value: 'no', key: 'no' },
-  { label: 'Polish', value: 'pl', key: 'pl' },
-  { label: 'Portuguese', value: 'pt', key: 'pt' },
-  { label: 'Romanian', value: 'ro', key: 'ro' },
-  { label: 'Russian', value: 'ru', key: 'ru' },
-  { label: 'Slovak', value: 'sk', key: 'sk' },
-  { label: 'Spanish', value: 'es', key: 'es' },
-  { label: 'Swedish', value: 'sv', key: 'sv' },
-  { label: 'Turkish', value: 'tr', key: 'tr' },
-  { label: 'Ukrainian', value: 'uk', key: 'uk' },
-  { label: 'Vietnamese', value: 'vi', key: 'vi' },
+  { label: "Bulgarian", value: "bg", key: "bg" },
+  { label: "Chinese", value: "zh", key: "zh" },
+  { label: "Czech", value: "cs", key: "cs" },
+  { label: "Danish", value: "da", key: "da" },
+  { label: "Dutch", value: "nl", key: "nl" },
+  { label: "English", value: "en", key: "en" },
+  { label: "Finnish", value: "fi", key: "fi" },
+  { label: "French", value: "fr", key: "fr" },
+  { label: "German", value: "de", key: "de" },
+  { label: "Greek", value: "el", key: "el" },
+  { label: "Hindi", value: "hi", key: "hi" },
+  { label: "Hungarian", value: "hu", key: "hu" },
+  { label: "Indonesian", value: "id", key: "id" },
+  { label: "Italian", value: "it", key: "it" },
+  { label: "Japanese", value: "ja", key: "ja" },
+  { label: "Korean", value: "ko", key: "ko" },
+  { label: "Malay", value: "ms", key: "ms" },
+  { label: "Norwegian", value: "no", key: "no" },
+  { label: "Polish", value: "pl", key: "pl" },
+  { label: "Portuguese", value: "pt", key: "pt" },
+  { label: "Romanian", value: "ro", key: "ro" },
+  { label: "Russian", value: "ru", key: "ru" },
+  { label: "Slovak", value: "sk", key: "sk" },
+  { label: "Spanish", value: "es", key: "es" },
+  { label: "Swedish", value: "sv", key: "sv" },
+  { label: "Turkish", value: "tr", key: "tr" },
+  { label: "Ukrainian", value: "uk", key: "uk" },
+  { label: "Vietnamese", value: "vi", key: "vi" },
 ];
 
 export const baseTemplatePlayer = `Persona
@@ -679,7 +715,7 @@ Leave every interaction with:
 A clear understanding of the athlete’s goals.
 Detailed information to inform the comprehensive report.
 A motivated and supported athlete who feels equipped to take the next step.
-`
+`;
 
 export const baseTemplateParent = `Persona
 Name: Kroni
@@ -819,6 +855,4 @@ Goals:
 Understanding:Gain a clear understanding of the parents' goals and concerns for their child.
 Information Gathering:Collect detailed information to inform a comprehensive and personalized report.
 Support and Trust:Build a trusting relationship with the parents, ensuring they feel heard and supported.
-`
-
-
+`;
