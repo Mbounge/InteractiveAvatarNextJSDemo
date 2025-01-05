@@ -63,239 +63,285 @@ const Welcome: React.FC<WelcomeProps> = ({
     videoUrls[user]?.[selectedLanguage] ||
     "https://www.youtube.com/embed/dQw4w9WgXcQ";
 
-  const executeApiCallPlayer = async () => {
-    try {
-      if (!playerData) {
-        throw new Error("Player data is not available.");
+    const executeApiCallPlayer = async () => {
+      try {
+        if (!playerData) {
+          throw new Error("Player data is not available.");
+        }
+    
+        // Define a type for player stats and tournaments
+        interface PlayerStat {
+          team: string;
+          league?: string;
+          gamesPlayed: number;
+          goals: number;
+          assists: number;
+          totalPoints: number;
+          pim?: number;
+          plusMinus?: number;
+        }
+    
+        interface TournamentStat {
+          team: string;
+          league?: string;
+          gamesPlayed: number;
+          goals: number;
+          assists: number;
+          totalPoints: number;
+          pim?: number;
+          plusMinus?: number;
+        }
+    
+        // Explicitly cast playerData.stats and playerData.tournaments
+        const statsEntries = Object.entries(playerData.stats) as [
+          string,
+          PlayerStat,
+        ][];
+        const tournamentEntries = playerData.tournaments
+          ? (Object.entries(playerData.tournaments) as [string, TournamentStat][])
+          : [];
+    
+        // Format playerData for the LLM
+        const formattedPlayerData = `
+          Name: ${playerData.fullName}
+          Position: ${playerData.position}
+          Playing Style: ${playerData.playingStyle}
+          Shoots: ${playerData.shoots}
+          Height: ${playerData.height}
+          Weight: ${playerData.weight}
+          Nationality: ${playerData.nationality}
+          Date of Birth: ${playerData.dateOfBirth}
+          Institution: ${playerData.institution || "Not set"}
+          Graduation: ${playerData.graduation || "Not set"}
+          Joined Graet: ${playerData.joinedGraet}
+          Current Team: ${playerData.currentTeam}
+          Stats:
+          ${statsEntries
+            .map(([season, stat]) => {
+              return `
+              Season: ${season}
+              Team: ${stat.team}
+              League: ${stat.league || "Not provided"}
+              Games Played: ${stat.gamesPlayed}
+              Goals: ${stat.goals}
+              Assists: ${stat.assists}
+              Total Points: ${stat.totalPoints}
+              PIM: ${stat.pim || "N/A"}
+              Plus/Minus: ${stat.plusMinus || "N/A"}
+              `;
+            })
+            .join("")}
+          Tournaments:
+          ${tournamentEntries
+            .map(([season, tournament]) => {
+              return `
+              Season: ${season}
+              Team: ${tournament.team}
+              League: ${tournament.league || "Not provided"}
+              Games Played: ${tournament.gamesPlayed}
+              Goals: ${tournament.goals}
+              Assists: ${tournament.assists}
+              Total Points: ${tournament.totalPoints}
+              PIM: ${tournament.pim || "N/A"}
+              Plus/Minus: ${tournament.plusMinus || "N/A"}
+              `;
+            })
+            .join("")}
+        `;
+    
+        const response = await fetch("/api/avatar", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messages: [
+              {
+                role: "user",
+                content: `Transform the provided base template of a system prompt for a Sports Advisor
+                 into a personalized system prompt for the athlete. Combine the base system prompt with athlete's data --
+                  Ensure that the personalized version prioritizes the proactive workflow and integrates all athlete data 
+                  [including all the tables with all the information in them, nothing left out] -- 
+                  Here's the base template: ${baseTemplatePlayer} -- here's the athlete's data: player's firstname: ${info.firstName}, player's lastname: ${info.lastName}, player's sport stats: ${formattedPlayerData} -- only provide the transformed personalized sports advisor for the user - do not say anything else`,
+              },
+            ],
+          }),
+        });
+    
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+    
+        const resultPersonal = await response.json();
+        setPersonalized(resultPersonal.answer);
+    
+        // Generate greeting
+        const responseGreeting = await fetch("/api/avatar", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messages: [
+              {
+                role: "user",
+                content: `Assume this prompt and look at the introduction and give me a personalized greeting for that athlete based on all the information you know about them, follow the same instructions in the prompt ${resultPersonal.answer} -- I want this greeting in this language: ${selectedLanguageLabel} -- only provide the greeting in your response - do not say anything else`,
+              },
+            ],
+          }),
+        });
+    
+        const resultGreeting = await responseGreeting.json();
+        setGreet(resultGreeting.answer);
+      } catch (err) {
+        console.error("API call failed:", err);
+      } finally {
+        console.log("finally");
       }
+    };
 
-      // Define a type for player stats if not already done
-      interface PlayerStat {
-        team: string;
-        league?: string;
-        gamesPlayed: number;
-        goals: number;
-        assists: number;
-        totalPoints: number;
-        pim?: number;
-        plusMinus?: number;
+    const executeApiCallParent = async () => {
+      try {
+        if (!playerData) {
+          throw new Error("Player data is not available.");
+        }
+    
+        // Define a type for player stats and tournaments
+        interface PlayerStat {
+          team: string;
+          league?: string;
+          gamesPlayed: number;
+          goals: number;
+          assists: number;
+          totalPoints: number;
+          pim?: number;
+          plusMinus?: number;
+        }
+    
+        interface TournamentStat {
+          team: string;
+          league?: string;
+          gamesPlayed: number;
+          goals: number;
+          assists: number;
+          totalPoints: number;
+          pim?: number;
+          plusMinus?: number;
+        }
+    
+        // Explicitly cast playerData.stats and playerData.tournaments
+        const statsEntries = Object.entries(playerData.stats) as [
+          string,
+          PlayerStat,
+        ][];
+        const tournamentEntries = playerData.tournaments
+          ? (Object.entries(playerData.tournaments) as [string, TournamentStat][])
+          : [];
+    
+        // Format playerData for the LLM
+        const formattedPlayerData = `
+          Name: ${playerData.fullName}
+          Position: ${playerData.position}
+          Playing Style: ${playerData.playingStyle}
+          Shoots: ${playerData.shoots}
+          Height: ${playerData.height}
+          Weight: ${playerData.weight}
+          Nationality: ${playerData.nationality}
+          Date of Birth: ${playerData.dateOfBirth}
+          Institution: ${playerData.institution || "Not set"}
+          Graduation: ${playerData.graduation || "Not set"}
+          Joined Graet: ${playerData.joinedGraet}
+          Current Team: ${playerData.currentTeam}
+          Stats:
+          ${statsEntries
+            .map(([season, stat]) => {
+              return `
+              Season: ${season}
+              Team: ${stat.team}
+              League: ${stat.league || "Not provided"}
+              Games Played: ${stat.gamesPlayed}
+              Goals: ${stat.goals}
+              Assists: ${stat.assists}
+              Total Points: ${stat.totalPoints}
+              PIM: ${stat.pim || "N/A"}
+              Plus/Minus: ${stat.plusMinus || "N/A"}
+              `;
+            })
+            .join("")}
+          Tournaments:
+          ${tournamentEntries
+            .map(([season, tournament]) => {
+              return `
+              Season: ${season}
+              Team: ${tournament.team}
+              League: ${tournament.league || "Not provided"}
+              Games Played: ${tournament.gamesPlayed}
+              Goals: ${tournament.goals}
+              Assists: ${tournament.assists}
+              Total Points: ${tournament.totalPoints}
+              PIM: ${tournament.pim || "N/A"}
+              Plus/Minus: ${tournament.plusMinus || "N/A"}
+              `;
+            })
+            .join("")}
+        `;
+    
+        const response = await fetch("/api/avatar", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messages: [
+              {
+                role: "user",
+                content: `Transform the provided base template of a system prompt for a Sports Advisor
+                 into a personalized system prompt for an athlete's parent. Combine the base system prompt with the parent's data --
+                  Ensure that the personalized version prioritizes the proactive workflow and integrates all available data for the parent
+                  -- I need all of this information in the system - all of it - nothing left out. 
+                  The sports advisor is not passive, it is active - 
+                  The sports advisor's main objective is to go through the entire workflow stated in the base template, also personalize the initial 
+                  question and follow-up questions found in the conversation structure of the proactive workflow to make them more engaging and to provide a good experience
+                  for the parent. Be respectful. 
+                  When this sports advisor starts a session with the parent, the sports advisor will only be talking to one of the parents. The sports advisor will have already been given an introduction to the parent. The sports advisor 
+                  should respond to the parent based on the greeting that will have been provided prior (change the base template such that it understands to not repeat the greeting and just continue the conversation towards the objectives of the conversation). 
+                  Here's the base template: ${baseTemplateParent} -- here's the parent's child's data: parent firstname: ${info.firstName}, parent lastname: ${info.lastName}, child's data: ${formattedPlayerData} -- only provide the transformed personalized sports advisor for the user - do not say anything else`,
+              },
+            ],
+          }),
+        });
+    
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+    
+        const resultPersonal = await response.json();
+        setPersonalized(resultPersonal.answer);
+    
+        // Generate greeting
+        const responseGreeting = await fetch("/api/avatar", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messages: [
+              {
+                role: "user",
+                content: `Assume this prompt and look at the introduction and give me a personalized greeting for the parent based on all the information you know about them -- remember the parent's first name is ${info.firstName} and last name is ${info.lastName} -- You are only meeting with one of the parents - follow the same instructions in the prompt ${resultPersonal.answer} -- I want this greeting in this language: ${selectedLanguageLabel} -- only provide the greeting in your response - do not say anything else`,
+              },
+            ],
+          }),
+        });
+    
+        const resultGreeting = await responseGreeting.json();
+        setGreet(resultGreeting.answer);
+      } catch (err) {
+        console.error("API call failed:", err);
+      } finally {
+        console.log("finally");
       }
-
-      // Explicitly cast playerData.stats to Record<string, PlayerStat>
-      const statsEntries = Object.entries(playerData.stats) as [
-        string,
-        PlayerStat,
-      ][];
-
-      // Format playerData for the LLM
-      const formattedPlayerData = `
-        Name: ${playerData.fullName}
-        Position: ${playerData.position}
-        Playing Style: ${playerData.playingStyle}
-        Shoots: ${playerData.shoots}
-        Height: ${playerData.height}
-        Weight: ${playerData.weight}
-        Nationality: ${playerData.nationality}
-        Date of Birth: ${playerData.dateOfBirth}
-        Institution: ${playerData.institution || "Not set"}
-        Graduation: ${playerData.graduation || "Not set"}
-        Joined Graet: ${playerData.joinedGraet}
-        Current Team: ${playerData.currentTeam}
-        Stats:
-        ${statsEntries
-          .map(([season, stat]) => {
-            return `
-            Season: ${season}
-            Team: ${stat.team}
-            League: ${stat.league || "Not provided"}
-            Games Played: ${stat.gamesPlayed}
-            Goals: ${stat.goals}
-            Assists: ${stat.assists}
-            Total Points: ${stat.totalPoints}
-            PIM: ${stat.pim || "N/A"}
-            Plus/Minus: ${stat.plusMinus || "N/A"}
-            `;
-          })
-          .join("")}
-      `;
-
-      const response = await fetch("/api/avatar", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messages: [
-            //{ role: "system", content: '' }, // Add the preprompt
-            {
-              role: "user",
-              content: `Transform the provided base template of a system prompt for a Sports Advisor
-             into a personalized system prompt for the athlete. Combine the base system prompt with athletes data --
-              Ensure that personalized version prioritizes the proactive workflow and integrates all athlete data 
-              [including all the tables with all the information in them, nothing left out] -- 
-              I need all of this information in the system - all of it - nothing left out, including performance statistics,
-               game logs, league standings, reports, family background, and personal interests - The sports advisor is not passive, is active - 
-               The sports advisor main objective is to go through the entire workflow stated in the base template, also personalize the initial 
-               question and follow up questions found in the conversation structure of the proactive workflow to make them more engaging and to provide a good experience
-                for the athlete - when this sports advisor starts a session with the user - the sports advisor will have been already given a introduction to user - the sports advisor 
-                should respond to the users based on the greeting that will have been provided prior - so the introduction (building rapport and trust) should just be continuing the conversation from that point and leading to the rest of the 
-                conversation flow -- here's the base template: ${baseTemplatePlayer} -- here's the athletes data: players firstname: ${info.firstName}, players lastname: ${info.lastName}, players sport stats: ${formattedPlayerData} -- only provide the transformed personalized sports advisor for the user - do not say anything else`,
-            },
-          ],
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
-      const resultPersonal = await response.json();
-      //setReport(result.answer || "No report generated.");
-      //console.log(resultPersonal);
-      setPersonalized(resultPersonal.answer);
-
-      // generate greeting -  now that we have the system prompt
-      const responseGreeting = await fetch("/api/avatar", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messages: [
-            //{ role: "system", content: '' }, // Add the preprompt
-            {
-              role: "user",
-              content: `Assume this prompt and look at the introduction and give me a personalized greeting for that athlete based on all the information you know about them, follow the same instructions in the prompt ${resultPersonal.answer} -- I want this greeting in this language: ${selectedLanguageLabel} -- only provide the greeting in your response - do not say anything else`,
-            },
-          ],
-        }),
-      });
-
-      const resultGreeting = await responseGreeting.json();
-      //console.log("greeting, ", resultGreeting);
-      setGreet(resultGreeting.answer);
-    } catch (err) {
-      console.error("API call failed:", err);
-    } finally {
-      console.log("finally, ");
-    }
-  };
-
-  const executeApiCallParent = async () => {
-    try {
-      if (!playerData) {
-        throw new Error("Player data is not available.");
-      }
-
-      // Define a type for player stats if not already done
-      interface PlayerStat {
-        team: string;
-        league?: string;
-        gamesPlayed: number;
-        goals: number;
-        assists: number;
-        totalPoints: number;
-        pim?: number;
-        plusMinus?: number;
-      }
-
-      // Explicitly cast playerData.stats to Record<string, PlayerStat>
-      const statsEntries = Object.entries(playerData.stats) as [
-        string,
-        PlayerStat,
-      ][];
-
-      // Format playerData for the LLM
-      const formattedPlayerData = `
-      Name: ${playerData.fullName}
-      Position: ${playerData.position}
-      Playing Style: ${playerData.playingStyle}
-      Shoots: ${playerData.shoots}
-      Height: ${playerData.height}
-      Weight: ${playerData.weight}
-      Nationality: ${playerData.nationality}
-      Date of Birth: ${playerData.dateOfBirth}
-      Institution: ${playerData.institution || "Not set"}
-      Graduation: ${playerData.graduation || "Not set"}
-      Joined Graet: ${playerData.joinedGraet}
-      Current Team: ${playerData.currentTeam}
-      Stats:
-      ${statsEntries
-        .map(([season, stat]) => {
-          return `
-          Season: ${season}
-          Team: ${stat.team}
-          League: ${stat.league || "Not provided"}
-          Games Played: ${stat.gamesPlayed}
-          Goals: ${stat.goals}
-          Assists: ${stat.assists}
-          Total Points: ${stat.totalPoints}
-          PIM: ${stat.pim || "N/A"}
-          Plus/Minus: ${stat.plusMinus || "N/A"}
-          `;
-        })
-        .join("")}
-    `;
-
-      const response = await fetch("/api/avatar", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messages: [
-            //{ role: "system", content: '' }, // Add the preprompt
-            {
-              role: "user",
-              content: `Transform the provided base template of a system prompt for a Sports Advisor
-           into a personalized system prompt for an athletes parent. Combine the base system prompt with parents data --
-            Ensure that personalized version prioritizes the proactive workflow and integrates all available data for the parent
-            -- I need all of this information in the system - all of it - nothing left out, -- The sports advisor is not passive, is active - 
-             The sports advisor main objective is to go through the entire workflow stated in the base template, also personalize the initial 
-             question and follow up questions found in the conversation structure of the proactive workflow to make them more engaging and to provide a good experience
-              for the parent - be respectful - when this sports advisor starts a session with the parent- The sports advisor will only be talking to one of the parents - the sports advisor will have been already given a introduction to parent - the sports advisor 
-              should respond to the parents based on the greeting that will have been provided prior (change the base template such that it understands to not repeat the greeting and just continue the conversation towards the objectives of the conversation) - so the introduction (building rapport and trust) should just be continuing the conversation from that point and leading to the rest of the 
-              conversation flow -- here's the base template: ${baseTemplateParent} -- here's the parents childs data: parent firstname: ${info.firstName}, parent lastname: ${info.lastName}, childs data: ${formattedPlayerData} -- only provide the transformed personalized sports advisor for the user - do not say anything else`,
-            },
-          ],
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
-      const resultPersonal = await response.json();
-      //setReport(result.answer || "No report generated.");
-      //console.log(resultPersonal);
-      setPersonalized(resultPersonal.answer);
-
-      // generate greeting -  now that we have the system prompt
-      const responseGreeting = await fetch("/api/avatar", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messages: [
-            //{ role: "system", content: '' }, // Add the preprompt
-            {
-              role: "user",
-              content: `Assume this prompt and look at the introduction and give me a personalized greeting for the parent based on all the information you know about them -- remember the parent's first name is ${info.firstName} and last name is ${info.lastName} -- You are only meeting with one of the parents - follow the same instructions in the prompt ${resultPersonal.answer} -- I want this greeting in this language: ${selectedLanguageLabel} -- only provide the greeting in your response - do not say anything else`,
-            },
-          ],
-        }),
-      });
-
-      const resultGreeting = await responseGreeting.json();
-      //console.log("greeting, ", resultGreeting);
-      setGreet(resultGreeting.answer);
-    } catch (err) {
-      console.error("API call failed:", err);
-    } finally {
-      console.log("finally, ");
-    }
-  };
+    };
 
   const handleNextStep = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
