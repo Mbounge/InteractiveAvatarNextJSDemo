@@ -1,7 +1,7 @@
 import openai from "./chatgpt";
 import OpenAI from "openai";
 
-const query = async (
+const query3 = async (
   messages: any
 ): Promise<OpenAI.Chat.ChatCompletion | string> => {
   const handleError = (error: any): string => {
@@ -32,7 +32,7 @@ const query = async (
 
   const params: OpenAI.Chat.ChatCompletionCreateParams = {
     messages: messages,
-    model: "gpt-4o-mini", // was gpt-4o-mini
+    model: "o1-mini", // was gpt-4o-mini
     temperature: 1,
     top_p: 1,
     frequency_penalty: 0.0,
@@ -49,4 +49,4 @@ const query = async (
   }
 };
 
-export default query;
+export default query3;

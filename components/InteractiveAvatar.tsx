@@ -477,7 +477,6 @@ export default function InteractiveAvatar({
       <div className="flex flex-col items-center justify-center w-full max-w-4xl text-center gap-6">
         {report ? (
           <Report
-            chatHistory={chatHistoryRef.current}
             onClose={handleReportClose}
             reportBool={report}
           />

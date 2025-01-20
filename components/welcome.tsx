@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import InteractiveAvatar from "./InteractiveAvatar"; // Import the InteractiveAvatar component
+import InteractiveAvatarCustom from "./interactiveAvatarCustom";
 import Image from "next/image";
 import logo from "../public/GraetAI.svg"; 
 import {

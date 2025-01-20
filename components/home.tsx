@@ -5,6 +5,10 @@ import Languages from "./language";
 import Image from "next/image";
 import kroni from "../public/kroni.svg";
 import logo from "../public/GraetAI.svg"; 
+import VoiceRecorder from "./VoiceRecorder";
+import InteractiveAvatarNew from "./interactiveAvatarNew";
+import InteractiveAvatarNew2 from "./interactiveAvatarNew2";
+import InteractiveAvatarCustom from "./interactiveAvatarCustom";
 
 const Home: React.FC = () => {
   const [userType, setUserType] = useState("parent");
@@ -57,6 +61,7 @@ const Home: React.FC = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-white">
+      
       <div className="flex justify-center absolute top-6">
         <Image src={logo} alt="Graet Logo" height={300} width={300}  />
       </div>

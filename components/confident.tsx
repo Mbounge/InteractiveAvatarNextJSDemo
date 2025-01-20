@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Welcome from "./welcome";
+import Welcome2 from "./welcome2";
 import warning from '../public/warning1.svg'
 import logo from "../public/GraetAI.svg"; 
 
@@ -30,7 +31,7 @@ const Confidentiality: React.FC<ConfidentialityProps> = ({info, user, selectedLa
 
   // Render the Welcome component if the user agrees to the terms
   if (showWelcome) {
-    return <Welcome info={info} user={user} selectedLanguage={selectedLanguage} accessCode={accessCode} playerData={playerData} />;
+    return accessCode === 'kroni' ? <Welcome2 info={info} user={user} selectedLanguage={selectedLanguage} accessCode={accessCode} playerData={playerData} /> : <Welcome info={info} user={user} selectedLanguage={selectedLanguage} accessCode={accessCode} playerData={playerData} />;
   }
 
   return (

@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import emailjs from "emailjs-com";
 
 type Props = {
-  chatHistory: ChatMessage[];
   onClose: () => void;
   reportBool: boolean;
 };
@@ -13,7 +12,7 @@ type ChatMessage = {
   message: string; // The actual message content
 };
 
-const Report = ({ chatHistory, onClose, reportBool }: Props) => {
+const Report = ({ onClose, reportBool }: Props) => {
   const [report, setReport] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
 
