@@ -830,11 +830,11 @@ export default function NewInteractiveAvatar({
         )}
 
         {/* Debug console */}
-        <div className="w-full max-w-4xl p-2 mt-6 bg-gray-50 border border-gray-200 rounded-md text-left text-sm h-24 overflow-y-auto">
+        {/* <div className="w-full max-w-4xl p-2 mt-6 bg-gray-50 border border-gray-200 rounded-md text-left text-sm h-24 overflow-y-auto">
           {messages.map((msg, idx) => (
             <div key={idx}>{msg}</div>
           ))}
-        </div>
+        </div> */}
       </div>
     </div>
   );
