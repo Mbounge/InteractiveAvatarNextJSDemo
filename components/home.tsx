@@ -8,7 +8,6 @@ import logo from "../public/GraetAI.svg";
 import VoiceRecorder from "./VoiceRecorder";
 import InteractiveAvatarNew from "./interactiveAvatarNew";
 import InteractiveAvatarNew2 from "./interactiveAvatarNew2";
-import InteractiveAvatarCustom from "./interactiveAvatarCustom";
 
 const Home: React.FC = () => {
   const [userType, setUserType] = useState("parent");
