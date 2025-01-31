@@ -1,0 +1,201 @@
+"use client";
+
+import React, { useCallback, useState, useEffect, useRef } from "react";
+import Image from "next/image";
+import { useConversation } from "@11labs/react";
+import logo from "../public/GraetAI.svg";
+import kroni from "../public/kroni.svg";
+import { Button } from "@nextui-org/react"; // Import NextUI Button
+
+export default function Conversation() {
+  // Track connection status and speaking state in local React state
+  const [isConnected, setIsConnected] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
+
+  // Timer state
+  const [timer, setTimer] = useState(600); // 10 minutes in seconds
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Setup ElevenLabs conversation
+  const conversation = useConversation({
+    onConnect: () => {
+      console.log("Connected");
+      setIsConnected(true);
+      setIsStarting(false);
+    },
+    onDisconnect: () => {
+      console.log("Disconnected");
+      setIsConnected(false);
+      setIsSpeaking(false);
+    },
+
+    onMessage: (message) => {
+      console.log("Message:", message);
+      // Example: Adjust this logic if your message payload is different
+    },
+
+    onError: (error) => {
+      console.error("Error:", error);
+      // If an error occurs while starting up, revert the "starting" state
+      setIsStarting(false);
+    },
+  });
+
+  // Start the conversation session
+  const startConversation = useCallback(async () => {
+    try {
+      setIsStarting(true);
+
+      // Request mic permission
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      // Start the conversation with your agent ID
+      await conversation.startSession({
+        agentId: "itIMQj7wiFSym71cSzpw", // Replace with your own agent ID
+      });
+    } catch (error) {
+      console.error("Failed to start conversation:", error);
+      setIsStarting(false);
+    }
+  }, [conversation]);
+
+  // End the conversation session
+  const stopConversation = useCallback(async () => {
+    await conversation.endSession();
+  }, [conversation]);
+
+  // Define handleEndSession
+  const handleEndSession = useCallback(async () => {
+    await stopConversation();
+  }, [stopConversation]);
+
+  // Format timer in MM:SS
+  const formatTimer = (seconds: number) => {
+    const mm = Math.floor(seconds / 60);
+    const ss = seconds % 60;
+    return `${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
+  };
+
+  // Effect to handle the timer countdown
+  useEffect(() => {
+    if (isConnected) {
+      // Start the timer
+      timerRef.current = setInterval(() => {
+        setTimer((prev) => {
+          if (prev > 0) return prev - 1;
+          // Time's up, end the session
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
+          handleEndSession();
+          return 0;
+        });
+      }, 1000);
+    }
+
+    // Cleanup function to clear the timer when session ends or component unmounts
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [isConnected, handleEndSession]);
+
+  // Reset timer when the session ends
+  useEffect(() => {
+    if (!isConnected) {
+      setTimer(600); // Reset to 10 minutes
+    }
+  }, [isConnected]);
+
+  // ---------------------------------
+  // Render the UI (mimicking NewInteractiveAvatar)
+  // ---------------------------------
+  return (
+    <div className="w-full min-h-screen flex flex-col bg-white">
+      {/* 1) Header / Logo */}
+      <div className="w-full flex justify-center py-6">
+        <Image src={logo} alt="Graet Logo" height={300} width={300} />
+      </div>
+
+      {/* 2) Main Content Area */}
+      <div className="flex-1 flex flex-col items-center justify-center w-full px-4">
+        <div className="w-full max-w-4xl flex flex-col items-center gap-6">
+          {/* Show Kroni Avatar when not connected */}
+          {!isConnected && !isStarting && (
+            <Image src={kroni} alt="Kroni Avatar" height={350} width={350} />
+          )}
+
+          {/* If not connected, show start button or loading text */}
+          {!isConnected ? (
+            <div className="flex flex-col items-center gap-6">
+              {isStarting ? (
+                <div className="text-gray-500 text-sm">Connecting...</div>
+              ) : (
+                <button
+                  onClick={startConversation}
+                  disabled={isStarting}
+                  className="
+                    bg-gradient-to-tr from-blue-700 to-blue-300
+                    text-white py-4 px-8 rounded-lg 
+                    flex items-center justify-center gap-2 shadow-lg 
+                    hover:scale-105 transform transition
+                  "
+                >
+                  {/* Plus icon */}
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 4.5v15m7.5-7.5h-15"
+                    />
+                  </svg>
+                  Start Conversation
+                </button>
+              )}
+            </div>
+          ) : (
+            /* If connected, show status */
+            <div className="flex flex-col items-center gap-6">
+              <div className="h-32 w-full flex flex-col justify-center items-center">
+                <p className="text-gray-700 font-semibold">
+                  Status: {isConnected ? "Connected" : "Disconnected"}
+                </p>
+                <p className="text-gray-600">
+                  Agent is {isSpeaking ? "speaking" : "listening"}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Timer and End Session Button */}
+        {isConnected && (
+          <div className="w-full max-w-4xl px-6 mt-6">
+            <div className="flex justify-between items-center">
+              <div className="text-left font-semibold text-gray-700">
+                Session Duration: {formatTimer(timer)}
+              </div>
+              <Button
+                className="bg-gradient-to-tr from-blue-700 to-blue-300 text-white py-2 px-6 rounded-lg hover:bg-blue-800 transition"
+                size="md"
+                onClick={handleEndSession}
+              >
+                End Session
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
