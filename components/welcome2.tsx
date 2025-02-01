@@ -552,9 +552,9 @@ const Welcome2: React.FC<WelcomeProps> = ({
     event.preventDefault();
 
     if (user === "parent") {
-      //executeApiCallParent();
+      executeApiCallParent();
     } else {
-      //executeApiCallPlayer();
+      executeApiCallPlayer();
     }
 
     //console.log("Proceeding to the next step...");
@@ -564,7 +564,13 @@ const Welcome2: React.FC<WelcomeProps> = ({
   // Render the InteractiveAvatar component if the user proceeds
   if (showInteractiveAvatar) {
     return (
-      <Conversation />
+      <Conversation
+      info={info}
+      user={user}
+      selectedLanguage={selectedLanguage}
+      accessCode={accessCode}
+      personalized={personalized}
+      greet={greet}/>
     );
   }
 

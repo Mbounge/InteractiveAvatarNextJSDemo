@@ -5,19 +5,47 @@ import Image from "next/image";
 import { useConversation } from "@11labs/react";
 import logo from "../public/GraetAI.svg";
 import kroni from "../public/kroni.svg";
-import { Button } from "@nextui-org/react"; // Import NextUI Button
+import { Button, Spinner } from "@nextui-org/react"; // Import NextUI Button and Spinner
 
-export default function Conversation() {
-  // Track connection status and speaking state in local React state
+interface InteractiveProps {
+  info: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    graetLink: string;
+  };
+  user: string;
+  selectedLanguage: string;
+  accessCode: string;
+  personalized?: string;
+  greet?: string;        
+}
+
+export default function Conversation({
+  info,
+  user,
+  selectedLanguage,
+  accessCode,
+  personalized = "", // Default to an empty string if undefined
+  greet = "",        // Default to an empty string if undefined
+}: InteractiveProps) {
+  // Provide safe versions of personalized and greet
+  const safePersonalized = personalized ?? "";
+  const safeGreet = greet ?? "";
+
+  // Check if both personalized and greet are provided.
+  const isReady = safePersonalized.trim() !== "" && safeGreet.trim() !== "";
+
+  // Track connection status and speaking state in local React state.
   const [isConnected, setIsConnected] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
 
-  // Timer state
-  const [timer, setTimer] = useState(600); // 10 minutes in seconds
+  // Timer state.
+  const [timer, setTimer] = useState(600); // 10 minutes in seconds.
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Setup ElevenLabs conversation
+  // Setup ElevenLabs conversation.
   const conversation = useConversation({
     onConnect: () => {
       console.log("Connected");
@@ -29,62 +57,74 @@ export default function Conversation() {
       setIsConnected(false);
       setIsSpeaking(false);
     },
-
     onMessage: (message) => {
       console.log("Message:", message);
-      // Example: Adjust this logic if your message payload is different
+      // You can add logic here if your message payload includes speaking indicators.
     },
-
     onError: (error) => {
       console.error("Error:", error);
-      // If an error occurs while starting up, revert the "starting" state
       setIsStarting(false);
     },
   });
 
-  // Start the conversation session
+  // Start the conversation session.
   const startConversation = useCallback(async () => {
+    // Do not start if the component is not ready.
+    if (!isReady) return;
     try {
       setIsStarting(true);
 
-      // Request mic permission
+      // Request microphone permission.
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Start the conversation with your agent ID
+      // Start the conversation with your agent ID and personalized settings.
       await conversation.startSession({
-        agentId: "itIMQj7wiFSym71cSzpw", // Replace with your own agent ID
+        agentId: "itIMQj7wiFSym71cSzpw", // Replace with your own agent ID.
+        overrides: {
+          agent: {
+            prompt: {
+              prompt:
+                safePersonalized.trim() !== ""
+                  ? safePersonalized
+                  : "You are a helpful assistant. Your name is Kroni",
+            },
+            firstMessage:
+              safeGreet.trim() !== ""
+                ? safeGreet
+                : "Hi, how can I help you today?",
+          },
+        },
       });
     } catch (error) {
       console.error("Failed to start conversation:", error);
       setIsStarting(false);
     }
-  }, [conversation]);
+  }, [conversation, safePersonalized, safeGreet, isReady]);
 
-  // End the conversation session
+  // End the conversation session.
   const stopConversation = useCallback(async () => {
     await conversation.endSession();
   }, [conversation]);
 
-  // Define handleEndSession
+  // Define handleEndSession for use with the timer and button.
   const handleEndSession = useCallback(async () => {
     await stopConversation();
   }, [stopConversation]);
 
-  // Format timer in MM:SS
+  // Format timer in MM:SS.
   const formatTimer = (seconds: number) => {
     const mm = Math.floor(seconds / 60);
     const ss = seconds % 60;
     return `${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
   };
 
-  // Effect to handle the timer countdown
+  // Effect to handle the timer countdown when connected.
   useEffect(() => {
     if (isConnected) {
-      // Start the timer
       timerRef.current = setInterval(() => {
         setTimer((prev) => {
           if (prev > 0) return prev - 1;
-          // Time's up, end the session
+          // When time's up, end the session.
           if (timerRef.current) {
             clearInterval(timerRef.current);
             timerRef.current = null;
@@ -94,8 +134,7 @@ export default function Conversation() {
         });
       }, 1000);
     }
-
-    // Cleanup function to clear the timer when session ends or component unmounts
+    // Cleanup: clear the timer when the session ends or component unmounts.
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -104,24 +143,21 @@ export default function Conversation() {
     };
   }, [isConnected, handleEndSession]);
 
-  // Reset timer when the session ends
+  // Reset timer when the session ends.
   useEffect(() => {
     if (!isConnected) {
-      setTimer(600); // Reset to 10 minutes
+      setTimer(600); // Reset to 10 minutes.
     }
   }, [isConnected]);
 
-  // ---------------------------------
-  // Render the UI (mimicking NewInteractiveAvatar)
-  // ---------------------------------
   return (
     <div className="w-full min-h-screen flex flex-col bg-white">
-      {/* 1) Header / Logo */}
+      {/* Header / Logo */}
       <div className="w-full flex justify-center py-6">
         <Image src={logo} alt="Graet Logo" height={300} width={300} />
       </div>
 
-      {/* 2) Main Content Area */}
+      {/* Main Content Area */}
       <div className="flex-1 flex flex-col items-center justify-center w-full px-4">
         <div className="w-full max-w-4xl flex flex-col items-center gap-6">
           {/* Show Kroni Avatar when not connected */}
@@ -129,11 +165,18 @@ export default function Conversation() {
             <Image src={kroni} alt="Kroni Avatar" height={350} width={350} />
           )}
 
-          {/* If not connected, show start button or loading text */}
+          {/* If not connected, show start button or loading indicator */}
           {!isConnected ? (
             <div className="flex flex-col items-center gap-6">
               {isStarting ? (
                 <div className="text-gray-500 text-sm">Connecting...</div>
+              ) : !isReady ? (
+                <div className="flex flex-col items-center gap-4">
+                  <Spinner color="default" size="lg" />
+                  <p className="text-gray-600 text-sm font-medium">
+                    Preparing the avatar for your session...
+                  </p>
+                </div>
               ) : (
                 <button
                   onClick={startConversation}
@@ -164,7 +207,7 @@ export default function Conversation() {
               )}
             </div>
           ) : (
-            /* If connected, show status */
+            // If connected, show status.
             <div className="flex flex-col items-center gap-6">
               <div className="h-32 w-full flex flex-col justify-center items-center">
                 <p className="text-gray-700 font-semibold">
@@ -199,3 +242,5 @@ export default function Conversation() {
     </div>
   );
 }
+
+
