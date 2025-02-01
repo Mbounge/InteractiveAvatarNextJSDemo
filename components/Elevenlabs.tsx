@@ -7,6 +7,8 @@ import logo from "../public/GraetAI.svg";
 import kroni from "../public/kroni.svg";
 import { Button, Spinner } from "@nextui-org/react"; // Import NextUI Button and Spinner
 
+import { STT_LANGUAGE_LIST } from "@/app/lib/constants";
+
 interface InteractiveProps {
   info: {
     firstName: string;
@@ -35,6 +37,13 @@ export default function Conversation({
 
   // Check if both personalized and greet are provided.
   const isReady = safePersonalized.trim() !== "" && safeGreet.trim() !== "";
+
+  const selectedLanguageLabel =
+    STT_LANGUAGE_LIST.find((language) => language.value === selectedLanguage)
+      ?.label || "en";
+
+
+  console.log(selectedLanguage)
 
   // Track connection status and speaking state in local React state.
   const [isConnected, setIsConnected] = useState(false);
@@ -92,7 +101,10 @@ export default function Conversation({
               safeGreet.trim() !== ""
                 ? safeGreet
                 : "Hi, how can I help you today?",
+            //@ts-ignore
+            language: selectedLanguage
           },
+          
         },
       });
     } catch (error) {
