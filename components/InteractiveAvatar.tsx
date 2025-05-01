@@ -279,9 +279,8 @@ export default function InteractiveAvatar({
 
       setData(res);
       // default to voice mode
-      await avatar.current?.startVoiceChat({
-        useSilencePrompt: false,
-      });
+      await avatar.current?.startVoiceChat();
+
       setChatMode("voice_mode");
     } catch (error) {
       console.error("Error starting avatar session:", error);
