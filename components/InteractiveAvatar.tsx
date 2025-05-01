@@ -9,27 +9,16 @@ import StreamingAvatar, {
 } from "@heygen/streaming-avatar";
 import {
   Button,
-  Card,
-  CardBody,
-  CardFooter,
-  Divider,
   Spinner,
-  Chip,
-  Tabs,
-  Tab,
 } from "@nextui-org/react";
 import { useEffect, useRef, useState } from "react";
 import { useMemoizedFn, usePrevious } from "ahooks";
-
-import InteractiveAvatarTextInput from "./InteractiveAvatarTextInput";
 import Report from "./report";
 
 import Image from "next/image";
 import kroni from "../public/kroni.svg"; // Replace with your actual image
 import logo from "../public/GraetAI.svg"; 
 
-import { AVATARS, STT_LANGUAGE_LIST } from "@/app/lib/constants";
-import { read } from "fs";
 
 interface InteractiveProps {
   info: {

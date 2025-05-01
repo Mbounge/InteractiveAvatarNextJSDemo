@@ -5,15 +5,14 @@ import Languages from "./language";
 import Image from "next/image";
 import kroni from "../public/kroni.svg";
 import logo from "../public/GraetAI.svg"; 
-import VoiceRecorder from "./VoiceRecorder";
-import InteractiveAvatarNew from "./interactiveAvatarNew";
-import InteractiveAvatarNew2 from "./interactiveAvatarNew2";
-import { ConvoFunc } from "@/app/action3";
-import ChatInterface from "./Chat";
-import Conversation from "./Elevenlabs";
-import Play from "./play";
-import Gemini from "./Gemini";
-import Gemini2 from "./Gemini2";
+// import VoiceRecorder from "./VoiceRecorder";
+// import InteractiveAvatarNew from "./interactiveAvatarNew";
+// import { ConvoFunc } from "@/app/action3";
+// import ChatInterface from "./Chat";
+// import Conversation from "./Elevenlabs";
+// import Play from "./play";
+// import Gemini from "./Gemini";
+// import Gemini2 from "./Gemini2";
 
 const Home: React.FC = () => {
   const [userType, setUserType] = useState("parent");

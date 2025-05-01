@@ -8,7 +8,6 @@ import {
   NavbarItem,
 } from "@nextui-org/react";
 import Image from "next/image";
-import { ThemeSwitch } from "./ThemeSwitch";
 import logo from "../public/Graet_Logo.svg";
 
 export default function NavBar() {
