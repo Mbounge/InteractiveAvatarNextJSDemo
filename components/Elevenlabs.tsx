@@ -7,6 +7,7 @@ import logo from "../public/GraetAI.svg";
 import kroni from "../public/kroni.svg";
 import { Button, Spinner } from "@nextui-org/react"; // Import NextUI Button and Spinner
 
+
 import { STT_LANGUAGE_LIST } from "@/app/lib/constants";
 
 interface InteractiveProps {
@@ -44,6 +45,8 @@ export default function Conversation({
 
 
   console.log(selectedLanguage)
+  // console.log(personalized)
+  // console.log(greet)
 
   // Track connection status and speaking state in local React state.
   const [isConnected, setIsConnected] = useState(false);

@@ -11,6 +11,9 @@ import InteractiveAvatarNew2 from "./interactiveAvatarNew2";
 import { ConvoFunc } from "@/app/action3";
 import ChatInterface from "./Chat";
 import Conversation from "./Elevenlabs";
+import Play from "./play";
+import Gemini from "./Gemini";
+import Gemini2 from "./Gemini2";
 
 const Home: React.FC = () => {
   const [userType, setUserType] = useState("parent");
@@ -175,7 +178,8 @@ const Home: React.FC = () => {
         </div>
       </div>
       {/* <ChatInterface /> */}
-
+      {/* <Play /> */}
+      {/* <Gemini2 /> */}
       {/* <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm">
         <Conversation />
       </div> */}

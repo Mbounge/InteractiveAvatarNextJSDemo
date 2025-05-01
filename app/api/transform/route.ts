@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import query3 from "@/public/lib/query3";
+import queryGemini from "@/public/lib/queryGemini";
 
 // POST method handler
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json(); // Parse JSON body
     const { messages } = body;
+
+    //console.log(messages)
 
     if (!messages) {
       return NextResponse.json(
@@ -16,7 +19,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Call your query function
-    const response = await query3(messages);
+    // use google gemini flash 2.0
+    const response = await queryGemini(messages);
 
     return NextResponse.json({ answer: response }, { status: 200 });
   } catch (error) {
