@@ -7,7 +7,6 @@ import logo from "../public/GraetAI.svg";
 import kroni from "../public/kroni.svg";
 import { Button, Spinner } from "@nextui-org/react"; // Import NextUI Button and Spinner
 
-
 import { STT_LANGUAGE_LIST } from "@/app/lib/constants";
 
 interface InteractiveProps {
@@ -91,7 +90,7 @@ export default function Conversation({
 
       // Start the conversation with your agent ID and personalized settings.
       await conversation.startSession({
-        agentId: "itIMQj7wiFSym71cSzpw", // Replace with your own agent ID.
+        agentId: "zvpmic1VqdKVwX1H0W3T", // Replace with your own agent ID.
         overrides: {
           agent: {
             prompt: {

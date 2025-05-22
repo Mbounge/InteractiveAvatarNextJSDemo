@@ -22,13 +22,15 @@ export const RankingStep: React.FC<Props> = ({ year, position, onBack }) => {
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_SHORTLIST_API_KEY;
 
+  const local = "http://localhost:8001/shortlist"
+
   const fetchShortlist = async () => {
     setIsLoading(true);
     setError(null);
     setPlayers(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/shortlist/`, {
+      const response = await fetch(local, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
