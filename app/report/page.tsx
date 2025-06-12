@@ -48,15 +48,14 @@ import {
   X,
   FileDown,
   FileText,
-  PanelLeftClose, // --- RE-ADDED --- For desktop collapse
-  PanelRightClose, // --- RE-ADDED --- For desktop expand
+  PanelLeftClose,
+  PanelRightClose,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import Image from "next/image";
 import logo2 from "../../public/Graet_Logo.svg";
 
-// --- NEW --- A custom hook to detect screen size for responsive logic
 const useMediaQuery = (query: string) => {
   const [matches, setMatches] = useState(false);
 
@@ -73,8 +72,21 @@ const useMediaQuery = (query: string) => {
   return matches;
 };
 
+// --- NEW HELPER --- Extracts detailed error messages from a server response.
+const getErrorMessage = async (response: Response): Promise<string> => {
+  try {
+    // Try to parse the response as JSON, which is common for API errors.
+    const errorJson = await response.json();
+    // Return the 'error' or 'message' field, or stringify the whole object.
+    return errorJson.error || errorJson.message || JSON.stringify(errorJson);
+  } catch (e) {
+    // If the response isn't JSON, return the raw text.
+    const errorText = await response.text();
+    return errorText || `HTTP error! Status: ${response.status}`;
+  }
+};
 
-// --- CONFIGURATION AND EXTENSIONS (No changes here) ---
+
 const PREDEFINED_SIZES: { [key: string]: string } = {
   p: "12pt",
   h1: "24pt",
@@ -170,7 +182,6 @@ const editorExtensions = [
   TableCell,
 ];
 
-// --- HELPER COMPONENTS (No changes here) ---
 type ToolbarButtonProps = {
   onClick: () => void;
   title: string;
@@ -750,8 +761,6 @@ const EditorPlaceholder = ({ onStart }: { onStart: () => void }) => (
   </div>
 );
 
-// --- THE MAIN PAGE COMPONENT ---
-
 const ScoutingPlatformPage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [transcriptionText, setTranscriptionText] = useState<string>("");
@@ -760,7 +769,6 @@ const ScoutingPlatformPage: React.FC = () => {
 
   const [editor, setEditor] = useState<Editor | null>(null);
   const [hasGeneratedReport, setHasGeneratedReport] = useState(false);
-  // --- STATE MANAGEMENT FOR RESPONSIVENESS ---
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
   
@@ -853,6 +861,7 @@ const ScoutingPlatformPage: React.FC = () => {
     }
   };
 
+  // --- UPDATED with detailed error logging ---
   const handleProcessAudio = async () => {
     if (!selectedFile) {
       toast.error("Please select an audio file first.");
@@ -868,19 +877,27 @@ const ScoutingPlatformPage: React.FC = () => {
         method: "POST",
         body: formData,
       });
-      if (!transcribeResponse.ok) throw new Error("Transcription failed.");
+
+      if (!transcribeResponse.ok) {
+        const errorMsg = await getErrorMessage(transcribeResponse);
+        throw new Error(errorMsg);
+      }
+
       const data = await transcribeResponse.json();
       transcriptionResult = data.transcription;
       setTranscriptionText(transcriptionResult);
       toast.success("Transcription complete!", { id: "transcribe-toast" });
-    } catch (error) {
-      console.error(error);
-      toast.error("Could not transcribe audio.", { id: "transcribe-toast" });
+    } catch (error: any) {
+      console.error("Transcription API Error:", error);
+      toast.error(`Could not transcribe: ${error.message}`, { id: "transcribe-toast" });
       setIsTranscribing(false);
       return;
     } finally {
-      setIsTranscribing(false);
+      // This finally block will run regardless of success or failure,
+      // but we only want to set isTranscribing to false on failure here.
+      // The success path continues to the next step.
     }
+
     setIsGenerating(true);
     toast.loading("Generating scout report...", { id: "generate-toast" });
     try {
@@ -889,7 +906,12 @@ const ScoutingPlatformPage: React.FC = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ transcription: transcriptionResult }),
       });
-      if (!generateResponse.ok) throw new Error("Report generation failed.");
+
+      if (!generateResponse.ok) {
+        const errorMsg = await getErrorMessage(generateResponse);
+        throw new Error(errorMsg);
+      }
+
       const data = await generateResponse.json();
       const finalHtml = marked.parse(data.report) as string;
       initEditor(finalHtml);
@@ -898,10 +920,11 @@ const ScoutingPlatformPage: React.FC = () => {
         setIsMobileSidebarOpen(false);
       }
       toast.success("Report generated!", { id: "generate-toast" });
-    } catch (error) {
-      console.error(error);
-      toast.error("Could not generate report.", { id: "generate-toast" });
+    } catch (error: any) {
+      console.error("Report Generation API Error:", error);
+      toast.error(`Could not generate report: ${error.message}`, { id: "generate-toast" });
     } finally {
+      setIsTranscribing(false); // Set both to false in the final finally block
       setIsGenerating(false);
     }
   };
@@ -935,48 +958,24 @@ const ScoutingPlatformPage: React.FC = () => {
     }
 
     if (format === "pdf") {
-        const printStyles = `
+      const printStyles = `
         <style>
-          /* 1. Define the physical page properties for ALL pages */
           @page {
             size: A4;
-            /* This margin is applied to EVERY page, ensuring consistent spacing.
-               20mm is a standard margin size (approx 0.78 inches). */
             margin: 20mm;
           }
-
-          /* 2. Define styles for when the page is actually being printed */
           @media print {
-            /* We no longer need padding on the body, as @page handles the margins */
             body {
               font-family: sans-serif;
               line-height: 1.5;
               color: #333;
             }
-
-            /* Page break rules remain the same */
-            h1, h2, h3, p, ul, ol, blockquote, table {
-              page-break-inside: avoid;
-            }
-            h1, h2 {
-                page-break-before: auto;
-                page-break-after: avoid;
-            }
+            h1, h2, h3, p, ul, ol, blockquote, table { page-break-inside: avoid; }
+            h1, h2 { page-break-before: auto; page-break-after: avoid; }
             table { page-break-inside: auto; }
-            tr {
-              page-break-inside: avoid;
-              page-break-after: auto;
-            }
-            th, td {
-              border: 1px solid #ccc;
-              padding: 8px;
-              font-size: 11pt;
-              text-align: left;
-            }
-            th {
-              background-color: #f4f4f4;
-              font-weight: bold;
-            }
+            tr { page-break-inside: avoid; page-break-after: auto; }
+            th, td { border: 1px solid #ccc; padding: 8px; font-size: 11pt; text-align: left; }
+            th { background-color: #f4f4f4; font-weight: bold; }
           }
         </style>
       `;
@@ -1060,15 +1059,14 @@ const ScoutingPlatformPage: React.FC = () => {
           )}
         </div>
       </header>
-      <div className="flex flex-1 min-h-0 relative">
-        {/* --- UPDATED SIDEBAR LOGIC --- */}
+      <div className="flex flex-1 min-h-0">
         <div
           className={`
             flex-shrink-0 bg-white border-r border-gray-200 flex flex-col z-40
             transition-all duration-300 ease-in-out
             
             lg:relative
-            ${isDesktopSidebarCollapsed ? 'lg:w-0 lg:p-0' : 'lg:w-1/3'}
+            ${isDesktopSidebarCollapsed ? 'lg:w-0' : 'lg:w-1/3'}
 
             absolute top-0 left-0 h-full w-full max-w-md sm:w-96 lg:max-w-none
             transform lg:transform-none
