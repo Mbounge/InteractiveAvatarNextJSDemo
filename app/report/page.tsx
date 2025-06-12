@@ -72,15 +72,16 @@ const useMediaQuery = (query: string) => {
   return matches;
 };
 
-// --- NEW HELPER --- Extracts detailed error messages from a server response.
+// --- CORRECTED HELPER --- Uses response.clone() to safely read the body.
 const getErrorMessage = async (response: Response): Promise<string> => {
+  // Clone the response so we can try to read it multiple ways
+  const clonedResponse = response.clone();
   try {
-    // Try to parse the response as JSON, which is common for API errors.
-    const errorJson = await response.json();
-    // Return the 'error' or 'message' field, or stringify the whole object.
+    // Try to parse the CLONE as JSON
+    const errorJson = await clonedResponse.json();
     return errorJson.error || errorJson.message || JSON.stringify(errorJson);
   } catch (e) {
-    // If the response isn't JSON, return the raw text.
+    // If JSON parsing fails, read the ORIGINAL response as text
     const errorText = await response.text();
     return errorText || `HTTP error! Status: ${response.status}`;
   }
@@ -861,7 +862,6 @@ const ScoutingPlatformPage: React.FC = () => {
     }
   };
 
-  // --- UPDATED with detailed error logging ---
   const handleProcessAudio = async () => {
     if (!selectedFile) {
       toast.error("Please select an audio file first.");
@@ -892,10 +892,6 @@ const ScoutingPlatformPage: React.FC = () => {
       toast.error(`Could not transcribe: ${error.message}`, { id: "transcribe-toast" });
       setIsTranscribing(false);
       return;
-    } finally {
-      // This finally block will run regardless of success or failure,
-      // but we only want to set isTranscribing to false on failure here.
-      // The success path continues to the next step.
     }
 
     setIsGenerating(true);
@@ -924,7 +920,7 @@ const ScoutingPlatformPage: React.FC = () => {
       console.error("Report Generation API Error:", error);
       toast.error(`Could not generate report: ${error.message}`, { id: "generate-toast" });
     } finally {
-      setIsTranscribing(false); // Set both to false in the final finally block
+      setIsTranscribing(false);
       setIsGenerating(false);
     }
   };
