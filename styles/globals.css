@@ -38,3 +38,120 @@ li {
   background-color: #f4f4f4;
   text-align: left;
 }
+
+.prose ul > li::before,
+.prose ol > li::before {
+  content: none; /* Disables the custom square/number from prose */
+}
+
+.prose ul > li,
+.prose ol > li {
+  padding-left: 0; /* Removes prose's custom padding to let the browser handle indentation. */
+}
+
+/* --- Style for Unordered (Bulleted) Lists --- */
+.prose ul > li {
+  list-style-type: disc; /* Standard round dots. */
+}
+
+/* --- Style for Ordered (Numbered) Lists --- */
+.prose ol > li {
+  list-style-type: decimal; /* Use standard 1, 2, 3... numbering. */
+}
+
+/* Apply the custom aesthetic ONLY to the number of ordered lists. */
+.prose ol > li::marker {
+  color: #6b7280; /* A nice, neutral gray (Tailwind's gray-500) */
+  font-weight: 600; /* Semi-bold for clarity */
+  font-family: sans-serif; /* A clean, standard font for numbers */
+}
+
+.ProseMirror pre {
+  background: #f1f5f9; /* A light gray background (Tailwind's slate-100) */
+  color: #334155;      /* A dark, readable text color (Tailwind's slate-700) */
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0; /* Tailwind's slate-200 */
+}
+
+/* This ensures the code tag inside doesn't have its own weird styles */
+.ProseMirror pre code {
+  color: inherit;
+  padding: 0;
+  background: none;
+  font-size: 0.9rem;
+}
+
+.ProseMirror table {
+  border-collapse: collapse;
+  margin: 1rem 0;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.ProseMirror th,
+.ProseMirror td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  vertical-align: top;
+  position: relative;
+}
+
+.ProseMirror th {
+  font-weight: bold;
+  background-color: #f1f5f9;
+  text-align: left;
+}
+
+/* Visual highlight for selected table cells */
+.ProseMirror .selectedCell:after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(37, 99, 235, 0.2);
+  pointer-events: none;
+}
+
+/* Styles for the resizable column handles */
+.ProseMirror .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+  background-color: #adf;
+}
+
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3,
+.ProseMirror p,
+.ProseMirror ul,
+.ProseMirror ol,
+.ProseMirror pre,
+.ProseMirror blockquote,
+.ProseMirror table {
+  margin-bottom: 0.2rem; /* Adjust this value (e.g., 0.75rem, 1.25rem) to your liking */
+}
+
+/* Ensure headings have a little extra space above them to separate sections clearly. */
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3 {
+  margin-top: 1.5rem;
+}
+
+/* Remove the top margin from the very first element in the editor to prevent extra space at the top. */
+.ProseMirror > :first-child {
+  margin-top: 0;
+}
+
+/* Optional: Add a little more space between list items for better readability. */
+.ProseMirror li {
+  margin-bottom: 0.05rem;
+}
