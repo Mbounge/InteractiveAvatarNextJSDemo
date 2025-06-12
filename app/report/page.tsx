@@ -56,6 +56,8 @@ import html2canvas from "html2canvas";
 import Image from "next/image";
 import logo2 from "../../public/Graet_Logo.svg";
 
+// --- HELPER HOOK & FUNCTIONS ---
+
 const useMediaQuery = (query: string) => {
   const [matches, setMatches] = useState(false);
 
@@ -72,22 +74,27 @@ const useMediaQuery = (query: string) => {
   return matches;
 };
 
-// --- CORRECTED HELPER --- Uses response.clone() to safely read the body.
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return window.btoa(binary);
+}
+
 const getErrorMessage = async (response: Response): Promise<string> => {
-  // Clone the response so we can try to read it multiple ways
   const clonedResponse = response.clone();
   try {
-    // Try to parse the CLONE as JSON
     const errorJson = await clonedResponse.json();
-    return errorJson.error || errorJson.message || JSON.stringify(errorJson);
+    return errorJson.error?.message || JSON.stringify(errorJson);
   } catch (e) {
-    // If JSON parsing fails, read the ORIGINAL response as text
-    const errorText = await response.text();
-    return errorText || `HTTP error! Status: ${response.status}`;
+    return await response.text() || `HTTP error! Status: ${response.status}`;
   }
 };
 
-
+// --- TIPTAP CONFIGURATION (No changes here) ---
 const PREDEFINED_SIZES: { [key: string]: string } = {
   p: "12pt",
   h1: "24pt",
@@ -183,6 +190,7 @@ const editorExtensions = [
   TableCell,
 ];
 
+// --- HELPER COMPONENTS (No changes here) ---
 type ToolbarButtonProps = {
   onClick: () => void;
   title: string;
@@ -851,11 +859,21 @@ const ScoutingPlatformPage: React.FC = () => {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Check for valid audio type
       if (!file.type.startsWith("audio/")) {
         toast.error("Invalid file type. Please select an audio file.");
         event.target.value = "";
         return;
       }
+      
+      // --- NEW: Enforce the 20MB file size limit ---
+      const fileSizeMB = file.size / (1024 * 1024);
+      if (fileSizeMB > 20) {
+        toast.error(`File exceeds 20MB limit. Your file is ${fileSizeMB.toFixed(2)}MB.`);
+        event.target.value = "";
+        return;
+      }
+
       setSelectedFile(file);
       setTranscriptionText("");
       toast.success(`${file.name} selected!`);
@@ -867,31 +885,64 @@ const ScoutingPlatformPage: React.FC = () => {
       toast.error("Please select an audio file first.");
       return;
     }
+
+    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    if (!apiKey) {
+        toast.error("API Key is not configured. Please set NEXT_PUBLIC_GEMINI_API_KEY.");
+        return;
+    }
+
     setIsTranscribing(true);
-    toast.loading("Transcribing audio...", { id: "transcribe-toast" });
-    const formData = new FormData();
-    formData.append("audio", selectedFile);
+    toast.loading("Transcribing audio...", { id: "process-toast" });
+
     let transcriptionResult = "";
     try {
-      const transcribeResponse = await fetch("/api/audio", {
-        method: "POST",
-        body: formData,
-      });
+        const audioBuffer = await selectedFile.arrayBuffer();
+        const audioBase64 = arrayBufferToBase64(audioBuffer);
 
-      if (!transcribeResponse.ok) {
-        const errorMsg = await getErrorMessage(transcribeResponse);
-        throw new Error(errorMsg);
-      }
+        const requestBody = {
+            contents: [{
+                parts: [
+                    {
+                        "inline_data": {
+                            "mime_type": selectedFile.type,
+                            "data": audioBase64
+                        }
+                    },
+                    { "text": "Transcribe the following audio of a sports scout. Focus on clarity and accuracy." }
+                ]
+            }]
+        };
 
-      const data = await transcribeResponse.json();
-      transcriptionResult = data.transcription;
-      setTranscriptionText(transcriptionResult);
-      toast.success("Transcription complete!", { id: "transcribe-toast" });
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+        const transcribeResponse = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody),
+        });
+
+        if (!transcribeResponse.ok) {
+            const errorMsg = await getErrorMessage(transcribeResponse);
+            throw new Error(errorMsg);
+        }
+
+        const responseData = await transcribeResponse.json();
+        
+        if (responseData.candidates && responseData.candidates[0].content.parts[0].text) {
+            transcriptionResult = responseData.candidates[0].content.parts[0].text;
+        } else {
+            throw new Error("Could not find transcription in API response.");
+        }
+        
+        setTranscriptionText(transcriptionResult);
+        toast.success("Transcription complete!", { id: "process-toast" });
+
     } catch (error: any) {
-      console.error("Transcription API Error:", error);
-      toast.error(`Could not transcribe: ${error.message}`, { id: "transcribe-toast" });
-      setIsTranscribing(false);
-      return;
+        console.error("Direct API Error:", error);
+        toast.error(`Could not transcribe: ${error.message}`, { id: "process-toast" });
+        setIsTranscribing(false);
+        return;
     }
 
     setIsGenerating(true);
@@ -1070,24 +1121,67 @@ const ScoutingPlatformPage: React.FC = () => {
           `}
         >
           <div className={`flex-1 flex flex-col space-y-6 min-h-0 overflow-y-auto p-4 md:p-6 ${isDesktopSidebarCollapsed ? 'lg:hidden' : ''}`}>
+            
+            {/* --- NEW UPLOAD UI --- */}
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-3">
                 1. Upload Audio
               </h2>
-              <label className="border-2 border-dashed border-gray-300 rounded-lg p-6 md:p-8 text-center hover:border-[#0e0c66] hover:bg-gray-50 cursor-pointer transition-colors block">
+              <label
+                htmlFor="file-upload"
+                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#0e0c66] hover:bg-gray-50 cursor-pointer transition-colors block"
+              >
+                <div className="flex flex-col items-center justify-center">
+                  <Upload className="mx-auto w-10 h-10 text-gray-400 mb-2" />
+                  <p className="text-sm font-semibold text-[#0e0c66]">
+                    Click to upload or drag and drop
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    MP3, WAV, M4A (20MB limit per file)
+                  </p>
+                </div>
                 <input
+                  id="file-upload"
                   type="file"
                   accept="audio/*"
                   className="hidden"
                   onChange={handleFileChange}
                 />
-                <Upload className="mx-auto w-10 h-10 text-gray-400 mb-2" />
-                <p className="text-sm font-semibold text-[#0e0c66] truncate">
-                  {selectedFile ? selectedFile.name : "Click to upload"}
-                </p>
-                <p className="text-xs text-gray-500">MP3, WAV, M4A</p>
               </label>
+
+              {selectedFile && (
+                <div className="mt-4 space-y-2">
+                  <p className="text-sm font-medium text-gray-800">Selected file:</p>
+                  {[selectedFile].map((file) => (
+                    <div
+                      key={file.name}
+                      className="flex items-center justify-between p-2.5 border rounded-lg bg-white shadow-sm"
+                    >
+                      <div className="flex items-center space-x-3 truncate">
+                        <FileText className="w-5 h-5 text-gray-500 flex-shrink-0" />
+                        <div className="truncate">
+                          <p className="text-sm font-medium text-gray-800 truncate">
+                            {file.name}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {(file.size / (1024 * 1024)).toFixed(2)} MB
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setSelectedFile(null)}
+                        className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-100 rounded-full transition-colors"
+                        title="Remove file"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
+            {/* --- END OF NEW UPLOAD UI --- */}
+
             <div className="flex flex-col flex-1 min-h-0">
               <h2 className="text-lg font-semibold text-gray-900 mb-3">
                 2. Review Transcription

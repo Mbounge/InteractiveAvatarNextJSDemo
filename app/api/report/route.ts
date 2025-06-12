@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash-preview-05-20",
       generationConfig: {
-        temperature: 0.2
+        temperature: 0.1
       }
       
     });
@@ -53,7 +53,8 @@ export async function POST(request: Request) {
       **Player:** [Player Name]\n
       **Date of Birth:** [Date of Birth, or "Unknown"]\n
       **Game:** [Game Details, or "N/A"]\n
-      **League:** [League, or "N/A"]\n
+      **Team:** [team name, or "N/A"]\n
+      **League:** [League name, or "N/A"]\n
       **Report Date:** [Today's Date which is ${formattedDate} ]\n
 
       ---
@@ -137,7 +138,7 @@ export async function POST(request: Request) {
           - **Main Title:** You MUST use the exact HTML tag: \`<h1 style="text-align: center;">GRAET SCOUTING REPORT</h1>\`.
           - **Section Headings:** Main section headings MUST strictly follow the format: \`### [SECTION NAME] (X.X/5)\`. Do not add any other text or context in parentheses, such as "(GOALIE SPECIFICS)" or "(NOT ASSESSED)".
           - **Sub-Categories:** Each header item (e.g., "**Player:**") and each sub-category (e.g., "**Speed:**") must be on its own line, followed by its analysis on the next line.
-          - **Spacing:** There must be a blank line between each sub-category block.
+          - **Spacing:** There must be a blank line between each sub-category block. please response the \n you see in the template
           - **Final Output:** The final output MUST be only the Markdown/HTML of the report itself. No extra commentary.
 
       **TRANSCRIPTION TO ANALYZE:**
