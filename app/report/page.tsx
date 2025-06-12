@@ -911,7 +911,10 @@ const ScoutingPlatformPage: React.FC = () => {
                     },
                     { "text": "Transcribe the following audio of a sports scout. Focus on clarity and accuracy." }
                 ]
-            }]
+            }],
+            "generationConfig": {
+                "temperature": 0.2,
+            }
         };
 
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
