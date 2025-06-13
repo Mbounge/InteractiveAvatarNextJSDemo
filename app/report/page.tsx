@@ -783,6 +783,8 @@ const ScoutingPlatformPage: React.FC = () => {
   
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+  // --- NEW: Ref for the file input ---
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const initEditor = useCallback(
     (content: any) => {
@@ -859,17 +861,17 @@ const ScoutingPlatformPage: React.FC = () => {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Check for valid audio type
       if (!file.type.startsWith("audio/")) {
         toast.error("Invalid file type. Please select an audio file.");
         event.target.value = "";
         return;
       }
       
-      // --- NEW: Enforce the 20MB file size limit ---
+      const MAX_FILE_SIZE_MB = 100;
       const fileSizeMB = file.size / (1024 * 1024);
-      if (fileSizeMB > 20) {
-        toast.error(`File exceeds 20MB limit. Your file is ${fileSizeMB.toFixed(2)}MB.`);
+
+      if (fileSizeMB > MAX_FILE_SIZE_MB) {
+        toast.error(`File exceeds ${MAX_FILE_SIZE_MB}MB limit. Your file is ${fileSizeMB.toFixed(2)}MB.`);
         event.target.value = "";
         return;
       }
@@ -877,6 +879,15 @@ const ScoutingPlatformPage: React.FC = () => {
       setSelectedFile(file);
       setTranscriptionText("");
       toast.success(`${file.name} selected!`);
+    }
+  };
+
+  // --- NEW: Function to handle removing the file ---
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    // Reset the file input so the same file can be re-selected
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -897,52 +908,21 @@ const ScoutingPlatformPage: React.FC = () => {
 
     let transcriptionResult = "";
     try {
-        const audioBuffer = await selectedFile.arrayBuffer();
-        const audioBase64 = arrayBufferToBase64(audioBuffer);
+      const fileSizeMB = selectedFile.size / (1024 * 1024);
+      const UPLOAD_THRESHOLD_MB = 20;
 
-        const requestBody = {
-            contents: [{
-                parts: [
-                    {
-                        "inline_data": {
-                            "mime_type": selectedFile.type,
-                            "data": audioBase64
-                        }
-                    },
-                    { "text": "Transcribe the following audio of a sports scout. Focus on clarity and accuracy." }
-                ]
-            }],
-            "generationConfig": {
-                "temperature": 0.2,
-            }
-        };
-
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-        const transcribeResponse = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody),
-        });
-
-        if (!transcribeResponse.ok) {
-            const errorMsg = await getErrorMessage(transcribeResponse);
-            throw new Error(errorMsg);
-        }
-
-        const responseData = await transcribeResponse.json();
-        
-        if (responseData.candidates && responseData.candidates[0].content.parts[0].text) {
-            transcriptionResult = responseData.candidates[0].content.parts[0].text;
-        } else {
-            throw new Error("Could not find transcription in API response.");
-        }
-        
-        setTranscriptionText(transcriptionResult);
-        toast.success("Transcription complete!", { id: "process-toast" });
+      if (fileSizeMB > UPLOAD_THRESHOLD_MB) {
+        toast.loading("Uploading audio file...", { id: "process-toast" });
+        transcriptionResult = await handleResumableUploadAndTranscribe(selectedFile, apiKey);
+      } else {
+        transcriptionResult = await handleInlineUploadAndTranscribe(selectedFile, apiKey);
+      }
+      
+      setTranscriptionText(transcriptionResult);
+      toast.success("Transcription complete!", { id: "process-toast" });
 
     } catch (error: any) {
-        console.error("Direct API Error:", error);
+        console.error("Transcription Error:", error);
         toast.error(`Could not transcribe: ${error.message}`, { id: "process-toast" });
         setIsTranscribing(false);
         return;
@@ -976,6 +956,114 @@ const ScoutingPlatformPage: React.FC = () => {
     } finally {
       setIsTranscribing(false);
       setIsGenerating(false);
+    }
+  };
+
+  const handleInlineUploadAndTranscribe = async (file: File, apiKey: string): Promise<string> => {
+    const audioBuffer = await file.arrayBuffer();
+    const audioBase64 = arrayBufferToBase64(audioBuffer);
+
+    const requestBody = {
+        contents: [{
+            parts: [
+                { "inline_data": { "mime_type": file.type, "data": audioBase64 } },
+                { "text": "Transcribe the following audio of a sports scout. Focus on clarity and accuracy." }
+            ]
+        }],
+        "generationConfig": {
+            "temperature": 0.2,
+        }
+    };
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) throw new Error(await getErrorMessage(response));
+
+    const responseData = await response.json();
+    if (responseData.candidates && responseData.candidates[0].content.parts[0].text) {
+        return responseData.candidates[0].content.parts[0].text;
+    } else {
+        throw new Error("Could not find transcription in API response.");
+    }
+  };
+
+  const handleResumableUploadAndTranscribe = async (file: File, apiKey: string): Promise<string> => {
+    let fileUri = '';
+    let fileNameOnServer = '';
+
+    try {
+      const startUploadResponse = await fetch(`https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`, {
+        method: 'POST',
+        headers: {
+          'X-Goog-Upload-Protocol': 'resumable',
+          'X-Goog-Upload-Command': 'start',
+          'X-Goog-Upload-Header-Content-Length': file.size.toString(),
+          'X-Goog-Upload-Header-Content-Type': file.type,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 'file': { 'display_name': file.name } }),
+      });
+
+      if (!startUploadResponse.ok) throw new Error(await getErrorMessage(startUploadResponse));
+      
+      const uploadUrl = startUploadResponse.headers.get('x-goog-upload-url');
+      if (!uploadUrl) throw new Error("Could not get resumable upload URL.");
+
+      const uploadBytesResponse = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Length': file.size.toString(),
+          'X-Goog-Upload-Offset': '0',
+          'X-Goog-Upload-Command': 'upload, finalize',
+        },
+        body: file,
+      });
+
+      if (!uploadBytesResponse.ok) throw new Error(await getErrorMessage(uploadBytesResponse));
+
+      const fileInfo = await uploadBytesResponse.json();
+      fileUri = fileInfo.file.uri;
+      fileNameOnServer = fileInfo.file.name;
+
+      const generateContentBody = {
+        contents: [{
+          parts: [
+            { "text": "Transcribe the following audio of a sports scout. Focus on clarity and accuracy." },
+            { "file_data": { "mime_type": file.type, "file_uri": fileUri } }
+          ]
+        }],
+        "generationConfig": {
+            "temperature": 0.2,
+        }
+      };
+
+      const generateContentUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+      const generateContentResponse = await fetch(generateContentUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(generateContentBody),
+      });
+
+      if (!generateContentResponse.ok) throw new Error(await getErrorMessage(generateContentResponse));
+
+      const responseData = await generateContentResponse.json();
+      if (responseData.candidates && responseData.candidates[0].content.parts[0].text) {
+        return responseData.candidates[0].content.parts[0].text;
+      } else {
+        throw new Error("Could not find transcription in API response.");
+      }
+    } finally {
+      if (fileNameOnServer) {
+        console.log(`Cleaning up uploaded file: ${fileNameOnServer}`);
+        await fetch(`https://generativelanguage.googleapis.com/v1beta/${fileNameOnServer}?key=${apiKey}`, {
+          method: 'DELETE',
+        });
+      }
     }
   };
 
@@ -1125,7 +1213,6 @@ const ScoutingPlatformPage: React.FC = () => {
         >
           <div className={`flex-1 flex flex-col space-y-6 min-h-0 overflow-y-auto p-4 md:p-6 ${isDesktopSidebarCollapsed ? 'lg:hidden' : ''}`}>
             
-            {/* --- NEW UPLOAD UI --- */}
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-3">
                 1. Upload Audio
@@ -1140,15 +1227,17 @@ const ScoutingPlatformPage: React.FC = () => {
                     Click to upload or drag and drop
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    MP3, WAV, M4A (20MB limit per file)
+                    MP3, WAV, M4A (100MB limit per file)
                   </p>
                 </div>
+                {/* --- MODIFIED: Added the ref --- */}
                 <input
                   id="file-upload"
                   type="file"
                   accept="audio/*"
                   className="hidden"
                   onChange={handleFileChange}
+                  ref={fileInputRef}
                 />
               </label>
 
@@ -1171,8 +1260,9 @@ const ScoutingPlatformPage: React.FC = () => {
                           </p>
                         </div>
                       </div>
+                      {/* --- MODIFIED: Calls the new remove handler --- */}
                       <button
-                        onClick={() => setSelectedFile(null)}
+                        onClick={handleRemoveFile}
                         className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-100 rounded-full transition-colors"
                         title="Remove file"
                       >
@@ -1183,7 +1273,6 @@ const ScoutingPlatformPage: React.FC = () => {
                 </div>
               )}
             </div>
-            {/* --- END OF NEW UPLOAD UI --- */}
 
             <div className="flex flex-col flex-1 min-h-0">
               <h2 className="text-lg font-semibold text-gray-900 mb-3">
