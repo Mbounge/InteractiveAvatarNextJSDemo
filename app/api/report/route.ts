@@ -14,7 +14,6 @@ export async function POST(request: Request) {
   try {
     
     const { transcription, playerContext, teamContext, standingsContext } = await request.json();
-
    
     // console.log("Received Player Context:", playerContext);
     // console.log("Received Team Context:", teamContext);

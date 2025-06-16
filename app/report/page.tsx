@@ -1754,61 +1754,73 @@ const ScoutingPlatformPage: React.FC = () => {
     }
 
     if (format === "pdf") {
-      const printStyles = `
-        <style>
-          @page {
-            size: A4;
-            margin: 20mm;
-          }
-          @media print {
-            body {
-              font-family: sans-serif;
-              line-height: 1.5;
-              color: #333;
+      toast.loading("Preparing PDF...", { id: "export-toast" });
+      try {
+        const response = await fetch(logo2.src);
+        const imageBuffer = await response.arrayBuffer();
+        const imageBase64 = arrayBufferToBase64(imageBuffer);
+        const logoDataUri = `data:image/svg+xml;base64,${imageBase64}`;
+
+        const printStyles = `
+          <style>
+            @page {
+              size: A4;
+              margin: 20mm;
             }
-            h1, h2, h3, p, ul, ol, blockquote, table { page-break-inside: avoid; }
-            h1, h2 { page-break-before: auto; page-break-after: avoid; }
-            table { page-break-inside: auto; }
-            tr { page-break-inside: avoid; page-break-after: auto; }
-            th, td { border: 1px solid #ccc; padding: 8px; font-size: 11pt; text-align: left; }
-            th { background-color: #f4f4f4; font-weight: bold; }
-          }
-        </style>
-      `;
+            @media print {
+              body {
+                font-family: sans-serif;
+                line-height: 1.5;
+                color: #333;
+              }
+              h1, h2, h3, p, ul, ol, blockquote, table { page-break-inside: avoid; }
+              h1, h2 { page-break-before: auto; page-break-after: avoid; }
+              table { page-break-inside: auto; }
+              tr { page-break-inside: avoid; page-break-after: auto; }
+              th, td { border: 1px solid #ccc; padding: 8px; font-size: 11pt; text-align: left; }
+              th { background-color: #f4f4f4; font-weight: bold; }
+            }
+          </style>
+        `;
 
-      const iframe = document.createElement("iframe");
-      iframe.style.position = "absolute";
-      iframe.style.width = "0";
-      iframe.style.height = "0";
-      iframe.style.border = "none";
-      document.body.appendChild(iframe);
+        const iframe = document.createElement("iframe");
+        iframe.style.position = "absolute";
+        iframe.style.width = "0";
+        iframe.style.height = "0";
+        iframe.style.border = "none";
+        document.body.appendChild(iframe);
 
-      const printContent = `
-        <html>
-          <head>
-            <title>${reportTitle}</title>
-            ${printStyles}
-          </head>
-          <body>
-            <div style="text-align: center; margin-bottom: 2rem; page-break-inside: avoid;">
-              <img src="${logo2.src}" style="width: 120px; height: auto;" alt="Logo">
-            </div>
-            ${editor.getHTML()}
-          </body>
-        </html>
-      `;
+        const printContent = `
+          <html>
+            <head>
+              <title>${reportTitle}</title>
+              ${printStyles}
+            </head>
+            <body>
+              <div style="text-align: center; margin-bottom: 2rem; page-break-inside: avoid;">
+                <img src="${logoDataUri}" style="width: 120px; height: auto;" alt="Logo">
+              </div>
+              ${editor.getHTML()}
+            </body>
+          </html>
+        `;
 
-      const iframeDoc = iframe.contentWindow?.document;
-      if (iframeDoc) {
-        iframeDoc.open();
-        iframeDoc.write(printContent);
-        iframeDoc.close();
-        
-        setTimeout(() => {
-            iframe.contentWindow?.focus();
-            iframe.contentWindow?.print();
-            document.body.removeChild(iframe);
-        }, 500);
+        const iframeDoc = iframe.contentWindow?.document;
+        if (iframeDoc) {
+          iframeDoc.open();
+          iframeDoc.write(printContent);
+          iframeDoc.close();
+          
+          setTimeout(() => {
+              iframe.contentWindow?.focus();
+              iframe.contentWindow?.print();
+              document.body.removeChild(iframe);
+              toast.success("Exported as PDF!", { id: "export-toast" });
+          }, 500);
+        }
+      } catch (error) {
+        console.error("PDF generation error:", error);
+        toast.error("Failed to prepare PDF.", { id: "export-toast" });
       }
     }
   };
