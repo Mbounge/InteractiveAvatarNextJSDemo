@@ -94,7 +94,130 @@ const getErrorMessage = async (response: Response): Promise<string> => {
   }
 };
 
-// --- TIPTAP CONFIGURATION (No changes here) ---
+const useDebounce = <T,>(value: T, delay: number): T => {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+  return debouncedValue;
+};
+
+const Spinner: React.FC<{ className?: string }> = ({ className }) => (
+  <svg
+    className={`animate-spin h-5 w-5 text-[#0e0c66] ${className}`}
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+  >
+    <circle
+      className="opacity-25"
+      cx="12"
+      cy="12"
+      r="10"
+      stroke="currentColor"
+      strokeWidth="4"
+    ></circle>
+    <path
+      className="opacity-75"
+      fill="currentColor"
+      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+    ></path>
+  </svg>
+);
+
+// --- TYPE DEFINITIONS ---
+type Stats = {
+  gamesPlayed: number;
+  goals: number;
+  assists: number;
+  points: number;
+  pointsPerGame: number;
+  gaa: number;
+  shutouts: number;
+  svp: number;
+  wins: number;
+  losses: number;
+  ties: number;
+};
+
+type Player = {
+  id: string;
+  slug: string;
+  role: string;
+  firstname: string;
+  lastname: string;
+  name: string;
+  country: string;
+  dateOfBirth: string;
+  possibleYearsOfBirth: number[];
+  bio: {
+    position: string;
+    gender: string;
+    playerType: string;
+    handedness: string;
+    height: { centimeters: number; inches: number };
+    weight: { kilograms: number; pounds: number };
+  } | null;
+  currentTeam: {
+    id: string;
+    name: string;
+    country: string;
+    shortName: string;
+    hasGames: boolean;
+    leagues: { id: string; name: string }[];
+  } | null;
+  stats: {
+    career: Stats;
+    season: Stats;
+  };
+};
+
+type PlayerSearchResult = {
+  node: Player;
+};
+
+type Team = {
+  id: string;
+  name: string;
+  shortName: string;
+  country: string;
+  slug: string;
+  leagues: {
+    id: string;
+    name: string;
+  }[];
+};
+
+type TeamSearchResult = {
+  node: Team;
+};
+
+type Standing = {
+  id: string;
+  team: {
+    id: string;
+    name: string;
+  };
+};
+
+type LeagueStandingsResponse = {
+  league: {
+    id: string;
+    name: string;
+  };
+  groups: {
+    group: string;
+    standings: Standing[];
+  }[];
+};
+
+
+// --- TIPTAP CONFIGURATION ---
 const PREDEFINED_SIZES: { [key: string]: string } = {
   p: "12pt",
   h1: "24pt",
@@ -190,7 +313,31 @@ const editorExtensions = [
   TableCell,
 ];
 
-// --- HELPER COMPONENTS (No changes here) ---
+// --- HELPER COMPONENTS ---
+const formatPosition = (rawPosition: string | null | undefined): string => {
+  if (!rawPosition) {
+    return 'N/A';
+  }
+  switch (rawPosition) {
+    case 'CENTER':
+      return 'Center';
+    case 'LEFT_WING':
+      return 'LW';
+    case 'RIGHT_WING':
+      return 'RW';
+    case 'LEFT_DEFENSIVE':
+      return 'LD';
+    case 'RIGHT_DEFENSIVE':
+      return 'RD';
+    case 'DEFENDER':
+      return 'D';
+    case 'GOALTENDER':
+      return 'Goalie';
+    default:
+      return rawPosition;
+  }
+};
+
 type ToolbarButtonProps = {
   onClick: () => void;
   title: string;
@@ -467,6 +614,204 @@ const TableMenus: React.FC<{ editor: Editor }> = ({ editor }) => {
     </>
   );
 };
+
+const PlayerSearch: React.FC<{
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+  searchResults: PlayerSearchResult[];
+  isSearching: boolean;
+  selectedPlayer: Player | null;
+  onSelectPlayer: (player: Player) => void;
+  onClearPlayer: () => void;
+}> = ({
+  searchQuery,
+  onSearchChange,
+  searchResults,
+  isSearching,
+  selectedPlayer,
+  onSelectPlayer,
+  onClearPlayer,
+}) => {
+  const searchResultsRef = useRef<HTMLDivElement>(null);
+  const [isResultsOpen, setIsResultsOpen] = useState(false);
+
+  useEffect(() => {
+    if (searchResults.length > 0) {
+      setIsResultsOpen(true);
+    } else {
+      setIsResultsOpen(false);
+    }
+  }, [searchResults]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchResultsRef.current && !searchResultsRef.current.contains(event.target as Node)) {
+        setIsResultsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+
+  if (selectedPlayer) {
+    return (
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900 mb-3">
+          1. Selected Player
+        </h2>
+        <div className="flex items-center justify-between p-3 border rounded-lg bg-green-50 border-green-200">
+          <div className="flex flex-col">
+            <span className="font-bold text-gray-800">{selectedPlayer.name}</span>
+            <span className="text-sm text-gray-600">{formatPosition(selectedPlayer.bio?.position)} - {selectedPlayer.currentTeam?.name || 'No Team'}</span>
+          </div>
+          <button
+            onClick={onClearPlayer}
+            className="text-sm font-semibold text-blue-600 hover:text-blue-800"
+          >
+            Change
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h2 className="text-lg font-semibold text-gray-900 mb-3">
+        1. Select Player
+      </h2>
+      <div className="relative" ref={searchResultsRef}>
+        <div className="relative">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Search for a player..."
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0e0c66] ml-1"
+          />
+          {isSearching && <div className="absolute right-3 top-1/2 -translate-y-1/2"><Spinner /></div>}
+        </div>
+        {isResultsOpen && searchResults.length > 0 && (
+          <div className="absolute top-full mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 z-10 max-h-60 overflow-y-auto">
+            {searchResults.map(({ node: player }) => (
+              <button
+                key={player.id}
+                onClick={() => onSelectPlayer(player)}
+                className="w-full text-left p-3 hover:bg-gray-100 transition-colors flex justify-between items-center"
+              >
+                <div>
+                  <p className="font-medium text-gray-800">{player.name}</p>
+                  <p className="text-sm text-gray-500">{formatPosition(player.bio?.position)} - {player.currentTeam?.name || 'No Team'}</p>
+                </div>
+                <span className="text-xs text-gray-400">{player.country}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const TeamSearch: React.FC<{
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+  searchResults: TeamSearchResult[];
+  isSearching: boolean;
+  selectedTeam: Team | null;
+  onSelectTeam: (team: Team) => void;
+  onClearTeam: () => void;
+}> = ({
+  searchQuery,
+  onSearchChange,
+  searchResults,
+  isSearching,
+  selectedTeam,
+  onSelectTeam,
+  onClearTeam,
+}) => {
+  const searchResultsRef = useRef<HTMLDivElement>(null);
+  const [isResultsOpen, setIsResultsOpen] = useState(false);
+
+  useEffect(() => {
+    if (searchResults.length > 0) {
+      setIsResultsOpen(true);
+    } else {
+      setIsResultsOpen(false);
+    }
+  }, [searchResults]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchResultsRef.current && !searchResultsRef.current.contains(event.target as Node)) {
+        setIsResultsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  if (selectedTeam) {
+    return (
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900 mb-3">
+          2. Selected Team
+        </h2>
+        <div className="flex items-center justify-between p-3 border rounded-lg bg-green-50 border-green-200">
+          <div className="flex flex-col">
+            <span className="font-bold text-gray-800">{selectedTeam.name}</span>
+            <span className="text-sm text-gray-600">{selectedTeam.leagues?.[0]?.name || 'No League'} - {selectedTeam.country}</span>
+          </div>
+          <button
+            onClick={onClearTeam}
+            className="text-sm font-semibold text-blue-600 hover:text-blue-800"
+          >
+            Change
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h2 className="text-lg font-semibold text-gray-900 mb-3">
+        2. Select Team
+      </h2>
+      <div className="relative" ref={searchResultsRef}>
+        <div className="relative">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Search for a team..."
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0e0c66] ml-1"
+          />
+          {isSearching && <div className="absolute right-3 top-1/2 -translate-y-1/2"><Spinner /></div>}
+        </div>
+        {isResultsOpen && searchResults.length > 0 && (
+          <div className="absolute top-full mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 z-10 max-h-60 overflow-y-auto">
+            {searchResults.map(({ node: team }) => (
+              <button
+                key={team.id}
+                onClick={() => onSelectTeam(team)}
+                className="w-full text-left p-3 hover:bg-gray-100 transition-colors flex justify-between items-center"
+              >
+                <div>
+                  <p className="font-medium text-gray-800">{team.name}</p>
+                  <p className="text-sm text-gray-500">{team.leagues?.[0]?.name || 'No League'}</p>
+                </div>
+                <span className="text-xs text-gray-400">{team.country}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const useToolbarState = (editor: Editor | null) => {
   const [state, setState] = useState({
     currentStyle: "p",
@@ -758,7 +1103,7 @@ const EditorPlaceholder = ({ onStart }: { onStart: () => void }) => (
     <Upload className="w-16 h-16 text-gray-400 mb-4" />
     <h3 className="text-lg font-semibold text-gray-600">Ready for Scouting</h3>
     <p className="text-gray-500 max-w-sm">
-      Upload an audio file to generate your first report.
+      Select a player and upload an audio file to generate your first report.
     </p>
     <button
       onClick={onStart}
@@ -771,20 +1116,305 @@ const EditorPlaceholder = ({ onStart }: { onStart: () => void }) => (
 );
 
 const ScoutingPlatformPage: React.FC = () => {
+  // Player Search State
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  const [searchResults, setSearchResults] = useState<PlayerSearchResult[]>([]);
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+
+  // Team Search State
+  const [teamSearchQuery, setTeamSearchQuery] = useState("");
+  const debouncedTeamSearchQuery = useDebounce(teamSearchQuery, 300);
+  const [teamSearchResults, setTeamSearchResults] = useState<TeamSearchResult[]>([]);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [isSearchingTeams, setIsSearchingTeams] = useState(false);
+
+  // League Standings State
+  const [leagueStandings, setLeagueStandings] = useState<LeagueStandingsResponse | null>(null);
+  const [isFetchingStandings, setIsFetchingStandings] = useState(false);
+
+  // Existing State
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [transcriptionText, setTranscriptionText] = useState<string>("");
   const [isTranscribing, setIsTranscribing] = useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
-
   const [editor, setEditor] = useState<Editor | null>(null);
   const [hasGeneratedReport, setHasGeneratedReport] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
-  
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
-  // --- NEW: Ref for the file input ---
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Player Search Handlers
+  const handleSelectPlayer = (player: Player) => {
+    setSelectedPlayer(player);
+    setSearchQuery('');
+    setSearchResults([]);
+  };
+
+  const handleClearPlayer = () => {
+    setSelectedPlayer(null);
+  };
+
+  // Team Search Handlers
+  const handleSelectTeam = (team: Team) => {
+    setSelectedTeam(team);
+    setTeamSearchQuery('');
+    setTeamSearchResults([]);
+  };
+
+  const handleClearTeam = () => {
+    setSelectedTeam(null);
+    setLeagueStandings(null);
+  };
+
+  // Player Search API Fetching
+  useEffect(() => {
+    if (debouncedSearchQuery.length < 2 || selectedPlayer) {
+      setSearchResults([]);
+      return;
+    }
+
+    const fetchPlayers = async () => {
+      setIsSearching(true);
+      const GRAPHQL_ENDPOINT = "https://api.graet.com";
+      
+      const query = `
+        query SearchUsersQuery($usersFilter: UsersFilter!, $first: Int) {
+          users: searchUsers(filter: $usersFilter, first: $first) {
+            edges {
+              node {
+                id
+                slug
+                role
+                firstname
+                lastname
+                name
+                country
+                dateOfBirth
+                possibleYearsOfBirth
+                bio {
+                  position
+                  gender
+                  playerType
+                  handedness
+                  height { centimeters inches }
+                  weight { kilograms pounds }
+                }
+                currentTeam {
+                  id
+                  name
+                  country
+                  shortName
+                  hasGames
+                  leagues { id name }
+                }
+                stats {
+                  career { gamesPlayed goals assists points pointsPerGame gaa shutouts svp wins losses ties }
+                  season { gamesPlayed goals assists points pointsPerGame gaa shutouts svp wins losses ties }
+                }
+              }
+            }
+            pageInfo { hasNextPage endCursor }
+          }
+        }
+      `;
+      
+      const variables = {
+        usersFilter: {
+          searchQuery: debouncedSearchQuery,
+        },
+        first: 10,
+      };
+
+      try {
+        const response = await fetch(GRAPHQL_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, variables }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`API Error: ${response.statusText} - ${errorText}`);
+        }
+
+        const result = await response.json();
+        if (result.errors) {
+          console.error("GraphQL Errors:", result.errors);
+          throw new Error(result.errors.map((e: any) => e.message).join("\n"));
+        }
+        
+        const foundPlayers = result.data?.users?.edges || [];
+        console.log("Search Results (Players):", foundPlayers);
+        setSearchResults(foundPlayers);
+
+      } catch (error: any) {
+        console.error("Failed to fetch players:", error);
+        toast.error(`Could not fetch players: ${error.message}`);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    fetchPlayers();
+  }, [debouncedSearchQuery, selectedPlayer]);
+
+  // Team Search API Fetching
+  useEffect(() => {
+    if (debouncedTeamSearchQuery.length < 2 || selectedTeam) {
+      setTeamSearchResults([]);
+      return;
+    }
+
+    const fetchTeams = async () => {
+      setIsSearchingTeams(true);
+      const GRAPHQL_ENDPOINT = "https://api.graet.com";
+
+      const query = `
+        query SearchTeams($filter: TeamsFilter!, $pagination: Pagination) {
+          teams(filter: $filter, pagination: $pagination) {
+            edges {
+              node {
+                id
+                name
+                shortName
+                country
+                slug
+                leagues {
+                  id
+                  name
+                }
+              }
+            }
+          }
+        }
+      `;
+
+      const variables = {
+        filter: {
+          searchQuery: debouncedTeamSearchQuery,
+          country: null,
+          leagues: null,
+          shortName: null,
+        },
+        pagination: {
+          first: 10,
+          after: null,
+        },
+      };
+
+      try {
+        const response = await fetch(GRAPHQL_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, variables }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`API Error: ${response.statusText} - ${errorText}`);
+        }
+
+        const result = await response.json();
+        if (result.errors) {
+          console.error("GraphQL Errors:", result.errors);
+          throw new Error(result.errors.map((e: any) => e.message).join("\n"));
+        }
+
+        const foundTeams = result.data?.teams?.edges || [];
+        console.log("Search Results (Teams):", foundTeams);
+        setTeamSearchResults(foundTeams);
+
+      } catch (error: any) {
+        console.error("Failed to fetch teams:", error);
+        toast.error(`Could not fetch teams: ${error.message}`);
+        setTeamSearchResults([]);
+      } finally {
+        setIsSearchingTeams(false);
+      }
+    };
+
+    fetchTeams();
+  }, [debouncedTeamSearchQuery, selectedTeam]);
+
+  // League Standings API Fetching
+  useEffect(() => {
+    const fetchLeagueStandings = async () => {
+      if (!selectedTeam || !selectedTeam.leagues?.[0]?.id) {
+        setLeagueStandings(null);
+        return;
+      }
+
+      setIsFetchingStandings(true);
+      toast.loading("Fetching league standings...", { id: "standings-toast" });
+      const GRAPHQL_ENDPOINT = "https://api.graet.com";
+
+      const query = `
+        query SearchLeagueStandings($leagueId: ObjectId!, $season: String, $teamId: ObjectId) {
+          leagueStandings(leagueId: $leagueId, season: $season, teamId: $teamId) {
+            league {
+              id
+              name
+            }
+            groups {
+              group
+              standings {
+                id
+                team {
+                  id
+                  name
+                }
+              }
+            }
+          }
+        }
+      `;
+
+      const variables = {
+        leagueId: selectedTeam.leagues[0].id,
+        season: "2024-2025",
+        teamId: selectedTeam.id,
+      };
+
+      try {
+        const response = await fetch(GRAPHQL_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, variables }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`API Error: ${response.statusText} - ${errorText}`);
+        }
+
+        const result = await response.json();
+        if (result.errors) {
+          console.error("GraphQL Errors:", result.errors);
+          throw new Error(result.errors.map((e: any) => e.message).join("\n"));
+        }
+
+        const standingsData = result.data?.leagueStandings;
+        console.log("League Standings:", standingsData);
+        setLeagueStandings(standingsData);
+        toast.success("League standings loaded!", { id: "standings-toast" });
+
+      } catch (error: any) {
+        console.error("Failed to fetch league standings:", error);
+        toast.error(`Could not fetch standings: ${error.message}`, { id: "standings-toast" });
+        setLeagueStandings(null);
+      } finally {
+        setIsFetchingStandings(false);
+      }
+    };
+
+    fetchLeagueStandings();
+  }, [selectedTeam]);
+
 
   const initEditor = useCallback(
     (content: any) => {
@@ -832,7 +1462,7 @@ const ScoutingPlatformPage: React.FC = () => {
 
   useEffect(() => {
     const initialContent = marked.parse(
-      "## Welcome\n\nUpload an audio file to get started."
+      "## Welcome\n\nSelect a player and upload an audio file to get started."
     ) as string;
     initEditor(initialContent);
     return () => {
@@ -882,10 +1512,8 @@ const ScoutingPlatformPage: React.FC = () => {
     }
   };
 
-  // --- NEW: Function to handle removing the file ---
   const handleRemoveFile = () => {
     setSelectedFile(null);
-    // Reset the file input so the same file can be re-selected
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -894,6 +1522,14 @@ const ScoutingPlatformPage: React.FC = () => {
   const handleProcessAudio = async () => {
     if (!selectedFile) {
       toast.error("Please select an audio file first.");
+      return;
+    }
+    if (!selectedPlayer) {
+      toast.error("Please select a player first.");
+      return;
+    }
+    if (!selectedTeam) {
+      toast.error("Please select a team first.");
       return;
     }
 
@@ -913,9 +1549,9 @@ const ScoutingPlatformPage: React.FC = () => {
 
       if (fileSizeMB > UPLOAD_THRESHOLD_MB) {
         toast.loading("Uploading audio file...", { id: "process-toast" });
-        transcriptionResult = await handleResumableUploadAndTranscribe(selectedFile, apiKey);
+        transcriptionResult = await handleResumableUploadAndTranscribe(selectedFile, apiKey, selectedPlayer, selectedTeam, leagueStandings);
       } else {
-        transcriptionResult = await handleInlineUploadAndTranscribe(selectedFile, apiKey);
+        transcriptionResult = await handleInlineUploadAndTranscribe(selectedFile, apiKey, selectedPlayer, selectedTeam, leagueStandings);
       }
       
       setTranscriptionText(transcriptionResult);
@@ -931,10 +1567,16 @@ const ScoutingPlatformPage: React.FC = () => {
     setIsGenerating(true);
     toast.loading("Generating scout report...", { id: "generate-toast" });
     try {
+      // FIX: Added standingsContext to the request body
       const generateResponse = await fetch("/api/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transcription: transcriptionResult }),
+        body: JSON.stringify({ 
+          transcription: transcriptionResult,
+          playerContext: selectedPlayer,
+          teamContext: selectedTeam,
+          standingsContext: leagueStandings,
+        }),
       });
 
       if (!generateResponse.ok) {
@@ -959,15 +1601,23 @@ const ScoutingPlatformPage: React.FC = () => {
     }
   };
 
-  const handleInlineUploadAndTranscribe = async (file: File, apiKey: string): Promise<string> => {
+  const handleInlineUploadAndTranscribe = async (file: File, apiKey: string, player: Player, team: Team, standings: LeagueStandingsResponse | null): Promise<string> => {
     const audioBuffer = await file.arrayBuffer();
     const audioBase64 = arrayBufferToBase64(audioBuffer);
+
+    let standingsContext = "";
+    if (standings && standings.groups) {
+      const teamNames = standings.groups.flatMap(g => g.standings.map(s => s.team.name));
+      standingsContext = `For context, the teams in this league include: ${Array.from(new Set(teamNames)).join(', ')}.`;
+    }
+
+    const promptText = `Transcribe the following audio of a sports scout discussing the player ${player.name} of the team ${team.name}. Focus on clarity and accuracy, correctly identifying hockey-specific terms. ${standingsContext}`;
 
     const requestBody = {
         contents: [{
             parts: [
                 { "inline_data": { "mime_type": file.type, "data": audioBase64 } },
-                { "text": "Transcribe the following audio of a sports scout. Focus on clarity and accuracy." }
+                { "text": promptText }
             ]
         }],
         "generationConfig": {
@@ -992,7 +1642,7 @@ const ScoutingPlatformPage: React.FC = () => {
     }
   };
 
-  const handleResumableUploadAndTranscribe = async (file: File, apiKey: string): Promise<string> => {
+  const handleResumableUploadAndTranscribe = async (file: File, apiKey: string, player: Player, team: Team, standings: LeagueStandingsResponse | null): Promise<string> => {
     let fileUri = '';
     let fileNameOnServer = '';
 
@@ -1030,10 +1680,18 @@ const ScoutingPlatformPage: React.FC = () => {
       fileUri = fileInfo.file.uri;
       fileNameOnServer = fileInfo.file.name;
 
+      let standingsContext = "";
+      if (standings && standings.groups) {
+        const teamNames = standings.groups.flatMap(g => g.standings.map(s => s.team.name));
+        standingsContext = `For context, the teams in this league include: ${Array.from(new Set(teamNames)).join(', ')}.`;
+      }
+
+      const promptText = `Transcribe the following audio of a sports scout discussing the player ${player.name} of the team ${team.name}. Focus on clarity and accuracy, correctly identifying hockey-specific terms. ${standingsContext}`;
+
       const generateContentBody = {
         contents: [{
           parts: [
-            { "text": "Transcribe the following audio of a sports scout. Focus on clarity and accuracy." },
+            { "text": promptText },
             { "file_data": { "mime_type": file.type, "file_uri": fileUri } }
           ]
         }],
@@ -1155,12 +1813,14 @@ const ScoutingPlatformPage: React.FC = () => {
     }
   };
 
-  const isLoading = isTranscribing || isGenerating;
+  const isLoading = isTranscribing || isGenerating || isFetchingStandings;
   const buttonText = isTranscribing
     ? "Transcribing..."
     : isGenerating
       ? "Generating..."
-      : "Generate Report";
+      : isFetchingStandings
+        ? "Loading Standings..."
+        : "Generate Report";
 
   return (
     <div className="h-screen bg-gray-100 flex flex-col font-sans text-black overflow-hidden">
@@ -1211,84 +1871,105 @@ const ScoutingPlatformPage: React.FC = () => {
             ${isMobileSidebarOpen ? "translate-x-0 shadow-lg" : "-translate-x-full"}
           `}
         >
-          <div className={`flex-1 flex flex-col space-y-6 min-h-0 overflow-y-auto p-4 md:p-6 ${isDesktopSidebarCollapsed ? 'lg:hidden' : ''}`}>
+          <div className={`flex-1 flex flex-col min-h-0 p-4 md:p-6 ${isDesktopSidebarCollapsed ? 'lg:hidden' : ''}`}>
             
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-3">
-                1. Upload Audio
-              </h2>
-              <label
-                htmlFor="file-upload"
-                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#0e0c66] hover:bg-gray-50 cursor-pointer transition-colors block"
-              >
-                <div className="flex flex-col items-center justify-center">
-                  <Upload className="mx-auto w-10 h-10 text-gray-400 mb-2" />
-                  <p className="text-sm font-semibold text-[#0e0c66]">
-                    Click to upload or drag and drop
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    MP3, WAV, M4A (100MB limit per file)
-                  </p>
-                </div>
-                {/* --- MODIFIED: Added the ref --- */}
-                <input
-                  id="file-upload"
-                  type="file"
-                  accept="audio/*"
-                  className="hidden"
-                  onChange={handleFileChange}
-                  ref={fileInputRef}
-                />
-              </label>
-
-              {selectedFile && (
-                <div className="mt-4 space-y-2">
-                  <p className="text-sm font-medium text-gray-800">Selected file:</p>
-                  {[selectedFile].map((file) => (
-                    <div
-                      key={file.name}
-                      className="flex items-center justify-between p-2.5 border rounded-lg bg-white shadow-sm"
-                    >
-                      <div className="flex items-center space-x-3 truncate">
-                        <FileText className="w-5 h-5 text-gray-500 flex-shrink-0" />
-                        <div className="truncate">
-                          <p className="text-sm font-medium text-gray-800 truncate">
-                            {file.name}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {(file.size / (1024 * 1024)).toFixed(2)} MB
-                          </p>
-                        </div>
-                      </div>
-                      {/* --- MODIFIED: Calls the new remove handler --- */}
-                      <button
-                        onClick={handleRemoveFile}
-                        className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-100 rounded-full transition-colors"
-                        title="Remove file"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-col flex-1 min-h-0">
-              <h2 className="text-lg font-semibold text-gray-900 mb-3">
-                2. Review Transcription
-              </h2>
-              <textarea
-                value={transcriptionText}
-                onChange={(e) => setTranscriptionText(e.target.value)}
-                className="flex-1 w-full p-4 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-800 leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-[#0e0c66]"
-                placeholder="Your audio transcription will appear here..."
+            <div className="flex-1 space-y-6 min-h-0 overflow-y-auto pr-2">
+              <PlayerSearch
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                searchResults={searchResults}
+                isSearching={isSearching}
+                selectedPlayer={selectedPlayer}
+                onSelectPlayer={handleSelectPlayer}
+                onClearPlayer={handleClearPlayer}
               />
+
+              <TeamSearch
+                searchQuery={teamSearchQuery}
+                onSearchChange={setTeamSearchQuery}
+                searchResults={teamSearchResults}
+                isSearching={isSearchingTeams}
+                selectedTeam={selectedTeam}
+                onSelectTeam={handleSelectTeam}
+                onClearTeam={handleClearTeam}
+              />
+
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-3">
+                  3. Upload Audio
+                </h2>
+                <label
+                  htmlFor="file-upload"
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#0e0c66] hover:bg-gray-50 cursor-pointer transition-colors block"
+                >
+                  <div className="flex flex-col items-center justify-center">
+                    <Upload className="mx-auto w-10 h-10 text-gray-400 mb-2" />
+                    <p className="text-sm font-semibold text-[#0e0c66]">
+                      Click to upload or drag and drop
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      MP3, WAV, M4A (100MB limit per file)
+                    </p>
+                  </div>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    accept="audio/*"
+                    className="hidden"
+                    onChange={handleFileChange}
+                    ref={fileInputRef}
+                  />
+                </label>
+
+                {selectedFile && (
+                  <div className="mt-4 space-y-2">
+                    <p className="text-sm font-medium text-gray-800">Selected file:</p>
+                    {[selectedFile].map((file) => (
+                      <div
+                        key={file.name}
+                        className="flex items-center justify-between p-2.5 border rounded-lg bg-white shadow-sm"
+                      >
+                        <div className="flex items-center space-x-3 truncate">
+                          <FileText className="w-5 h-5 text-gray-500 flex-shrink-0" />
+                          <div className="truncate">
+                            <p className="text-sm font-medium text-gray-800 truncate">
+                              {file.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {(file.size / (1024 * 1024)).toFixed(2)} MB
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={handleRemoveFile}
+                          className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-100 rounded-full transition-colors"
+                          title="Remove file"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col flex-1 h-[400px]">
+                <h2 className="text-lg font-semibold text-gray-900 mb-3">
+                  4. Review Transcription
+                </h2>
+                <textarea
+                  value={transcriptionText}
+                  onChange={(e) => setTranscriptionText(e.target.value)}
+                  className="flex-1 w-full p-4 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-800 leading-relaxed resize-none focus:outline-none"
+                  placeholder="Your audio transcription will appear here..."
+                />
+              </div>
             </div>
-            <div>
+
+            <div className="flex-shrink-0 pt-4">
               <button
                 onClick={handleProcessAudio}
-                disabled={isLoading || !selectedFile}
+                disabled={isLoading || !selectedFile || !selectedPlayer || !selectedTeam}
                 className="w-full flex items-center justify-center space-x-2 py-3 bg-[#0e0c66] text-white font-semibold rounded-lg hover:bg-[#0e0c66]/85 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 <Sparkles className="w-5 h-5" />

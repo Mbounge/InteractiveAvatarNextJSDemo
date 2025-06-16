@@ -1,26 +1,28 @@
-
-
 import { GoogleGenerativeAI } from "@google/generative-ai";
-
-
 import { NextResponse } from "next/server";
 
 export const runtime = "edge";
 
 const today = new Date();
-    const formattedDate = today.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+const formattedDate = today.toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
 
 export async function POST(request: Request) {
   try {
-    const { transcription } = await request.json();
+    
+    const { transcription, playerContext, teamContext, standingsContext } = await request.json();
 
-    if (!transcription) {
+   
+    // console.log("Received Player Context:", playerContext);
+    // console.log("Received Team Context:", teamContext);
+    // console.log("Received Standings Context:", standingsContext);
+
+    if (!transcription || !playerContext || !teamContext) {
       return NextResponse.json(
-        { error: "Transcription is required." },
+        { error: "Transcription, player context, and team context are required." },
         { status: 400 }
       );
     }
@@ -31,7 +33,6 @@ export async function POST(request: Request) {
       generationConfig: {
         temperature: 0.1
       }
-      
     });
 
     const prompt = `
@@ -52,11 +53,19 @@ export async function POST(request: Request) {
 
       **Player:** [Player Name]\n
       **Date of Birth:** [Date of Birth, or "Unknown"]\n
+      **Position:** [Position of player, or  "N/A"]\n
+      **Play Style:** [Play style of player (max 2 word), or  "N/A"]\n
+      **Shoots:** [Shoots right or left, or  "N/A"]\n
+      **Height:** [Height, or  "N/A"]\n
+      **Weight:** [Weight, or  "N/A"]\n
+      ---
+      <p> </p>
+
       **Game:** [Game Details, or "N/A"]\n
+      **Game Date:** [Game Date, or "N/A"]\n
       **Team:** [team name, or "N/A"]\n
       **League:** [League name, or "N/A"]\n
       **Report Date:** [Today's Date which is ${formattedDate} ]\n
-
       ---
 
       ### SKATING (Rating/5)
@@ -140,6 +149,7 @@ export async function POST(request: Request) {
           - **Sub-Categories:** Each header item (e.g., "**Player:**") and each sub-category (e.g., "**Speed:**") must be on its own line, followed by its analysis on the next line.
           - **Spacing:** There must be a blank line between each sub-category block. please response the \n you see in the template
           - **Final Output:** The final output MUST be only the Markdown/HTML of the report itself. No extra commentary.
+          - respect the \n you see the template and space out sections appropriately - especially between player details and game details in the beginning of the report - these sections must be spaced
 
       **TRANSCRIPTION TO ANALYZE:**
       ---
