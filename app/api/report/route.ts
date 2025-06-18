@@ -10,12 +10,74 @@ const formattedDate = today.toLocaleDateString('en-US', {
   day: 'numeric',
 });
 
+const formatPosition = (rawPosition: string | null | undefined): string => {
+  if (!rawPosition) return 'N/A';
+  switch (rawPosition) {
+    case 'CENTER': return 'Center';
+    case 'LEFT_WING': return 'Left Wing';
+    case 'RIGHT_WING': return 'Right Wing';
+    case 'LEFT_DEFENSIVE': return 'Left Defensive';
+    case 'RIGHT_DEFENSIVE': return 'Right Defensive';
+    case 'DEFENDER': return 'Defender';
+    case 'GOALTENDER': return 'Goalie';
+    default: return rawPosition;
+  }
+};
+
+const formatPlayStyle = (rawPlayStyle: string | null | undefined): string => {
+  if (!rawPlayStyle) return 'N/A';
+  
+  return rawPlayStyle
+    .split('_') // Splits "POWER_FORWARD" into ["POWER", "FORWARD"]
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()) // Converts each word to "Title Case" -> ["Power", "Forward"]
+    .join(' '); // Joins them with a space -> "Power Forward"
+};
+
+const formatHandedness = (rawHandedness: string | null | undefined): string => {
+  if (!rawHandedness) return 'N/A';
+  // Capitalize the first letter, e.g., "LEFT" -> "Left"
+  return rawHandedness.charAt(0).toUpperCase() + rawHandedness.slice(1).toLowerCase();
+};
+
+const formatHeight = (heightObj: { centimeters: number; inches: number } | null | undefined): string => {
+  if (!heightObj || !heightObj.centimeters) return 'N/A';
+
+  const totalInches = heightObj.centimeters / 2.54;
+  
+  const feet = Math.floor(totalInches / 12);
+
+  const inches = Math.round(totalInches % 12);
+
+  return `${feet}' ${inches}" (${heightObj.centimeters} cm)`;
+};
+
+const formatWeight = (weightObj: { kilograms: number; pounds: number } | null | undefined): string => {
+  if (!weightObj || !weightObj.pounds) return 'N/A';
+  return `${weightObj.pounds} lbs (${weightObj.kilograms} kg)`;
+};
+
+const formatDateOfBirth = (isoString: string | null | undefined): string => {
+  if (!isoString) return 'Unknown';
+  try {
+    const date = new Date(isoString);
+    // Adding timeZone: 'UTC' prevents the date from shifting by a day due to server timezone
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'UTC',
+    });
+  } catch (error) {
+    return 'Unknown'; // Return default if the date string is invalid
+  }
+};
+
 export async function POST(request: Request) {
   try {
     
     const { transcription, playerContext, teamContext, standingsContext } = await request.json();
    
-    // console.log("Received Player Context:", playerContext);
+    console.log("Received Player Context:", playerContext);
     // console.log("Received Team Context:", teamContext);
     // console.log("Received Standings Context:", standingsContext);
 
@@ -26,6 +88,23 @@ export async function POST(request: Request) {
       );
     }
 
+    const playerName = playerContext.name ?? 'N/A';
+    const dateOfBirth = formatDateOfBirth(playerContext.dateOfBirth);
+    const position = formatPosition(playerContext.bio?.position);
+    const playStyle = formatPlayStyle(playerContext.bio?.playerType);
+    const shoots = formatHandedness(playerContext.bio?.handedness);
+    const height = formatHeight(playerContext.bio?.height);
+    const weight = formatWeight(playerContext.bio?.weight);
+    const teamName = teamContext.name ?? 'N/A';
+    const leagueName = teamContext.leagues?.[0]?.name ?? 'N/A';
+
+    // Create a string representation of the standings for the AI's context
+    let standingsInfo = "No league standings data available.";
+    if (standingsContext && standingsContext.groups) {
+        standingsInfo = JSON.stringify(standingsContext, null, 2);
+    }
+    
+
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash-preview-05-20",
@@ -34,8 +113,27 @@ export async function POST(request: Request) {
       }
     });
 
+    console.log("position, ", position)
+    console.log("playstyle, ", playStyle)
+    console.log("height, ", height)
+    console.log("weight, ", weight)
+
     const prompt = `
       You are an expert hockey scout assistant. Your task is to synthesize a raw audio transcription from a scout into a professional, structured scouting report in Markdown format.
+
+      ---
+      **CONTEXTUAL DATA (FOR YOUR REFERENCE):**
+      Here is the structured data you have about the player, their team, and the league. Use this to inform your analysis and ensure consistency.
+
+      **Player Data:**
+      ${JSON.stringify(playerContext, null, 2)}
+
+      **Team Data:**
+      ${JSON.stringify(teamContext, null, 2)}
+
+      **League Standings Data:**
+      ${standingsInfo}
+      ---
 
       **Primary Goal:** Create the most insightful and accurate report possible based on the provided transcription.
 
@@ -50,22 +148,25 @@ export async function POST(request: Request) {
       \n
       \n
 
-      **Player:** [Player Name]\n
-      **Date of Birth:** [Date of Birth, or "Unknown"]\n
-      **Position:** [Position of player, or  "N/A"]\n
-      **Play Style:** [Play style of player (max 2 word), or  "N/A"]\n
-      **Shoots:** [Shoots right or left, or  "N/A"]\n
-      **Height:** [Height, or  "N/A"]\n
-      **Weight:** [Weight, or  "N/A"]\n
+      **Player:** ${playerName}\n
+      **Date of Birth:** [${dateOfBirth}, or "Unknown"]\n
+      **Position:** [${position}, use this exact position, ignore transcript]\n
+      **Play Style:** [use this playstyle ${playStyle}]\n
+      **Shoots:** [${shoots}, or  "N/A"]\n
+      **Height:** [${height}, or  "N/A"]\n
+      **Weight:** [${weight}, or  "N/A"]\n
       ---
       <p> </p>
 
       **Game:** [Game Details, or "N/A"]\n
       **Game Date:** [Game Date, or "N/A"]\n
-      **Team:** [team name, or "N/A"]\n
+      **Team:** [${teamName}, or "N/A"]\n
       **League:** [League name, or "N/A"]\n
       **Report Date:** [Today's Date which is ${formattedDate} ]\n
       ---
+
+      ### SEASONAL STATS
+      [Create a position-relevant Markdown table here using the seasonal stats from the Player Data context. The first 2 columns must be team and league then the stats. If no stats are available, state "No seasonal stats available."]\n
 
       ### SKATING (Rating/5)
       **Speed:** [Analysis of top speed and acceleration.]\n
@@ -141,6 +242,7 @@ export async function POST(request: Request) {
       7.  **Handling Missing Information:**
           - If a core, essential skill for a position is completely missing from the transcription, it is appropriate to add a "Notes" sub-category under the relevant section stating: *"This aspect was not assessed in the current observation."*
           - If the entire transcription is too brief or vague to form a meaningful report, your entire response MUST be the single line: "Insufficient information to generate a report."
+          - Try your best to use your own knowledge about the leagues and the teams that play within them to correctly spell the names of the teams and leagues in the report - so do not default to N/A until you try your best to estimate the league
 
       8.  **Formatting Rules:**
           - **Main Title:** You MUST use the exact HTML tag: \`<h1 style="text-align: center;">GRAET SCOUTING REPORT</h1>\`.

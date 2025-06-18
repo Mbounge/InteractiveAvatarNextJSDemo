@@ -1135,7 +1135,7 @@ const ScoutingPlatformPage: React.FC = () => {
   const [isFetchingStandings, setIsFetchingStandings] = useState(false);
 
   // Existing State
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]); // FIX: Changed to array
   const [transcriptionText, setTranscriptionText] = useState<string>("");
   const [isTranscribing, setIsTranscribing] = useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
@@ -1152,6 +1152,18 @@ const ScoutingPlatformPage: React.FC = () => {
     setSelectedPlayer(player);
     setSearchQuery('');
     setSearchResults([]);
+
+    if (player.currentTeam) {
+      const teamForSelection: Team = {
+        id: player.currentTeam.id,
+        name: player.currentTeam.name,
+        shortName: player.currentTeam.shortName,
+        country: player.currentTeam.country,
+        slug: '',
+        leagues: player.currentTeam.leagues,
+      };
+      setSelectedTeam(teamForSelection);
+    }
   };
 
   const handleClearPlayer = () => {
@@ -1488,40 +1500,38 @@ const ScoutingPlatformPage: React.FC = () => {
     };
   }, [isExportMenuOpen]);
 
+  // FIX: Updated to handle multiple files
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      if (!file.type.startsWith("audio/")) {
-        toast.error("Invalid file type. Please select an audio file.");
-        event.target.value = "";
-        return;
-      }
-      
-      const MAX_FILE_SIZE_MB = 100;
-      const fileSizeMB = file.size / (1024 * 1024);
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const newFiles = Array.from(files);
+      const validFiles = newFiles.filter(file => {
+        if (!file.type.startsWith("audio/")) {
+          toast.error(`Invalid file type: ${file.name}. Please select audio files.`);
+          return false;
+        }
+        const MAX_FILE_SIZE_MB = 100;
+        const fileSizeMB = file.size / (1024 * 1024);
+        if (fileSizeMB > MAX_FILE_SIZE_MB) {
+          toast.error(`${file.name} exceeds ${MAX_FILE_SIZE_MB}MB limit.`);
+          return false;
+        }
+        return true;
+      });
 
-      if (fileSizeMB > MAX_FILE_SIZE_MB) {
-        toast.error(`File exceeds ${MAX_FILE_SIZE_MB}MB limit. Your file is ${fileSizeMB.toFixed(2)}MB.`);
-        event.target.value = "";
-        return;
-      }
-
-      setSelectedFile(file);
-      setTranscriptionText("");
-      toast.success(`${file.name} selected!`);
+      setSelectedFiles(prevFiles => [...prevFiles, ...validFiles]);
+      toast.success(`${validFiles.length} file(s) selected!`);
     }
   };
 
-  const handleRemoveFile = () => {
-    setSelectedFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+  // FIX: Updated to remove a specific file from the array
+  const handleRemoveFile = (fileToRemove: File) => {
+    setSelectedFiles(prevFiles => prevFiles.filter(file => file !== fileToRemove));
   };
 
   const handleProcessAudio = async () => {
-    if (!selectedFile) {
-      toast.error("Please select an audio file first.");
+    if (selectedFiles.length === 0) {
+      toast.error("Please select at least one audio file.");
       return;
     }
     if (!selectedPlayer) {
@@ -1540,23 +1550,25 @@ const ScoutingPlatformPage: React.FC = () => {
     }
 
     setIsTranscribing(true);
-    toast.loading("Transcribing audio...", { id: "process-toast" });
-
-    let transcriptionResult = "";
+    
+    const allTranscriptions: string[] = [];
     try {
-      const fileSizeMB = selectedFile.size / (1024 * 1024);
-      const UPLOAD_THRESHOLD_MB = 20;
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        toast.loading(`Transcribing file ${i + 1} of ${selectedFiles.length}...`, { id: "process-toast" });
+        
+        const fileSizeMB = file.size / (1024 * 1024);
+        const UPLOAD_THRESHOLD_MB = 20;
+        let singleTranscription = "";
 
-      if (fileSizeMB > UPLOAD_THRESHOLD_MB) {
-        toast.loading("Uploading audio file...", { id: "process-toast" });
-        transcriptionResult = await handleResumableUploadAndTranscribe(selectedFile, apiKey, selectedPlayer, selectedTeam, leagueStandings);
-      } else {
-        transcriptionResult = await handleInlineUploadAndTranscribe(selectedFile, apiKey, selectedPlayer, selectedTeam, leagueStandings);
+        if (fileSizeMB > UPLOAD_THRESHOLD_MB) {
+          singleTranscription = await handleResumableUploadAndTranscribe(file, apiKey, selectedPlayer, selectedTeam, leagueStandings);
+        } else {
+          singleTranscription = await handleInlineUploadAndTranscribe(file, apiKey, selectedPlayer, selectedTeam, leagueStandings);
+        }
+        allTranscriptions.push(singleTranscription);
       }
-      
-      setTranscriptionText(transcriptionResult);
-      toast.success("Transcription complete!", { id: "process-toast" });
-
+      toast.success("All files transcribed!", { id: "process-toast" });
     } catch (error: any) {
         console.error("Transcription Error:", error);
         toast.error(`Could not transcribe: ${error.message}`, { id: "process-toast" });
@@ -1564,15 +1576,20 @@ const ScoutingPlatformPage: React.FC = () => {
         return;
     }
 
+    const combinedTranscription = allTranscriptions
+      .map((text, index) => `--- File ${index + 1} ---\n${text}`)
+      .join('\n\n');
+    
+    setTranscriptionText(combinedTranscription);
+
     setIsGenerating(true);
     toast.loading("Generating scout report...", { id: "generate-toast" });
     try {
-      // FIX: Added standingsContext to the request body
       const generateResponse = await fetch("/api/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          transcription: transcriptionResult,
+          transcription: combinedTranscription,
           playerContext: selectedPlayer,
           teamContext: selectedTeam,
           standingsContext: leagueStandings,
@@ -1611,7 +1628,7 @@ const ScoutingPlatformPage: React.FC = () => {
       standingsContext = `For context, the teams in this league include: ${Array.from(new Set(teamNames)).join(', ')}.`;
     }
 
-    const promptText = `Transcribe the following audio of a sports scout discussing the player ${player.name} of the team ${team.name}. Focus on clarity and accuracy, correctly identifying hockey-specific terms. ${standingsContext}`;
+    const promptText = `Transcribe the following audio of a sports scout discussing the player ${player.name} of the team ${team.name}. Focus on clarity and accuracy, correctly identifying hockey-specific terms. If you recognize the names of the opponent team and the league they play in correctly spell them out in the transcript. ${standingsContext}`;
 
     const requestBody = {
         contents: [{
@@ -1686,7 +1703,7 @@ const ScoutingPlatformPage: React.FC = () => {
         standingsContext = `For context, the teams in this league include: ${Array.from(new Set(teamNames)).join(', ')}.`;
       }
 
-      const promptText = `Transcribe the following audio of a sports scout discussing the player ${player.name} of the team ${team.name}. Focus on clarity and accuracy, correctly identifying hockey-specific terms. ${standingsContext}`;
+      const promptText = `Transcribe the following audio of a sports scout discussing the player ${player.name} of the team ${team.name}. Focus on clarity and accuracy, correctly identifying hockey-specific terms. If you recognize the names of the opponent team and the league they play in correctly spell them out in the transcript. ${standingsContext}`;
 
       const generateContentBody = {
         contents: [{
@@ -1923,6 +1940,7 @@ const ScoutingPlatformPage: React.FC = () => {
                       MP3, WAV, M4A (100MB limit per file)
                     </p>
                   </div>
+                  {/* FIX: Added 'multiple' attribute */}
                   <input
                     id="file-upload"
                     type="file"
@@ -1930,15 +1948,17 @@ const ScoutingPlatformPage: React.FC = () => {
                     className="hidden"
                     onChange={handleFileChange}
                     ref={fileInputRef}
+                    multiple
                   />
                 </label>
 
-                {selectedFile && (
+                {/* FIX: Updated to display a list of files */}
+                {selectedFiles.length > 0 && (
                   <div className="mt-4 space-y-2">
-                    <p className="text-sm font-medium text-gray-800">Selected file:</p>
-                    {[selectedFile].map((file) => (
+                    <p className="text-sm font-medium text-gray-800">Selected files:</p>
+                    {selectedFiles.map((file, index) => (
                       <div
-                        key={file.name}
+                        key={`${file.name}-${index}`}
                         className="flex items-center justify-between p-2.5 border rounded-lg bg-white shadow-sm"
                       >
                         <div className="flex items-center space-x-3 truncate">
@@ -1953,7 +1973,7 @@ const ScoutingPlatformPage: React.FC = () => {
                           </div>
                         </div>
                         <button
-                          onClick={handleRemoveFile}
+                          onClick={() => handleRemoveFile(file)}
                           className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-100 rounded-full transition-colors"
                           title="Remove file"
                         >
@@ -1981,7 +2001,7 @@ const ScoutingPlatformPage: React.FC = () => {
             <div className="flex-shrink-0 pt-4">
               <button
                 onClick={handleProcessAudio}
-                disabled={isLoading || !selectedFile || !selectedPlayer || !selectedTeam}
+                disabled={isLoading || selectedFiles.length === 0 || !selectedPlayer || !selectedTeam}
                 className="w-full flex items-center justify-center space-x-2 py-3 bg-[#0e0c66] text-white font-semibold rounded-lg hover:bg-[#0e0c66]/85 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 <Sparkles className="w-5 h-5" />
