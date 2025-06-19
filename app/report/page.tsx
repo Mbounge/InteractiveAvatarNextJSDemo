@@ -216,6 +216,30 @@ type LeagueStandingsResponse = {
   }[];
 };
 
+// NEW: Seasonal Stats types
+type SeasonalStat = {
+  node: {
+    team: { name: string; shortName: string };
+    user: { name: string; id: string };
+    position: string;
+    season: string;
+    seasonType: string;
+    gamesPlayed: number;
+    goals: number;
+    assists: number;
+    points: number;
+    plusMinus: number;
+    pim: number;
+    wins: number;
+    losses: number;
+    ties: number;
+    gaa: number;
+    svp: number;
+    shutouts: number;
+    toi: number;
+  }
+};
+
 
 // --- TIPTAP CONFIGURATION ---
 const PREDEFINED_SIZES: { [key: string]: string } = {
@@ -455,6 +479,7 @@ const TableCreationGrid: React.FC<{ editor: Editor; close: () => void }> = ({
     </div>
   );
 };
+
 const TableMenus: React.FC<{ editor: Editor }> = ({ editor }) => {
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -505,7 +530,16 @@ const TableMenus: React.FC<{ editor: Editor }> = ({ editor }) => {
           getReferenceClientRect: () => {
             const { view } = editor;
             const { $anchor } = editor.state.selection;
-            const element = view.domAtPos($anchor.pos).node as HTMLElement;
+            const node = view.domAtPos($anchor.pos).node;
+
+            // FIX: Check if the node is a Text node. If so, use its parentElement.
+            // This ensures we always call .closest() on an Element.
+            const element = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node) as HTMLElement | null;
+
+            if (!element) {
+              return new DOMRect(0, 0, 0, 0);
+            }
+            
             const tableElement = element.closest("table");
             if (!tableElement) {
               return new DOMRect(0, 0, 0, 0);
@@ -1134,8 +1168,12 @@ const ScoutingPlatformPage: React.FC = () => {
   const [leagueStandings, setLeagueStandings] = useState<LeagueStandingsResponse | null>(null);
   const [isFetchingStandings, setIsFetchingStandings] = useState(false);
 
+  // NEW: Seasonal Stats State
+  const [seasonalStats, setSeasonalStats] = useState<SeasonalStat[]>([]);
+  const [isFetchingStats, setIsFetchingStats] = useState(false);
+
   // Existing State
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]); // FIX: Changed to array
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [transcriptionText, setTranscriptionText] = useState<string>("");
   const [isTranscribing, setIsTranscribing] = useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
@@ -1168,6 +1206,7 @@ const ScoutingPlatformPage: React.FC = () => {
 
   const handleClearPlayer = () => {
     setSelectedPlayer(null);
+    setSeasonalStats([]); // Clear stats when player is cleared
   };
 
   // Team Search Handlers
@@ -1255,16 +1294,16 @@ const ScoutingPlatformPage: React.FC = () => {
 
         const result = await response.json();
         if (result.errors) {
-          console.error("GraphQL Errors:", result.errors);
+          //console.error("GraphQL Errors:", result.errors);
           throw new Error(result.errors.map((e: any) => e.message).join("\n"));
         }
         
         const foundPlayers = result.data?.users?.edges || [];
-        console.log("Search Results (Players):", foundPlayers);
+        //console.log("Search Results (Players):", foundPlayers);
         setSearchResults(foundPlayers);
 
       } catch (error: any) {
-        console.error("Failed to fetch players:", error);
+        //console.error("Failed to fetch players:", error);
         toast.error(`Could not fetch players: ${error.message}`);
         setSearchResults([]);
       } finally {
@@ -1333,16 +1372,16 @@ const ScoutingPlatformPage: React.FC = () => {
 
         const result = await response.json();
         if (result.errors) {
-          console.error("GraphQL Errors:", result.errors);
+          //console.error("GraphQL Errors:", result.errors);
           throw new Error(result.errors.map((e: any) => e.message).join("\n"));
         }
 
         const foundTeams = result.data?.teams?.edges || [];
-        console.log("Search Results (Teams):", foundTeams);
+        //console.log("Search Results (Teams):", foundTeams);
         setTeamSearchResults(foundTeams);
 
       } catch (error: any) {
-        console.error("Failed to fetch teams:", error);
+        //console.error("Failed to fetch teams:", error);
         toast.error(`Could not fetch teams: ${error.message}`);
         setTeamSearchResults([]);
       } finally {
@@ -1406,17 +1445,17 @@ const ScoutingPlatformPage: React.FC = () => {
 
         const result = await response.json();
         if (result.errors) {
-          console.error("GraphQL Errors:", result.errors);
+          //console.error("GraphQL Errors:", result.errors);
           throw new Error(result.errors.map((e: any) => e.message).join("\n"));
         }
 
         const standingsData = result.data?.leagueStandings;
-        console.log("League Standings:", standingsData);
+        //console.log("League Standings:", standingsData);
         setLeagueStandings(standingsData);
         toast.success("League standings loaded!", { id: "standings-toast" });
 
       } catch (error: any) {
-        console.error("Failed to fetch league standings:", error);
+        //console.error("Failed to fetch league standings:", error);
         toast.error(`Could not fetch standings: ${error.message}`, { id: "standings-toast" });
         setLeagueStandings(null);
       } finally {
@@ -1426,6 +1465,79 @@ const ScoutingPlatformPage: React.FC = () => {
 
     fetchLeagueStandings();
   }, [selectedTeam]);
+
+  // NEW: Seasonal Stats API Fetching
+  useEffect(() => {
+    if (!selectedPlayer) {
+      setSeasonalStats([]);
+      return;
+    }
+
+    const fetchSeasonalStats = async () => {
+      setIsFetchingStats(true);
+      toast.loading("Fetching player stats...", { id: "player-stats-toast" });
+      const GRAPHQL_ENDPOINT = "https://api.graet.com";
+
+      const query = `
+        query GetUserStats($statsFilter: UserStatsFilter!, $statsPage: Pagination) {
+          seasons: userStats(filter: $statsFilter, pagination: $statsPage) {
+            edges {
+              node {
+                team { name shortName }
+                user { name id }
+                position season seasonType gamesPlayed goals assists points
+                plusMinus pim wins losses ties gaa svp shutouts toi
+              }
+            }
+          }
+        }
+      `;
+
+      const variables = {
+        statsFilter: {
+          slug: null,
+          user: selectedPlayer.id,
+        },
+        statsPage: {
+          first: 100,
+          after: null,
+        },
+      };
+
+      try {
+        const response = await fetch(GRAPHQL_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, variables }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`API Error: ${response.statusText} - ${errorText}`);
+        }
+
+        const result = await response.json();
+        if (result.errors) {
+          //console.error("GraphQL Errors:", result.errors);
+          throw new Error(result.errors.map((e: any) => e.message).join("\n"));
+        }
+
+        const statsData = result.data?.seasons?.edges || [];
+        //console.log("Seasonal Stats:", statsData);
+        setSeasonalStats(statsData);
+        toast.success("Player stats loaded!", { id: "player-stats-toast" });
+
+      } catch (error: any) {
+        //console.error("Failed to fetch seasonal stats:", error);
+        toast.error(`Could not fetch player stats: ${error.message}`, { id: "player-stats-toast" });
+        setSeasonalStats([]);
+      } finally {
+        setIsFetchingStats(false);
+      }
+    };
+
+    fetchSeasonalStats();
+  }, [selectedPlayer]);
 
 
   const initEditor = useCallback(
@@ -1500,7 +1612,6 @@ const ScoutingPlatformPage: React.FC = () => {
     };
   }, [isExportMenuOpen]);
 
-  // FIX: Updated to handle multiple files
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
@@ -1524,7 +1635,6 @@ const ScoutingPlatformPage: React.FC = () => {
     }
   };
 
-  // FIX: Updated to remove a specific file from the array
   const handleRemoveFile = (fileToRemove: File) => {
     setSelectedFiles(prevFiles => prevFiles.filter(file => file !== fileToRemove));
   };
@@ -1570,7 +1680,7 @@ const ScoutingPlatformPage: React.FC = () => {
       }
       toast.success("All files transcribed!", { id: "process-toast" });
     } catch (error: any) {
-        console.error("Transcription Error:", error);
+        //console.error("Transcription Error:", error);
         toast.error(`Could not transcribe: ${error.message}`, { id: "process-toast" });
         setIsTranscribing(false);
         return;
@@ -1593,6 +1703,7 @@ const ScoutingPlatformPage: React.FC = () => {
           playerContext: selectedPlayer,
           teamContext: selectedTeam,
           standingsContext: leagueStandings,
+          seasonalStatsContext: seasonalStats, // NEW: Sending seasonal stats
         }),
       });
 
@@ -1610,7 +1721,7 @@ const ScoutingPlatformPage: React.FC = () => {
       }
       toast.success("Report generated!", { id: "generate-toast" });
     } catch (error: any) {
-      console.error("Report Generation API Error:", error);
+      //console.error("Report Generation API Error:", error);
       toast.error(`Could not generate report: ${error.message}`, { id: "generate-toast" });
     } finally {
       setIsTranscribing(false);
@@ -1628,7 +1739,7 @@ const ScoutingPlatformPage: React.FC = () => {
       standingsContext = `For context, the teams in this league include: ${Array.from(new Set(teamNames)).join(', ')}.`;
     }
 
-    const promptText = `Transcribe the following audio of a sports scout discussing the player ${player.name} of the team ${team.name}. Focus on clarity and accuracy, correctly identifying hockey-specific terms. If you recognize the names of the opponent team and the league they play in correctly spell them out in the transcript. ${standingsContext}`;
+    const promptText = `Transcribe the following audio of a sports scout discussing the player ${player.name} of the team ${team.name}. Focus on clarity and accuracy, correctly identifying hockey-specific terms. If you recognize the names of the opponent team and the league they play in correctly spell them out in the transcript (use the right capitalization the letters in words for some nations). ${standingsContext}`;
 
     const requestBody = {
         contents: [{
@@ -1638,7 +1749,7 @@ const ScoutingPlatformPage: React.FC = () => {
             ]
         }],
         "generationConfig": {
-            "temperature": 0.2,
+            "temperature": 0,
         }
     };
 
@@ -1713,7 +1824,7 @@ const ScoutingPlatformPage: React.FC = () => {
           ]
         }],
         "generationConfig": {
-            "temperature": 0.2,
+            "temperature": 0,
         }
       };
 
@@ -1734,7 +1845,7 @@ const ScoutingPlatformPage: React.FC = () => {
       }
     } finally {
       if (fileNameOnServer) {
-        console.log(`Cleaning up uploaded file: ${fileNameOnServer}`);
+        //console.log(`Cleaning up uploaded file: ${fileNameOnServer}`);
         await fetch(`https://generativelanguage.googleapis.com/v1beta/${fileNameOnServer}?key=${apiKey}`, {
           method: 'DELETE',
         });
@@ -1836,20 +1947,22 @@ const ScoutingPlatformPage: React.FC = () => {
           }, 500);
         }
       } catch (error) {
-        console.error("PDF generation error:", error);
+        //sconsole.error("PDF generation error:", error);
         toast.error("Failed to prepare PDF.", { id: "export-toast" });
       }
     }
   };
 
-  const isLoading = isTranscribing || isGenerating || isFetchingStandings;
+  const isLoading = isTranscribing || isGenerating || isFetchingStandings || isFetchingStats;
   const buttonText = isTranscribing
     ? "Transcribing..."
     : isGenerating
       ? "Generating..."
       : isFetchingStandings
         ? "Loading Standings..."
-        : "Generate Report";
+        : isFetchingStats
+          ? "Loading Player Stats..."
+          : "Generate Report";
 
   return (
     <div className="h-screen bg-gray-100 flex flex-col font-sans text-black overflow-hidden">
@@ -1940,7 +2053,6 @@ const ScoutingPlatformPage: React.FC = () => {
                       MP3, WAV, M4A (100MB limit per file)
                     </p>
                   </div>
-                  {/* FIX: Added 'multiple' attribute */}
                   <input
                     id="file-upload"
                     type="file"
@@ -1952,7 +2064,6 @@ const ScoutingPlatformPage: React.FC = () => {
                   />
                 </label>
 
-                {/* FIX: Updated to display a list of files */}
                 {selectedFiles.length > 0 && (
                   <div className="mt-4 space-y-2">
                     <p className="text-sm font-medium text-gray-800">Selected files:</p>

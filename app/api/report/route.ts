@@ -75,11 +75,12 @@ const formatDateOfBirth = (isoString: string | null | undefined): string => {
 export async function POST(request: Request) {
   try {
     
-    const { transcription, playerContext, teamContext, standingsContext } = await request.json();
+    const { transcription, playerContext, teamContext, standingsContext, seasonalStatsContext } = await request.json();
    
-    console.log("Received Player Context:", playerContext);
+    // console.log("Received Player Context:", playerContext);
     // console.log("Received Team Context:", teamContext);
     // console.log("Received Standings Context:", standingsContext);
+    // console.log("Received Seasonal Stats:, ", seasonalStatsContext)
 
     if (!transcription || !playerContext || !teamContext) {
       return NextResponse.json(
@@ -113,10 +114,10 @@ export async function POST(request: Request) {
       }
     });
 
-    console.log("position, ", position)
-    console.log("playstyle, ", playStyle)
-    console.log("height, ", height)
-    console.log("weight, ", weight)
+    // console.log("position, ", position)
+    // console.log("playstyle, ", playStyle)
+    // console.log("height, ", height)
+    // console.log("weight, ", weight)
 
     const prompt = `
       You are an expert hockey scout assistant. Your task is to synthesize a raw audio transcription from a scout into a professional, structured scouting report in Markdown format.
@@ -127,6 +128,9 @@ export async function POST(request: Request) {
 
       **Player Data:**
       ${JSON.stringify(playerContext, null, 2)}
+
+      **Players Seasonal History Stats**
+      ${JSON.stringify(seasonalStatsContext, null, 2)}
 
       **Team Data:**
       ${JSON.stringify(teamContext, null, 2)}
@@ -166,7 +170,7 @@ export async function POST(request: Request) {
       ---
 
       ### SEASONAL STATS
-      [Create a position-relevant Markdown table here using the seasonal stats from the Player Data context. The first 2 columns must be team and league then the stats. If no stats are available, state "No seasonal stats available."]\n
+      [Create a position-relevant Markdown table here using the seasonal stats from the Player Data context. The first 2 columns must be team and league then the stats. If no stats are available, state "No seasonal stats available."] - Use the Players seasonal stats history to find the relevant league and team from the transcript with the corresponding stats to show in this table. You can only use the seasonal stats found in **Player Data** only if the players team and league correspond to the team and league mentioned in the transcript\n
 
       ### SKATING (Rating/5)
       **Speed:** [Analysis of top speed and acceleration.]\n
@@ -241,6 +245,7 @@ export async function POST(request: Request) {
 
       7.  **Handling Missing Information:**
           - If a core, essential skill for a position is completely missing from the transcription, it is appropriate to add a "Notes" sub-category under the relevant section stating: *"This aspect was not assessed in the current observation."*
+          - if you cannot find any information in the transcript for a certain part in the report for example: **Stickhandling** - state "Insufficient information from transcript to assess Stickhandling" - only nothing else after for the part
           - If the entire transcription is too brief or vague to form a meaningful report, your entire response MUST be the single line: "Insufficient information to generate a report."
           - Try your best to use your own knowledge about the leagues and the teams that play within them to correctly spell the names of the teams and leagues in the report - so do not default to N/A until you try your best to estimate the league
 
