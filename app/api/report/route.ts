@@ -257,6 +257,8 @@ export async function POST(request: Request) {
           - **Spacing:** There must be a blank line between each sub-category block. please response the \n you see in the template
           - **Final Output:** The final output MUST be only the Markdown/HTML of the report itself. No extra commentary.
           - respect the \n you see the template and space out sections appropriately - especially between player details and game details in the beginning of the report - these sections must be spaced
+          - For the players position and play style always use the the version of the position and play style without the underscores - I want to see these ${position} and ${playStyle}
+        
 
       **TRANSCRIPTION TO ANALYZE:**
       ---
