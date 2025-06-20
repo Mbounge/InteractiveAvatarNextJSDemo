@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 
 export const runtime = "edge";
 
+export const maxDuration = 120; 
+
 const today = new Date();
 const formattedDate = today.toLocaleDateString('en-US', {
   year: 'numeric',
