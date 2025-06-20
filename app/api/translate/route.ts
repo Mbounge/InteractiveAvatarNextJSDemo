@@ -3,7 +3,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
-export const runtime = "edge";
+//export const runtime = "edge";
 
 // Helper map to convert country codes to language names/codes
 const countryToLanguageMap: { [key: string]: { name: string; code: string } } = {
