@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
-export const runtime = "edge";
+//export const runtime = "edge";
 
 export const maxDuration = 120; 
 

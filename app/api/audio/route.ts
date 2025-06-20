@@ -2,7 +2,9 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
 
 // IMPORTANT: Set the runtime to 'edge' for best performance with streaming AI
-export const runtime = 'edge';
+//export const runtime = 'edge';
+
+export const maxDuration = 120; 
 
 export async function POST(request: Request) {
   try {
