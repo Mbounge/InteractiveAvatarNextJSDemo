@@ -171,7 +171,7 @@ export async function POST(request: Request) {
       ---
 
       ### SEASONAL STATS
-      [Create a position-relevant Markdown table here using the seasonal stats from the Player Data context. The first 3 columns must be team, league and season then the stats. If no stats are available, state "No seasonal stats available."] - Use the Players seasonal stats history to find the relevant league and team (retrieve and display the latest 3-4 seasons of the player) to show in this table. You can only use the seasonal stats found in **Player Data** only if you don't have **Players Seasonal History Stats** - so show those stats as a last resort\n
+      [SEASONAL_STATS_TABLE_HERE]
 
       ### SKATING (Rating/5)
       **Speed:** [Analysis of top speed and acceleration.]\n
@@ -228,29 +228,39 @@ export async function POST(request: Request) {
 
       1.  **Depth and Synthesis:** Your analysis must be comprehensive. Extract and synthesize as much relevant detail as possible from the transcription for each category. Do not simply summarize; elaborate on the scout's points to provide a full picture of the player's abilities. The goal is a detailed, insightful report.
 
-      2.  **Objectivity and Balance:** This is a critical principle. Your analysis MUST be unbiased and directly reflect the information in the transcription. If the scout mentions both strengths and weaknesses within a category, you must represent both. Do not sugarcoat or downplay negative feedback. The goal is an honest, professional assessment.
+      2. **Seasonal Stats Table Generation:** You MUST replace the \`[SEASONAL_STATS_TABLE_HERE]\` placeholder by following these steps precisely:
+      a. **Check Primary Source:** Look at the \`Player's Full Seasonal History Stats\` data provided in the context.
+      b. **If History Exists:** If the array is not empty, you must perform the following sub-steps:
+          i. **Identify Recent Seasons:** Sort the entire \`Player's Full Seasonal History Stats\` array by the \`season\` field in DESCENDING order (e.g., '2023-2024' comes before '2022-2023').
+          ii. **Select a Maximum of Four:** From this sorted list, take ONLY the top 4 latest entries. If there are fewer than 4 seasons in total, take all of them.
+          iii. **Sort for Display:** Now, sort this final selection of 4 (or fewer) seasons in ASCENDING order (e.g., '2020-2021' at the top, '2023-2024' at the bottom).
+          iv. **Generate Table:** Create a Markdown table using this final, sorted selection. The first three columns MUST be Team, League, and Season. The subsequent columns must be position-relevant (e.g., GP, G, A, Pts for skaters; GP, W, L, GAA, SV% for goalies).
+      c. **Fallback to Player Data:** If the \`Player's Full Seasonal History Stats\` array is empty or not provided, check the \`playerContext.stats.season\` object. If it contains data, create a single-row Markdown table with the same position-relevant columns.
+      d. **No Data:** If no stats are available from either source, you MUST replace the placeholder with the text: "No seasonal stats available."
+
+      3.  **Objectivity and Balance:** This is a critical principle. Your analysis MUST be unbiased and directly reflect the information in the transcription. If the scout mentions both strengths and weaknesses within a category, you must represent both. Do not sugarcoat or downplay negative feedback. The goal is an honest, professional assessment.
       
-      3.  **Adopt the Scout's Persona:** Write the report as if you are the scout finalizing their notes. Your tone must be objective, analytical, and direct. Do not refer to the scout in the third person (e.g., "The scout noted..."). Instead, state the observation directly (e.g., "Shows good vision but at times moves the puck too quickly.").
+      4.  **Adopt the Scout's Persona:** Write the report as if you are the scout finalizing their notes. Your tone must be objective, analytical, and direct. Do not refer to the scout in the third person (e.g., "The scout noted..."). Instead, state the observation directly (e.g., "Shows good vision but at times moves the puck too quickly.").
       
-      4.  **Intelligent Section Management:**
+      5.  **Intelligent Section Management:**
           - **Omit Irrelevance:** You have the autonomy to completely omit any sub-category or even a main "###" section if it is irrelevant to the player's position or not substantively discussed in the transcription. Never write "N/A"; simply leave it out.
           - **Create Relevance:** If the scout repeatedly emphasizes a specific skill not in the template (e.g., "Forechecking," "Penalty Kill," "Rebound Control"), you are encouraged to create a new, appropriate "### [New Skill]" section or sub-category.
 
-      5.  **Data Presentation:**
+      6.  **Data Presentation:**
           - **Use Tables for Structured Data:** If the transcription includes quantifiable stats (e.g., goals, assists, time on ice) or clear comparative points, you are strongly encouraged to present this information in a Markdown table for clarity.
 
-      6.  **Scoring and Ratings:**
+      7.  **Scoring and Ratings:**
           - **Use Scout's Rating First:** If the scout provides a direct rating (e.g., "skating is a 4 out of 5"), you MUST use it.
           - **Estimate When Necessary:** If no rating is given for a category, provide your own expert estimation based on the scout's analysis.
           - **Format:** The rating should only appear in the main section headings, formatted as \`(X.X/5)\`.
 
-      7.  **Handling Missing Information:**
+      8.  **Handling Missing Information:**
           - If a core, essential skill for a position is completely missing from the transcription, it is appropriate to add a "Notes" sub-category under the relevant section stating: *"This aspect was not assessed in the current observation."*
           - if you cannot find any information in the transcript for a certain part in the report for example: **Stickhandling** - state "Insufficient information from transcript to assess Stickhandling" - only nothing else after for the part
           - If the entire transcription is too brief or vague to form a meaningful report, your entire response MUST be the single line: "Insufficient information to generate a report."
           - Try your best to use your own knowledge about the leagues and the teams that play within them to correctly spell the names of the teams and leagues in the report - so do not default to N/A until you try your best to estimate the league
 
-      8.  **Formatting Rules:**
+      9.  **Formatting Rules:**
           - **Main Title:** You MUST use the exact HTML tag: \`<h1 style="text-align: center;">GRAET SCOUTING REPORT</h1>\`.
           - **Section Headings:** Main section headings MUST strictly follow the format: \`### [SECTION NAME] (X.X/5)\`. Do not add any other text or context in parentheses, such as "(GOALIE SPECIFICS)" or "(NOT ASSESSED)".
           - **Sub-Categories:** Each header item (e.g., "**Player:**") and each sub-category (e.g., "**Speed:**") must be on its own line, followed by its analysis on the next line.

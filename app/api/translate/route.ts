@@ -56,8 +56,8 @@ export async function POST(request: Request) {
     });
 
     const prompt = `
-      Translate the following hockey scouting report into ${targetLanguage.name}. No english 
-      Preserve the exact Markdown and HTML formatting, including headings, bold text, lists, and tables.
+      Translate the following hockey scouting report into ${targetLanguage.name}. No english. The only thing that should be in english is the header "GRAET SCOUTING REPORT" - this must not be translated.
+      Preserve the exact Markdown and HTML formatting, including headings, bold text, lists, and tables. No markdown code blocks in the beginning or --- report should start with GRAET SCOUTING REPORT
       Only provide the translated text as the response, with no additional commentary.
 
       ---
