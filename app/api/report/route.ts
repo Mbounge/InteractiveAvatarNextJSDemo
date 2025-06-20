@@ -160,8 +160,7 @@ export async function POST(request: Request) {
       **Height:** [${height}, or  "N/A"]\n
       **Weight:** [${weight}, or  "N/A"]\n
       ---
-      <p> </p>
-
+      ###
       **Game:** [Game Details, or "N/A"]\n
       **Game Date:** [Game Date, or "N/A"]\n
       **Team:** [${teamName}, or "N/A"]\n
@@ -170,7 +169,7 @@ export async function POST(request: Request) {
       ---
 
       ### SEASONAL STATS
-      [Create a position-relevant Markdown table here using the seasonal stats from the Player Data context. The first 2 columns must be team and league then the stats. If no stats are available, state "No seasonal stats available."] - Use the Players seasonal stats history to find the relevant league and team from the transcript with the corresponding stats to show in this table. You can only use the seasonal stats found in **Player Data** only if the players team and league correspond to the team and league mentioned in the transcript\n
+      [Create a position-relevant Markdown table here using the seasonal stats from the Player Data context. The first 3 columns must be team, league and season then the stats. If no stats are available, state "No seasonal stats available."] - Use the Players seasonal stats history to find the relevant league and team (retrieve and display the latest 3-4 seasons of the player) to show in this table. You can only use the seasonal stats found in **Player Data** only if you don't have **Players Seasonal History Stats** - so show those stats as a last resort\n
 
       ### SKATING (Rating/5)
       **Speed:** [Analysis of top speed and acceleration.]\n

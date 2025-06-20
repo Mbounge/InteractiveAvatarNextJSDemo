@@ -50,6 +50,7 @@ import {
   FileText,
   PanelLeftClose,
   PanelRightClose,
+  Languages,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -216,7 +217,6 @@ type LeagueStandingsResponse = {
   }[];
 };
 
-// NEW: Seasonal Stats types
 type SeasonalStat = {
   node: {
     team: { name: string; shortName: string };
@@ -479,7 +479,6 @@ const TableCreationGrid: React.FC<{ editor: Editor; close: () => void }> = ({
     </div>
   );
 };
-
 const TableMenus: React.FC<{ editor: Editor }> = ({ editor }) => {
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -532,8 +531,6 @@ const TableMenus: React.FC<{ editor: Editor }> = ({ editor }) => {
             const { $anchor } = editor.state.selection;
             const node = view.domAtPos($anchor.pos).node;
 
-            // FIX: Check if the node is a Text node. If so, use its parentElement.
-            // This ensures we always call .closest() on an Element.
             const element = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node) as HTMLElement | null;
 
             if (!element) {
@@ -846,6 +843,56 @@ const TeamSearch: React.FC<{
   );
 };
 
+const LanguageToggle: React.FC<{
+  isEnglishReport: boolean;
+  setIsEnglishReport: (isEnglish: boolean) => void;
+  playerLanguage: string | null;
+  isTranslating: boolean;
+}> = ({ isEnglishReport, setIsEnglishReport, playerLanguage, isTranslating }) => {
+  if (!playerLanguage && !isTranslating) {
+    return null;
+  }
+
+  const getLanguageAbbreviation = (lang: string | null) => {
+    if (!lang) return "";
+    const abbreviations: { [key: string]: string } = {
+      "Swedish": "SV",
+      "Finnish": "FI",
+      "Czech": "CZ",
+      "Slovak": "SK",
+      "Russian": "RU",
+      "German": "DE",
+    };
+    return abbreviations[lang] || lang.substring(0, 2).toUpperCase();
+  };
+
+  const otherLangAbbr = getLanguageAbbreviation(playerLanguage);
+
+  return (
+    <div className="flex items-center space-x-1 bg-gray-200 rounded-lg p-1">
+      <button 
+        onClick={() => setIsEnglishReport(true)}
+        title="Switch to English"
+        className={`w-10 h-7 flex items-center justify-center text-xs font-bold rounded-md transition-colors ${
+          isEnglishReport ? 'bg-white text-gray-800 shadow-sm' : 'bg-transparent text-gray-500 hover:text-gray-700'
+        }`}
+      >
+        EN
+      </button>
+      
+      <button 
+        onClick={() => setIsEnglishReport(false)}
+        title={`Switch to ${playerLanguage || 'Translated'}`}
+        className={`w-10 h-7 flex items-center justify-center text-xs font-bold rounded-md transition-colors ${
+          !isEnglishReport ? 'bg-white text-gray-800 shadow-sm' : 'bg-transparent text-gray-500 hover:text-gray-700'
+        }`}
+      >
+        {isTranslating ? <Spinner className="w-4 h-4" /> : otherLangAbbr}
+      </button>
+    </div>
+  );
+};
+
 const useToolbarState = (editor: Editor | null) => {
   const [state, setState] = useState({
     currentStyle: "p",
@@ -909,12 +956,20 @@ const EditorToolbar: React.FC<{
   isDesktopSidebarCollapsed: boolean;
   onToggleMobileSidebar: () => void;
   onToggleDesktopSidebar: () => void;
+  isEnglishReport: boolean;
+  setIsEnglishReport: (isEnglish: boolean) => void;
+  playerLanguage: string | null;
+  isTranslating: boolean;
 }> = ({
   editor,
   isMobileSidebarOpen,
   isDesktopSidebarCollapsed,
   onToggleMobileSidebar,
   onToggleDesktopSidebar,
+  isEnglishReport,
+  setIsEnglishReport,
+  playerLanguage,
+  isTranslating,
 }) => {
   const [isTableDropdownOpen, setTableDropdownOpen] = useState(false);
   const tableMenuRef = useRef<HTMLDivElement>(null);
@@ -992,7 +1047,7 @@ const EditorToolbar: React.FC<{
   };
 
   return (
-    <div className="flex-shrink-0 bg-white border-b border-gray-200 p-2 flex items-center space-x-1 flex-wrap">
+    <div className="flex-shrink-0 bg-white border-b border-gray-200 p-2 flex items-center justify-between space-x-2">
       <div className="flex items-center space-x-1">
         <ToolbarButton onClick={handleToggleClick} title="Toggle Sidebar">
           {isDesktop ? (
@@ -1008,124 +1063,135 @@ const EditorToolbar: React.FC<{
           )}
         </ToolbarButton>
       </div>
-      <div className="flex items-center space-x-1 border-l border-gray-300 pl-2 ml-2">
-        <ToolbarButton
-          onClick={() => editor.chain().focus().undo().run()}
-          disabled={!toolbarState.canUndo}
-          title="Undo"
-        >
-          <Undo className="w-4 h-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().redo().run()}
-          disabled={!toolbarState.canRedo}
-          title="Redo"
-        >
-          <Redo className="w-4 h-4" />
-        </ToolbarButton>
-      </div>
-      <div className="flex items-center space-x-2 border-l border-gray-300 pl-2 ml-2">
-        <CustomDropdown
-          options={styleOptions}
-          value={toolbarState.currentStyle}
-          onChange={handleStyleChange}
-          title="Text Style"
-        />
-        <CustomDropdown
-          options={fontSizeOptions}
-          value={toolbarState.currentFontSize}
-          onChange={handleFontSizeChange}
-          title="Font Size"
-        />
-      </div>
-      <div className="flex items-center space-x-1 border-l border-gray-300 pl-2 ml-2">
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          isActive={toolbarState.isBold}
-          title="Bold"
-        >
-          <Bold className="w-4 h-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          isActive={toolbarState.isItalic}
-          title="Italic"
-        >
-          <Italic className="w-4 h-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
-          isActive={toolbarState.isUnderline}
-          title="Underline"
-        >
-          <UnderlineIcon className="w-4 h-4" />
-        </ToolbarButton>
-      </div>
-      <div className="flex items-center space-x-1 border-l border-gray-300 pl-2 ml-2">
-        <ToolbarButton
-          onClick={() => editor.chain().focus().setTextAlign("left").run()}
-          isActive={toolbarState.textAlign === "left"}
-          title="Align Left"
-        >
-          <AlignLeft className="w-4 h-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().setTextAlign("center").run()}
-          isActive={toolbarState.textAlign === "center"}
-          title="Align Center"
-        >
-          <AlignCenter className="w-4 h-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().setTextAlign("right").run()}
-          isActive={toolbarState.textAlign === "right"}
-          title="Align Right"
-        >
-          <AlignRight className="w-4 h-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().setTextAlign("justify").run()}
-          isActive={toolbarState.textAlign === "justify"}
-          title="Justify"
-        >
-          <AlignJustify className="w-4 h-4" />
-        </ToolbarButton>
-      </div>
-      <div className="flex items-center space-x-1 border-l border-gray-300 pl-2 ml-2">
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          isActive={toolbarState.isBulletList}
-          title="Bulleted List"
-        >
-          <List className="w-4 h-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          isActive={toolbarState.isOrderedList}
-          title="Numbered List"
-        >
-          <ListOrdered className="w-4 h-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-          isActive={toolbarState.isCodeBlock}
-          title="Code Block"
-        >
-          <Code className="w-4 h-4" />
-        </ToolbarButton>
-        <div ref={tableMenuRef} className="relative">
+      
+      <div className="flex items-center space-x-1 flex-wrap justify-end">
+        <div className="flex items-center space-x-1 border-l border-gray-300 pl-2 ml-2">
           <ToolbarButton
-            onClick={() => setTableDropdownOpen(!isTableDropdownOpen)}
-            title="Insert Table"
+            onClick={() => editor.chain().focus().undo().run()}
+            disabled={!toolbarState.canUndo}
+            title="Undo"
           >
-            <TableIcon className="w-4 h-4" />
+            <Undo className="w-4 h-4" />
           </ToolbarButton>
-          {isTableDropdownOpen && (
-            <TableCreationGrid
-              editor={editor}
-              close={() => setTableDropdownOpen(false)}
-            />
-          )}
+          <ToolbarButton
+            onClick={() => editor.chain().focus().redo().run()}
+            disabled={!toolbarState.canRedo}
+            title="Redo"
+          >
+            <Redo className="w-4 h-4" />
+          </ToolbarButton>
+        </div>
+        <div className="flex items-center space-x-2 border-l border-gray-300 pl-2 ml-2">
+          <CustomDropdown
+            options={styleOptions}
+            value={toolbarState.currentStyle}
+            onChange={handleStyleChange}
+            title="Text Style"
+          />
+          <CustomDropdown
+            options={fontSizeOptions}
+            value={toolbarState.currentFontSize}
+            onChange={handleFontSizeChange}
+            title="Font Size"
+          />
+        </div>
+        <div className="flex items-center space-x-1 border-l border-gray-300 pl-2 ml-2">
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleBold().run()}
+            isActive={toolbarState.isBold}
+            title="Bold"
+          >
+            <Bold className="w-4 h-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+            isActive={toolbarState.isItalic}
+            title="Italic"
+          >
+            <Italic className="w-4 h-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+            isActive={toolbarState.isUnderline}
+            title="Underline"
+          >
+            <UnderlineIcon className="w-4 h-4" />
+          </ToolbarButton>
+        </div>
+        <div className="flex items-center space-x-1 border-l border-gray-300 pl-2 ml-2">
+          <ToolbarButton
+            onClick={() => editor.chain().focus().setTextAlign("left").run()}
+            isActive={toolbarState.textAlign === "left"}
+            title="Align Left"
+          >
+            <AlignLeft className="w-4 h-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().setTextAlign("center").run()}
+            isActive={toolbarState.textAlign === "center"}
+            title="Align Center"
+          >
+            <AlignCenter className="w-4 h-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().setTextAlign("right").run()}
+            isActive={toolbarState.textAlign === "right"}
+            title="Align Right"
+          >
+            <AlignRight className="w-4 h-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().setTextAlign("justify").run()}
+            isActive={toolbarState.textAlign === "justify"}
+            title="Justify"
+          >
+            <AlignJustify className="w-4 h-4" />
+          </ToolbarButton>
+        </div>
+        <div className="flex items-center space-x-1 border-l border-gray-300 pl-2 ml-2">
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            isActive={toolbarState.isBulletList}
+            title="Bulleted List"
+          >
+            <List className="w-4 h-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            isActive={toolbarState.isOrderedList}
+            title="Numbered List"
+          >
+            <ListOrdered className="w-4 h-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+            isActive={toolbarState.isCodeBlock}
+            title="Code Block"
+          >
+            <Code className="w-4 h-4" />
+          </ToolbarButton>
+          <div ref={tableMenuRef} className="relative">
+            <ToolbarButton
+              onClick={() => setTableDropdownOpen(!isTableDropdownOpen)}
+              title="Insert Table"
+            >
+              <TableIcon className="w-4 h-4" />
+            </ToolbarButton>
+            {isTableDropdownOpen && (
+              <TableCreationGrid
+                editor={editor}
+                close={() => setTableDropdownOpen(false)}
+              />
+            )}
+          </div>
+        </div>
+        <div className="flex items-center space-x-1 border-l border-gray-300 pl-2 ml-2">
+          <LanguageToggle 
+            isEnglishReport={isEnglishReport}
+            setIsEnglishReport={setIsEnglishReport}
+            playerLanguage={playerLanguage}
+            isTranslating={isTranslating}
+          />
         </div>
       </div>
     </div>
@@ -1168,9 +1234,16 @@ const ScoutingPlatformPage: React.FC = () => {
   const [leagueStandings, setLeagueStandings] = useState<LeagueStandingsResponse | null>(null);
   const [isFetchingStandings, setIsFetchingStandings] = useState(false);
 
-  // NEW: Seasonal Stats State
+  // Seasonal Stats State
   const [seasonalStats, setSeasonalStats] = useState<SeasonalStat[]>([]);
   const [isFetchingStats, setIsFetchingStats] = useState(false);
+
+  // Translation State
+  const [originalReportHtml, setOriginalReportHtml] = useState<string | null>(null);
+  const [translatedReportHtml, setTranslatedReportHtml] = useState<string | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [isEnglishReport, setIsEnglishReport] = useState(true);
+  const [playerLanguage, setPlayerLanguage] = useState<string | null>(null);
 
   // Existing State
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -1184,6 +1257,149 @@ const ScoutingPlatformPage: React.FC = () => {
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Reusable function to apply font sizes
+  const applyFontSizes = (editorInstance: Editor) => {
+    const { tr, doc } = editorInstance.state;
+    let modified = false;
+    doc.descendants((node, pos) => {
+      if (!node.isTextblock) return;
+      let size: string | undefined = undefined;
+      if (node.type.name === "heading") {
+        const level = node.attrs.level;
+        size = PREDEFINED_SIZES[`h${level}`];
+      } else if (node.type.name === "paragraph") {
+        size = PREDEFINED_SIZES.p;
+      }
+      if (size) {
+        const from = pos + 1;
+        const to = from + node.content.size;
+        tr.addMark(
+          from,
+          to,
+          editorInstance.schema.marks.textStyle.create({ fontSize: size })
+        );
+        modified = true;
+      }
+    });
+    if (modified) {
+      editorInstance.view.dispatch(tr);
+    }
+  };
+
+  const initEditor = useCallback(
+    (content: any) => {
+      if (editor) {
+        editor.destroy();
+      }
+      const newEditor = new Editor({
+        extensions: editorExtensions,
+        content: content,
+        editorProps: {
+          attributes: { class: "prose max-w-none p-4 md:p-8 focus:outline-none" },
+        },
+        onCreate: ({ editor: createdEditor }) => {
+          applyFontSizes(createdEditor);
+        },
+        onUpdate: ({ editor: updatedEditor }) => {
+          const currentHtml = updatedEditor.getHTML();
+          if (isEnglishReportRef.current) {
+            setOriginalReportHtml(currentHtml);
+          } else {
+            setTranslatedReportHtml(currentHtml);
+          }
+        },
+      });
+      setEditor(newEditor);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  const isEnglishReportRef = useRef(isEnglishReport);
+  useEffect(() => {
+    isEnglishReportRef.current = isEnglishReport;
+  }, [isEnglishReport]);
+
+
+  useEffect(() => {
+    const initialContent = marked.parse(
+      "## Welcome\n\nSelect a player and upload an audio file to get started."
+    ) as string;
+    initEditor(initialContent);
+    return () => {
+      editor?.destroy();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initEditor]);
+
+  useEffect(() => {
+    const initialContent = marked.parse(
+      "## Welcome\n\nSelect a player and upload an audio file to get started."
+    ) as string;
+    initEditor(initialContent);
+    return () => {
+      editor?.destroy();
+    };
+  }, [initEditor]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        exportMenuRef.current &&
+        !exportMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsExportMenuOpen(false);
+      }
+    };
+    if (isExportMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isExportMenuOpen]);
+
+  // Effect to switch editor content when language changes
+  useEffect(() => {
+    if (!editor) return;
+
+    const newContent = isEnglishReport ? originalReportHtml : translatedReportHtml;
+    
+    if (newContent && editor.getHTML() !== newContent) {
+      editor.commands.setContent(newContent, false, {
+        preserveWhitespace: 'full',
+      });
+      applyFontSizes(editor);
+    }
+  }, [isEnglishReport, originalReportHtml, translatedReportHtml, editor]);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const newFiles = Array.from(files);
+      const validFiles = newFiles.filter(file => {
+        if (!file.type.startsWith("audio/")) {
+          toast.error(`Invalid file type: ${file.name}. Please select audio files.`);
+          return false;
+        }
+        const MAX_FILE_SIZE_MB = 100;
+        const fileSizeMB = file.size / (1024 * 1024);
+        if (fileSizeMB > MAX_FILE_SIZE_MB) {
+          toast.error(`${file.name} exceeds ${MAX_FILE_SIZE_MB}MB limit.`);
+          return false;
+        }
+        return true;
+      });
+
+      setSelectedFiles(prevFiles => [...prevFiles, ...validFiles]);
+      toast.success(`${validFiles.length} file(s) selected!`);
+    }
+  };
+
+  const handleRemoveFile = (fileToRemove: File) => {
+    setSelectedFiles(prevFiles => prevFiles.filter(file => file !== fileToRemove));
+  };
 
   // Player Search Handlers
   const handleSelectPlayer = (player: Player) => {
@@ -1206,7 +1422,7 @@ const ScoutingPlatformPage: React.FC = () => {
 
   const handleClearPlayer = () => {
     setSelectedPlayer(null);
-    setSeasonalStats([]); // Clear stats when player is cleared
+    setSeasonalStats([]);
   };
 
   // Team Search Handlers
@@ -1294,16 +1510,16 @@ const ScoutingPlatformPage: React.FC = () => {
 
         const result = await response.json();
         if (result.errors) {
-          //console.error("GraphQL Errors:", result.errors);
+          console.error("GraphQL Errors:", result.errors);
           throw new Error(result.errors.map((e: any) => e.message).join("\n"));
         }
         
         const foundPlayers = result.data?.users?.edges || [];
-        //console.log("Search Results (Players):", foundPlayers);
+        console.log("Search Results (Players):", foundPlayers);
         setSearchResults(foundPlayers);
 
       } catch (error: any) {
-        //console.error("Failed to fetch players:", error);
+        console.error("Failed to fetch players:", error);
         toast.error(`Could not fetch players: ${error.message}`);
         setSearchResults([]);
       } finally {
@@ -1372,16 +1588,16 @@ const ScoutingPlatformPage: React.FC = () => {
 
         const result = await response.json();
         if (result.errors) {
-          //console.error("GraphQL Errors:", result.errors);
+          console.error("GraphQL Errors:", result.errors);
           throw new Error(result.errors.map((e: any) => e.message).join("\n"));
         }
 
         const foundTeams = result.data?.teams?.edges || [];
-        //console.log("Search Results (Teams):", foundTeams);
+        console.log("Search Results (Teams):", foundTeams);
         setTeamSearchResults(foundTeams);
 
       } catch (error: any) {
-        //console.error("Failed to fetch teams:", error);
+        console.error("Failed to fetch teams:", error);
         toast.error(`Could not fetch teams: ${error.message}`);
         setTeamSearchResults([]);
       } finally {
@@ -1445,17 +1661,17 @@ const ScoutingPlatformPage: React.FC = () => {
 
         const result = await response.json();
         if (result.errors) {
-          //console.error("GraphQL Errors:", result.errors);
+          console.error("GraphQL Errors:", result.errors);
           throw new Error(result.errors.map((e: any) => e.message).join("\n"));
         }
 
         const standingsData = result.data?.leagueStandings;
-        //console.log("League Standings:", standingsData);
+        console.log("League Standings:", standingsData);
         setLeagueStandings(standingsData);
         toast.success("League standings loaded!", { id: "standings-toast" });
 
       } catch (error: any) {
-        //console.error("Failed to fetch league standings:", error);
+        console.error("Failed to fetch league standings:", error);
         toast.error(`Could not fetch standings: ${error.message}`, { id: "standings-toast" });
         setLeagueStandings(null);
       } finally {
@@ -1466,7 +1682,7 @@ const ScoutingPlatformPage: React.FC = () => {
     fetchLeagueStandings();
   }, [selectedTeam]);
 
-  // NEW: Seasonal Stats API Fetching
+  // Seasonal Stats API Fetching
   useEffect(() => {
     if (!selectedPlayer) {
       setSeasonalStats([]);
@@ -1518,17 +1734,17 @@ const ScoutingPlatformPage: React.FC = () => {
 
         const result = await response.json();
         if (result.errors) {
-          //console.error("GraphQL Errors:", result.errors);
+          console.error("GraphQL Errors:", result.errors);
           throw new Error(result.errors.map((e: any) => e.message).join("\n"));
         }
 
         const statsData = result.data?.seasons?.edges || [];
-        //console.log("Seasonal Stats:", statsData);
+        console.log("Seasonal Stats:", statsData);
         setSeasonalStats(statsData);
         toast.success("Player stats loaded!", { id: "player-stats-toast" });
 
       } catch (error: any) {
-        //console.error("Failed to fetch seasonal stats:", error);
+        console.error("Failed to fetch seasonal stats:", error);
         toast.error(`Could not fetch player stats: ${error.message}`, { id: "player-stats-toast" });
         setSeasonalStats([]);
       } finally {
@@ -1539,104 +1755,40 @@ const ScoutingPlatformPage: React.FC = () => {
     fetchSeasonalStats();
   }, [selectedPlayer]);
 
-
-  const initEditor = useCallback(
-    (content: any) => {
-      if (editor) {
-        editor.destroy();
-      }
-      const newEditor = new Editor({
-        extensions: editorExtensions,
-        content: content,
-        editorProps: {
-          attributes: { class: "prose max-w-none p-4 md:p-8 focus:outline-none" },
-        },
-        onCreate: ({ editor: createdEditor }) => {
-          const { tr, doc } = createdEditor.state;
-          let modified = false;
-          doc.descendants((node, pos) => {
-            if (!node.isTextblock) return;
-            let size: string | undefined = undefined;
-            if (node.type.name === "heading") {
-              const level = node.attrs.level;
-              size = PREDEFINED_SIZES[`h${level}`];
-            } else if (node.type.name === "paragraph") {
-              size = PREDEFINED_SIZES.p;
-            }
-            if (size) {
-              const from = pos + 1;
-              const to = from + node.content.size;
-              tr.addMark(
-                from,
-                to,
-                createdEditor.schema.marks.textStyle.create({ fontSize: size })
-              );
-              modified = true;
-            }
-          });
-          if (modified) {
-            createdEditor.view.dispatch(tr);
-          }
-        },
-      });
-      setEditor(newEditor);
-    },
-    [editor]
-  );
-
-  useEffect(() => {
-    const initialContent = marked.parse(
-      "## Welcome\n\nSelect a player and upload an audio file to get started."
-    ) as string;
-    initEditor(initialContent);
-    return () => {
-      editor?.destroy();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        exportMenuRef.current &&
-        !exportMenuRef.current.contains(event.target as Node)
-      ) {
-        setIsExportMenuOpen(false);
-      }
-    };
-    if (isExportMenuOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isExportMenuOpen]);
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (files && files.length > 0) {
-      const newFiles = Array.from(files);
-      const validFiles = newFiles.filter(file => {
-        if (!file.type.startsWith("audio/")) {
-          toast.error(`Invalid file type: ${file.name}. Please select audio files.`);
-          return false;
-        }
-        const MAX_FILE_SIZE_MB = 100;
-        const fileSizeMB = file.size / (1024 * 1024);
-        if (fileSizeMB > MAX_FILE_SIZE_MB) {
-          toast.error(`${file.name} exceeds ${MAX_FILE_SIZE_MB}MB limit.`);
-          return false;
-        }
-        return true;
+  const handleTranslateReport = async (reportHtml: string, playerCountry: string) => {
+    setIsTranslating(true);
+    setPlayerLanguage(null);
+    toast.loading("Translating report...", { id: "translate-toast" });
+    try {
+      const response = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reportText: reportHtml, playerCountry }),
       });
 
-      setSelectedFiles(prevFiles => [...prevFiles, ...validFiles]);
-      toast.success(`${validFiles.length} file(s) selected!`);
-    }
-  };
+      if (!response.ok) {
+        throw new Error('Translation failed');
+      }
 
-  const handleRemoveFile = (fileToRemove: File) => {
-    setSelectedFiles(prevFiles => prevFiles.filter(file => file !== fileToRemove));
+      const data = await response.json();
+
+      if (data.translationSkipped) {
+        console.log("Translation skipped:", data.reason);
+        toast.dismiss("translate-toast");
+        return;
+      }
+
+      const translatedHtml = marked.parse(data.translatedText) as string;
+      setTranslatedReportHtml(translatedHtml);
+      setPlayerLanguage(data.languageName);
+      toast.success("Translation complete!", { id: "translate-toast" });
+
+    } catch (error) {
+      console.error("Translation error:", error);
+      toast.error("Could not translate report.", { id: "translate-toast" });
+    } finally {
+      setIsTranslating(false);
+    }
   };
 
   const handleProcessAudio = async () => {
@@ -1652,6 +1804,11 @@ const ScoutingPlatformPage: React.FC = () => {
       toast.error("Please select a team first.");
       return;
     }
+
+    setOriginalReportHtml(null);
+    setTranslatedReportHtml(null);
+    setPlayerLanguage(null);
+    setIsEnglishReport(true);
 
     const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
     if (!apiKey) {
@@ -1680,7 +1837,7 @@ const ScoutingPlatformPage: React.FC = () => {
       }
       toast.success("All files transcribed!", { id: "process-toast" });
     } catch (error: any) {
-        //console.error("Transcription Error:", error);
+        console.error("Transcription Error:", error);
         toast.error(`Could not transcribe: ${error.message}`, { id: "process-toast" });
         setIsTranscribing(false);
         return;
@@ -1703,7 +1860,7 @@ const ScoutingPlatformPage: React.FC = () => {
           playerContext: selectedPlayer,
           teamContext: selectedTeam,
           standingsContext: leagueStandings,
-          seasonalStatsContext: seasonalStats, // NEW: Sending seasonal stats
+          seasonalStatsContext: seasonalStats,
         }),
       });
 
@@ -1714,14 +1871,19 @@ const ScoutingPlatformPage: React.FC = () => {
 
       const data = await generateResponse.json();
       const finalHtml = marked.parse(data.report) as string;
+      
+      setOriginalReportHtml(finalHtml);
       initEditor(finalHtml);
       setHasGeneratedReport(true);
       if (window.innerWidth < 1024) {
         setIsMobileSidebarOpen(false);
       }
       toast.success("Report generated!", { id: "generate-toast" });
+
+      handleTranslateReport(data.report, selectedPlayer.country);
+
     } catch (error: any) {
-      //console.error("Report Generation API Error:", error);
+      console.error("Report Generation API Error:", error);
       toast.error(`Could not generate report: ${error.message}`, { id: "generate-toast" });
     } finally {
       setIsTranscribing(false);
@@ -1845,7 +2007,7 @@ const ScoutingPlatformPage: React.FC = () => {
       }
     } finally {
       if (fileNameOnServer) {
-        //console.log(`Cleaning up uploaded file: ${fileNameOnServer}`);
+        console.log(`Cleaning up uploaded file: ${fileNameOnServer}`);
         await fetch(`https://generativelanguage.googleapis.com/v1beta/${fileNameOnServer}?key=${apiKey}`, {
           method: 'DELETE',
         });
@@ -1947,7 +2109,7 @@ const ScoutingPlatformPage: React.FC = () => {
           }, 500);
         }
       } catch (error) {
-        //sconsole.error("PDF generation error:", error);
+        console.error("PDF generation error:", error);
         toast.error("Failed to prepare PDF.", { id: "export-toast" });
       }
     }
@@ -2136,6 +2298,10 @@ const ScoutingPlatformPage: React.FC = () => {
             isDesktopSidebarCollapsed={isDesktopSidebarCollapsed}
             onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
             onToggleDesktopSidebar={() => setIsDesktopSidebarCollapsed(!isDesktopSidebarCollapsed)}
+            isEnglishReport={isEnglishReport}
+            setIsEnglishReport={setIsEnglishReport}
+            playerLanguage={playerLanguage}
+            isTranslating={isTranslating}
           />
           {editor && (
             <>
