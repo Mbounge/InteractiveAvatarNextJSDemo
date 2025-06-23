@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 //export const runtime = "edge";
 
-export const maxDuration = 120; 
+export const maxDuration = 150; 
 
 const today = new Date();
 const formattedDate = today.toLocaleDateString('en-US', {
@@ -231,11 +231,10 @@ export async function POST(request: Request) {
       2. **Seasonal Stats Table Generation:** You MUST replace the \`[SEASONAL_STATS_TABLE_HERE]\` placeholder by following these steps precisely:
       a. **Check Primary Source:** Look at the \`Player's Full Seasonal History Stats\` data provided in the context.
       b. **If History Exists:** If the array is not empty, you must perform the following sub-steps:
-          i. **Identify Recent Seasons:** Sort the entire \`Player's Full Seasonal History Stats\` array by the \`season\` field in DESCENDING order (e.g., '2023-2024' comes before '2022-2023').
-          ii. **Select a Maximum of Four:** From this sorted list, take ONLY the top 4 latest entries. If there are fewer than 4 seasons in total, take all of them.
-          iii. **Sort for Display:** Now, sort this final selection of 4 (or fewer) seasons in ASCENDING order (e.g., '2020-2021' at the top, '2023-2024' at the bottom).
-          iv. **Generate Table:** Create a Markdown table using this final, sorted selection. The first three columns MUST be Team, League, and Season. The subsequent columns must be position-relevant (e.g., GP, G, A, Pts for skaters; GP, W, L, GAA, SV% for goalies).
-      c. **Fallback to Player Data:** If the \`Player's Full Seasonal History Stats\` array is empty or not provided, check the \`playerContext.stats.season\` object. If it contains data, create a single-row Markdown table with the same position-relevant columns.
+          i. **Identify Recent Seasons:** Sort the entire \`Player's Full Seasonal History Stats\` array by the \`season\` field in DESCENDING order.
+          ii. **Select a Maximum of Four:** From this sorted list, take ONLY the top 4 entries.
+          iii. **Generate Table:** Create a Markdown table using this final selection of 4 (or fewer) seasons, sorted with the most recent season at the top. The first three columns MUST be Team, League, and Season. The subsequent columns must be position-relevant.
+      c. **Fallback to Player Data:** If the \`Player's Full Seasonal History Stats\` array is empty, check the \`playerContext.stats.season\` object. If it contains data, create a single-row Markdown table.
       d. **No Data:** If no stats are available from either source, you MUST replace the placeholder with the text: "No seasonal stats available."
 
       3.  **Objectivity and Balance:** This is a critical principle. Your analysis MUST be unbiased and directly reflect the information in the transcription. If the scout mentions both strengths and weaknesses within a category, you must represent both. Do not sugarcoat or downplay negative feedback. The goal is an honest, professional assessment.
@@ -256,7 +255,7 @@ export async function POST(request: Request) {
 
       8.  **Handling Missing Information:**
           - If a core, essential skill for a position is completely missing from the transcription, it is appropriate to add a "Notes" sub-category under the relevant section stating: *"This aspect was not assessed in the current observation."*
-          - if you cannot find any information in the transcript for a certain part in the report for example: **Stickhandling** - state "Insufficient information from transcript to assess Stickhandling" - only nothing else after for the part
+          - if you cannot find any information in the transcript for a certain part in the report for example: **Stickhandling** - state "Insufficient information from the video to assess Stickhandling" - only nothing else after for the part
           - If the entire transcription is too brief or vague to form a meaningful report, your entire response MUST be the single line: "Insufficient information to generate a report."
           - Try your best to use your own knowledge about the leagues and the teams that play within them to correctly spell the names of the teams and leagues in the report - so do not default to N/A until you try your best to estimate the league
 

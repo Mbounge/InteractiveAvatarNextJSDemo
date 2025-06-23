@@ -5,6 +5,8 @@ import { NextResponse } from "next/server";
 
 //export const runtime = "edge";
 
+export const maxDuration = 150;
+
 // Helper map to convert country codes to language names/codes
 const countryToLanguageMap: { [key: string]: { name: string; code: string } } = {
   SE: { name: "Swedish", code: "sv" },
