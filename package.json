@@ -14,6 +14,7 @@
     "@agentic/tavily": "^7.2.0",
     "@ai-sdk/openai": "^0.0.34",
     "@deepgram/sdk": "^3.9.0",
+    "@elevenlabs/react": "^0.1.7",
     "@google/generative-ai": "^0.21.0",
     "@heygen/streaming-avatar": "^2.0.8",
     "@nextui-org/react": "^2.6.11",

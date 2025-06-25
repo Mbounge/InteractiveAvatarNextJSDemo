@@ -9,13 +9,15 @@ export const maxDuration = 150;
 
 // Helper map to convert country codes to language names/codes
 const countryToLanguageMap: { [key: string]: { name: string; code: string } } = {
-  SE: { name: "Swedish", code: "sv" },
+  SE: { name: "Swedish", code: "se" },
   FI: { name: "Finnish", code: "fi" },
   CZ: { name: "Czech", code: "cz" },
   SK: { name: "Slovak", code: "sk" },
   RU: { name: "Russian", code: "ru" },
   DE: { name: "German", code: "de" },
-  CH: { name: "German", code: "de" }, // Swiss German is complex, German is a safe default
+  CH: { name: "German", code: "de" }, 
+  FR: {name: "French", code: "fr"},
+  GE: {name: "Georgian", code: "ge"},
   // Add more mappings as needed
 };
 

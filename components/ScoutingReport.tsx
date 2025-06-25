@@ -856,12 +856,14 @@ const LanguageToggle: React.FC<{
   const getLanguageAbbreviation = (lang: string | null) => {
     if (!lang) return "";
     const abbreviations: { [key: string]: string } = {
-      "Swedish": "SV",
+      "Swedish": "SE",
       "Finnish": "FI",
       "Czech": "CZ",
       "Slovak": "SK",
       "Russian": "RU",
       "German": "DE",
+      "Georgian": "GE",
+      "French": "FR"
     };
     return abbreviations[lang] || lang.substring(0, 2).toUpperCase();
   };
