@@ -1,3 +1,5 @@
+// ScoutingPlatform.tsx
+
 "use client";
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
@@ -238,6 +240,15 @@ type SeasonalStat = {
     shutouts: number;
     toi: number;
   }
+};
+
+type TraitRatings = {
+  skating: number;
+  puckSkills: number;
+  hockeyIq: number;
+  shot: number;
+  competeLevel: number;
+  defensiveGame: number;
 };
 
 
@@ -689,7 +700,7 @@ const PlayerSearch: React.FC<{
     return (
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-3">
-          1. Selected Player
+          Selected Player
         </h2>
         <div className="flex items-center justify-between p-3 border rounded-lg bg-green-50 border-green-200">
           <div className="flex flex-col">
@@ -710,7 +721,7 @@ const PlayerSearch: React.FC<{
   return (
     <div>
       <h2 className="text-lg font-semibold text-gray-900 mb-3">
-        1. Select Player
+        Select Player
       </h2>
       <div className="relative" ref={searchResultsRef}>
         <div className="relative">
@@ -787,7 +798,7 @@ const TeamSearch: React.FC<{
     return (
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-3">
-          2. Selected Team
+          Selected Team
         </h2>
         <div className="flex items-center justify-between p-3 border rounded-lg bg-green-50 border-green-200">
           <div className="flex flex-col">
@@ -808,7 +819,7 @@ const TeamSearch: React.FC<{
   return (
     <div>
       <h2 className="text-lg font-semibold text-gray-900 mb-3">
-        2. Select Team
+        Select Team
       </h2>
       <div className="relative" ref={searchResultsRef}>
         <div className="relative">
@@ -891,6 +902,134 @@ const LanguageToggle: React.FC<{
       >
         {isTranslating ? <Spinner className="w-4 h-4" /> : otherLangAbbr}
       </button>
+    </div>
+  );
+};
+
+const StarIcon: React.FC<{
+  fillType: 'full' | 'half' | 'empty';
+  className?: string;
+}> = ({ fillType, className = 'w-6 h-6' }) => {
+  const starPath = "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z";
+  const uniqueId = `grad-${Math.random().toString(36).substr(2, 9)}`;
+
+  if (fillType === 'full') {
+    return (
+      <svg className={`${className} text-blue-600`} fill="currentColor" viewBox="0 0 24 24">
+        <path d={starPath} />
+      </svg>
+    );
+  }
+
+  if (fillType === 'half') {
+    return (
+      <svg className={`${className} text-blue-600`} fill={`url(#${uniqueId})`} viewBox="0 0 24 24">
+        <defs>
+          <linearGradient id={uniqueId}>
+            <stop offset="50%" stopColor="currentColor" />
+            <stop offset="50%" stopColor="#d1d5db" stopOpacity="1" />
+          </linearGradient>
+        </defs>
+        <path d={starPath} />
+      </svg>
+    );
+  }
+
+  return (
+    <svg className={`${className} text-gray-300`} fill="currentColor" viewBox="0 0 24 24">
+      <path d={starPath} />
+    </svg>
+  );
+};
+
+const RatingScaleLegend: React.FC = () => (
+  <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg mb-4">
+    <h3 className="text-sm font-semibold text-gray-800 mb-3">Rating Scale</h3>
+    <div className="grid grid-cols-1 gap-3 text-xs text-gray-600">
+      <div className="flex items-start space-x-2">
+        <div className="flex pt-0.5">
+          {[...Array(5)].map((_, i) => <StarIcon key={i} fillType="full" className="w-3 h-3" />)}
+        </div>
+        <div><span className="font-bold text-gray-700">Elite:</span> Exceptional at this skill, comparable to top-tier players in their age group or level.</div>
+      </div>
+      <div className="flex items-start space-x-2">
+        <div className="flex pt-0.5">
+          {[...Array(4)].map((_, i) => <StarIcon key={i} fillType="full" className="w-3 h-3" />)}
+          <StarIcon fillType="empty" className="w-3 h-3" />
+        </div>
+        <div><span className="font-bold text-gray-700">Strong:</span> Above average; consistently effective in high-level play.</div>
+      </div>
+      <div className="flex items-start space-x-2">
+        <div className="flex pt-0.5">
+          {[...Array(3)].map((_, i) => <StarIcon key={i} fillType="full" className="w-3 h-3" />)}
+          {[...Array(2)].map((_, i) => <StarIcon key={i} fillType="empty" className="w-3 h-3" />)}
+        </div>
+        <div><span className="font-bold text-gray-700">Solid:</span> Adequate for current level; can still be developed further.</div>
+      </div>
+      <div className="flex items-start space-x-2">
+        <div className="flex pt-0.5">
+          {[...Array(2)].map((_, i) => <StarIcon key={i} fillType="full" className="w-3 h-3" />)}
+          {[...Array(3)].map((_, i) => <StarIcon key={i} fillType="empty" className="w-3 h-3" />)}
+        </div>
+        <div><span className="font-bold text-gray-700">Developing:</span> Some signs of potential, but inconsistency or technical flaws are present.</div>
+      </div>
+      <div className="flex items-start space-x-2">
+        <div className="flex pt-0.5">
+          <StarIcon fillType="full" className="w-3 h-3" />
+          {[...Array(4)].map((_, i) => <StarIcon key={i} fillType="empty" className="w-3 h-3" />)}
+        </div>
+        <div><span className="font-bold text-gray-700">Needs Improvement:</span> Below standard; requires focused development or training.</div>
+      </div>
+    </div>
+  </div>
+);
+
+const TraitRatingSelector: React.FC<{
+  title: string;
+  rating: number;
+  onRatingChange: (newRating: number) => void;
+}> = ({ title, rating, onRatingChange }) => {
+  const [hoverRating, setHoverRating] = useState(0);
+
+  const calculateRatingFromEvent = (e: React.MouseEvent<HTMLDivElement>, starIndex: number) => {
+    const starElement = e.currentTarget;
+    const { left, width } = starElement.getBoundingClientRect();
+    const x = e.clientX - left;
+    const percentageInStar = x / width;
+    
+    const newRating = starIndex + (percentageInStar < 0.5 ? 0.5 : 1.0);
+    return newRating;
+  };
+
+  const displayRating = hoverRating > 0 ? hoverRating : rating;
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-1">
+        <p className="text-sm font-medium text-gray-800">{title}</p>
+        <p className="text-sm font-bold text-blue-600 w-8 text-right">{displayRating.toFixed(1)}</p>
+      </div>
+      <div className="flex" onMouseLeave={() => setHoverRating(0)}>
+        {[...Array(5)].map((_, i) => {
+          const starValue = i + 1;
+          let fillType: 'full' | 'half' | 'empty' = 'empty';
+          if (displayRating >= starValue) {
+            fillType = 'full';
+          } else if (displayRating > i && displayRating < starValue) {
+            fillType = 'half';
+          }
+          return (
+            <div
+              key={i}
+              className="cursor-pointer"
+              onMouseMove={(e) => setHoverRating(calculateRatingFromEvent(e, i))}
+              onClick={(e) => onRatingChange(calculateRatingFromEvent(e, i))}
+            >
+              <StarIcon fillType={fillType} />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
@@ -1247,6 +1386,15 @@ const ScoutingPlatform: React.FC = () => {
   const [isEnglishReport, setIsEnglishReport] = useState(true);
   const [playerLanguage, setPlayerLanguage] = useState<string | null>(null);
 
+  const [traitRatings, setTraitRatings] = useState<TraitRatings>({
+    skating: 0,
+    puckSkills: 0,
+    hockeyIq: 0,
+    shot: 0,
+    competeLevel: 0,
+    defensiveGame: 0,
+  });
+
   // Existing State
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [transcriptionText, setTranscriptionText] = useState<string>("");
@@ -1438,6 +1586,10 @@ const ScoutingPlatform: React.FC = () => {
     setSelectedTeam(null);
     setLeagueStandings(null);
   };
+
+  const handleRatingChange = useCallback((trait: keyof TraitRatings, newRating: number) => {
+    setTraitRatings(prev => ({ ...prev, [trait]: newRating }));
+  }, []);
 
   // Player Search API Fetching
   useEffect(() => {
@@ -2046,73 +2198,32 @@ const ScoutingPlatform: React.FC = () => {
     }
 
     if (format === "pdf") {
-      toast.loading("Preparing PDF...", { id: "export-toast" });
+      toast.loading("Generating PDF...", { id: "export-toast" });
       try {
-        const response = await fetch(logo2.src);
-        const imageBuffer = await response.arrayBuffer();
-        const imageBase64 = arrayBufferToBase64(imageBuffer);
-        const logoDataUri = `data:image/svg+xml;base64,${imageBase64}`;
+        const response = await fetch('/api/pdf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            playerContext: selectedPlayer,
+            teamContext: selectedTeam,
+            standingsContext: leagueStandings,
+            seasonalStatsContext: seasonalStats,
+            reportHtml: editor.getHTML(),
+            traitRatings: traitRatings,
+          }),
+        });
 
-        const printStyles = `
-          <style>
-            @page {
-              size: A4;
-              margin: 20mm;
-            }
-            @media print {
-              body {
-                font-family: sans-serif;
-                line-height: 1.5;
-                color: #333;
-              }
-              h1, h2, h3, p, ul, ol, blockquote, table { page-break-inside: avoid; }
-              h1, h2 { page-break-before: auto; page-break-after: avoid; }
-              table { page-break-inside: auto; }
-              tr { page-break-inside: avoid; page-break-after: auto; }
-              th, td { border: 1px solid #ccc; padding: 8px; font-size: 11pt; text-align: left; }
-              th { background-color: #f4f4f4; font-weight: bold; }
-            }
-          </style>
-        `;
-
-        const iframe = document.createElement("iframe");
-        iframe.style.position = "absolute";
-        iframe.style.width = "0";
-        iframe.style.height = "0";
-        iframe.style.border = "none";
-        document.body.appendChild(iframe);
-
-        const printContent = `
-          <html>
-            <head>
-              <title>${reportTitle}</title>
-              ${printStyles}
-            </head>
-            <body>
-              <div style="text-align: center; margin-bottom: 2rem; page-break-inside: avoid;">
-                <img src="${logoDataUri}" style="width: 120px; height: auto;" alt="Logo">
-              </div>
-              ${editor.getHTML()}
-            </body>
-          </html>
-        `;
-
-        const iframeDoc = iframe.contentWindow?.document;
-        if (iframeDoc) {
-          iframeDoc.open();
-          iframeDoc.write(printContent);
-          iframeDoc.close();
-          
-          setTimeout(() => {
-              iframe.contentWindow?.focus();
-              iframe.contentWindow?.print();
-              document.body.removeChild(iframe);
-              toast.success("Exported as PDF!", { id: "export-toast" });
-          }, 500);
+        if (!response.ok) {
+          throw new Error(`PDF generation failed: ${response.statusText}`);
         }
-      } catch (error) {
-        console.error("PDF generation error:", error);
-        toast.error("Failed to prepare PDF.", { id: "export-toast" });
+
+        const pdfBlob = await response.blob();
+        downloadFile(pdfBlob, fileName);
+        toast.success("PDF downloaded!", { id: "export-toast" });
+
+      } catch (error: any) {
+        console.error(`Could not generate PDF: ${error.message}`, error);
+        toast.error(`Could not generate PDF: ${error.message}`, { id: "export-toast" });
       }
     }
   };
@@ -2177,9 +2288,27 @@ const ScoutingPlatform: React.FC = () => {
             ${isMobileSidebarOpen ? "translate-x-0 shadow-lg" : "-translate-x-full"}
           `}
         >
-          <div className={`flex-1 flex flex-col min-h-0 p-4 md:p-6 ${isDesktopSidebarCollapsed ? 'lg:hidden' : ''}`}>
+          {/* --- MODIFICATION START: CORRECTED SIDEBAR LAYOUT FOR SCROLLING --- */}
+          <div className={`flex-1 flex flex-col min-h-0 ${isDesktopSidebarCollapsed ? 'lg:hidden' : ''}`}>
             
-            <div className="flex-1 space-y-6 min-h-0 overflow-y-auto pr-2">
+            <div className="flex-1 space-y-6 min-h-0 overflow-y-auto p-4 md:p-6">
+              {hasGeneratedReport && (
+                <div className="pb-4 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-3">
+                    Rate Player Traits
+                  </h2>
+                  <div className="space-y-4">
+                    <RatingScaleLegend />
+                    <TraitRatingSelector title="Skating" rating={traitRatings.skating} onRatingChange={(r) => handleRatingChange('skating', r)} />
+                    <TraitRatingSelector title="Puck Skills" rating={traitRatings.puckSkills} onRatingChange={(r) => handleRatingChange('puckSkills', r)} />
+                    <TraitRatingSelector title="Hockey IQ" rating={traitRatings.hockeyIq} onRatingChange={(r) => handleRatingChange('hockeyIq', r)} />
+                    <TraitRatingSelector title="Shot" rating={traitRatings.shot} onRatingChange={(r) => handleRatingChange('shot', r)} />
+                    <TraitRatingSelector title="Compete Level" rating={traitRatings.competeLevel} onRatingChange={(r) => handleRatingChange('competeLevel', r)} />
+                    <TraitRatingSelector title="Defensive Game" rating={traitRatings.defensiveGame} onRatingChange={(r) => handleRatingChange('defensiveGame', r)} />
+                  </div>
+                </div>
+              )}
+
               <PlayerSearch
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
@@ -2202,7 +2331,7 @@ const ScoutingPlatform: React.FC = () => {
 
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 mb-3">
-                  3. Upload Audio
+                  Upload Audio
                 </h2>
                 <label
                   htmlFor="file-upload"
@@ -2262,7 +2391,7 @@ const ScoutingPlatform: React.FC = () => {
 
               <div className="flex flex-col flex-1 h-[400px]">
                 <h2 className="text-lg font-semibold text-gray-900 mb-3">
-                  4. Review Transcription
+                  Review Transcription
                 </h2>
                 <textarea
                   value={transcriptionText}
@@ -2272,8 +2401,8 @@ const ScoutingPlatform: React.FC = () => {
                 />
               </div>
             </div>
-
-            <div className="flex-shrink-0 pt-4">
+            
+            <div className="flex-shrink-0 p-4 md:p-6 pt-4">
               <button
                 onClick={handleProcessAudio}
                 disabled={isLoading || selectedFiles.length === 0 || !selectedPlayer || !selectedTeam}
@@ -2284,6 +2413,7 @@ const ScoutingPlatform: React.FC = () => {
               </button>
             </div>
           </div>
+          {/* --- MODIFICATION END --- */}
         </div>
 
         {isMobileSidebarOpen && (

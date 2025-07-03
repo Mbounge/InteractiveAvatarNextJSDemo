@@ -1,3 +1,5 @@
+// api/report/route.ts
+
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
@@ -163,7 +165,8 @@ export async function POST(request: Request) {
       **Weight:** [${weight}, or  "N/A"]\n
       ---
       ###
-      **Game:** [Game Details, or "N/A"]\n
+      **Game:** [Game Details - team vs team name, or "N/A"]\n
+      **Game Score** [Game Score - Team: score, or "N/A"]\n
       **Game Date:** [Game Date, or "N/A"]\n
       **Team:** [${teamName}, or "N/A"]\n
       **League:** [League name, or "N/A"]\n
@@ -175,7 +178,7 @@ export async function POST(request: Request) {
 
       ### SKATING (Rating/5)
       **Speed:** [Analysis of top speed and acceleration.]\n
-      **Edgework & Agility:** [Analysis of movement in tight spaces.]\n
+      **Edgework and Agility:** [Analysis of movement in tight spaces.]\n
       **Stride Efficiency:** [Analysis of glide and dynamic movements.]\n
       **Notes:** [Overall summary of skating abilities and areas for improvement.]\n
 

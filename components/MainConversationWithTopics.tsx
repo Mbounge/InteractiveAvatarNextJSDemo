@@ -99,7 +99,6 @@ export default function MainConversationWithTopics({
 
   const handleTopicClick = (topicPrompt: string) => {
     if (isConnected && conversation.sendUserMessage) {
-      console.log(`Sending user message for topic: "${topicPrompt}"`);
       conversation.sendUserMessage(topicPrompt);
     } else {
       console.warn("Cannot send topic message: not connected or function unavailable.");
