@@ -1616,6 +1616,7 @@ const ScoutingPlatform: React.FC = () => {
                 country
                 dateOfBirth
                 possibleYearsOfBirth
+                avatar
                 bio {
                   position
                   gender
@@ -1704,6 +1705,7 @@ const ScoutingPlatform: React.FC = () => {
                 name
                 shortName
                 country
+                logo
                 slug
                 leagues {
                   id

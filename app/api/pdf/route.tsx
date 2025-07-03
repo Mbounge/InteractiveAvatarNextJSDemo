@@ -15,7 +15,7 @@ import {
   Svg,
   Defs,
   LinearGradient,
-  ClipPath, // Import ClipPath
+  ClipPath,
   Stop,
   Rect,
   Path,
@@ -304,9 +304,8 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   gameHeaderIcon: {
-    width: 20,
-    height: 20,
-    backgroundColor: "#D1D5DB",
+    width: 60,
+    height: 60,
     marginHorizontal: 16,
   },
   gameBody: {
@@ -405,10 +404,10 @@ const styles = StyleSheet.create({
   aCol: { width: 40 },
   tpCol: { width: 40 },
   teamIcon: {
-    width: 16,
-    height: 16,
+    width: 42,
+    height: 42,
     backgroundColor: "#D1D5DB",
-    borderRadius: 8,
+    borderRadius: 10,
     marginRight: 8,
   },
   teamNameContainer: { flexDirection: "row", alignItems: "center" },
@@ -528,7 +527,7 @@ const styles = StyleSheet.create({
   
   // Footer Logo
   footerLogo: {
-    width: 50,
+    width: 90,
     height: 'auto',
   },
 });
@@ -583,6 +582,7 @@ const coverPageStyles = StyleSheet.create({
   playerImage: {
     width: '100%',
     height: '100%',
+    objectFit: 'cover',
   },
   logoOverlay: {
     position: 'absolute',
@@ -820,7 +820,6 @@ const BackgroundGradient2 = () => (
   </Svg>
 );
 
-// --- MODIFICATION START: NEW STAR AND STAR RATING COMPONENTS ---
 const Star = ({ fillType }: { fillType: 'full' | 'half' | 'empty' }) => {
   const starPath = "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27z";
   const clipId = `clip-${Math.random()}`;
@@ -868,18 +867,17 @@ const StarRating = ({ rating, max = 5 }: { rating: number; max?: number }) => (
     })}
   </View>
 );
-// --- MODIFICATION END ---
 
 const CoverPage = ({
   playerContext,
   backgroundBuffer,
-  playerImageBuffer,
+  playerImageSrc,
   logoOverlayBuffer,
   footerLogoBuffer,
 }: {
   playerContext: any;
   backgroundBuffer: Buffer | null;
-  playerImageBuffer: Buffer | null;
+  playerImageSrc: string | null;
   logoOverlayBuffer: Buffer | null;
   footerLogoBuffer: Buffer | null;
 }) => {
@@ -897,9 +895,9 @@ const CoverPage = ({
         <View style={coverPageStyles.contentWrapper}>
           <View style={coverPageStyles.headerSection}>
             <View style={coverPageStyles.imagePositioningContainer}>
-              {playerImageBuffer && (
+              {playerImageSrc && (
                 <View style={coverPageStyles.imageClippingContainer}>
-                  <Image style={coverPageStyles.playerImage} src={{ data: playerImageBuffer, format: 'png' }} />
+                  <Image style={coverPageStyles.playerImage} src={playerImageSrc} />
                 </View>
               )}
               {logoOverlayBuffer && (
@@ -978,8 +976,7 @@ const PlaystylePage = ({
   );
 };
 
-// --- MODIFICATION START: CORRECTED StatsTable COMPONENT ---
-const StatsTable = ({ html }: { html: string }) => {
+const StatsTable = ({ html, teamLogosMap }: { html: string, teamLogosMap: Map<string, string> }) => {
   if (!html) return null;
 
   const root = parse(html);
@@ -1048,6 +1045,7 @@ const StatsTable = ({ html }: { html: string }) => {
       <View style={styles.tableBody}>
         {allRows.map((row: any, index: number) => {
           const isLastRow = index === allRows.length - 1;
+          const logoSrc = teamLogosMap.get(row.team);
           
           return (
             <View
@@ -1063,7 +1061,11 @@ const StatsTable = ({ html }: { html: string }) => {
               </View>
               <View style={[styles.tableCol, styles.teamCol]}>
                 <View style={styles.teamNameContainer}>
-                  <View style={styles.teamIcon} />
+                  {logoSrc ? (
+                    <Image style={styles.teamIcon} src={logoSrc} />
+                  ) : (
+                    <View style={styles.teamIcon} />
+                  )}
                   <Text style={styles.teamName}>{row.team}</Text>
                 </View>
               </View>
@@ -1086,21 +1088,22 @@ const StatsTable = ({ html }: { html: string }) => {
     </View>
   );
 };
-// --- MODIFICATION END ---
 
 const HtmlRenderer = ({
   html,
   isStatsTable = false,
+  teamLogosMap,
   ignoreHeadings = [],
   styleOverrides = {},
 }: {
   html: string;
   isStatsTable?: boolean;
+  teamLogosMap?: Map<string, string>;
   ignoreHeadings?: string[];
   styleOverrides?: { [key: string]: any };
 }) => {
   if (isStatsTable) {
-    return <StatsTable html={html} />;
+    return <StatsTable html={html} teamLogosMap={teamLogosMap || new Map()} />;
   }
 
   const root = parse(html);
@@ -1264,7 +1267,7 @@ const TraitPage = ({
   );
 };
 
-const StatsPage = ({ html, footerLogoBuffer2 }: { html: string | null, footerLogoBuffer2: Buffer | null }) => {
+const StatsPage = ({ html, footerLogoBuffer2, teamLogosMap }: { html: string | null, footerLogoBuffer2: Buffer | null, teamLogosMap: Map<string, string> }) => {
   if (!html) return null;
   return (
     <Page size="A4" style={styles.page}>
@@ -1275,7 +1278,7 @@ const StatsPage = ({ html, footerLogoBuffer2 }: { html: string | null, footerLog
         </View>
         <View style={styles.statsMainContent}>
           <View style={styles.statsTableWrapper}>
-            <HtmlRenderer html={html} isStatsTable={true} />
+            <HtmlRenderer html={html} isStatsTable={true} teamLogosMap={teamLogosMap} />
           </View>
         </View>
       </View>
@@ -1297,7 +1300,22 @@ const StatsPage = ({ html, footerLogoBuffer2 }: { html: string | null, footerLog
   );
 };
 
-const ScoutedGamePage = ({ gameDetails, footerLogoBuffer2, gameQrCodeDataUrl }: { gameDetails: GameDetails | null, footerLogoBuffer2: Buffer | null, gameQrCodeDataUrl: string | null }) => {
+// --- MODIFICATION START: UPDATED ScoutedGamePage ---
+const ScoutedGamePage = ({ 
+  gameDetails, 
+  footerLogoBuffer2, 
+  gameQrCodeDataUrl,
+  homeTeamLogo,
+  awayTeamLogo,
+  leagueLogo,
+}: { 
+  gameDetails: GameDetails | null, 
+  footerLogoBuffer2: Buffer | null, 
+  gameQrCodeDataUrl: string | null,
+  homeTeamLogo: string | null,
+  awayTeamLogo: string | null,
+  leagueLogo: string | null,
+}) => {
   if (!gameDetails) return null;
 
   const { homeTeam, awayTeam, gameDate, league } = gameDetails;
@@ -1313,19 +1331,31 @@ const ScoutedGamePage = ({ gameDetails, footerLogoBuffer2, gameQrCodeDataUrl }: 
           <View style={styles.gameBox}>
             <View style={styles.gameHeader}>
               <Text style={styles.gameHeaderText}>{league || 'N/A'}</Text>
-              <View style={styles.gameHeaderIcon} />
+              {leagueLogo ? (
+                <Image style={styles.gameHeaderIcon} src={leagueLogo} />
+              ) : (
+                <View style={styles.gameHeaderIcon} />
+              )}
               <Text style={styles.gameHeaderText}>{gameDate || 'N/A'}</Text>
             </View>
             <View style={styles.gameBody}>
               <View style={styles.teamBlock}>
-                <View style={styles.teamLogo} />
+                {homeTeamLogo ? (
+                  <Image style={styles.teamLogo} src={homeTeamLogo} />
+                ) : (
+                  <View style={styles.teamLogo} />
+                )}
                 <Text style={styles.teamNameText}>{homeTeam.name || 'Home Team'}</Text>
               </View>
               <View style={styles.scoreBlock}>
                 <Text style={styles.scoreText}>{`${homeScore} : ${awayScore}`}</Text>
               </View>
               <View style={styles.teamBlock}>
-                <View style={styles.teamLogo} />
+                {awayTeamLogo ? (
+                  <Image style={styles.teamLogo} src={awayTeamLogo} />
+                ) : (
+                  <View style={styles.teamLogo} />
+                )}
                 <Text style={styles.teamNameText}>{awayTeam.name || 'Away Team'}</Text>
               </View>
             </View>
@@ -1362,6 +1392,7 @@ const ScoutedGamePage = ({ gameDetails, footerLogoBuffer2, gameQrCodeDataUrl }: 
     </Page>
   );
 };
+// --- MODIFICATION END ---
 
 const ScalingSystemPage = ({ footerLogoBuffer2 }: { footerLogoBuffer2: Buffer | null }) => (
   <Page size="A4" style={styles.page}>
@@ -1484,7 +1515,7 @@ const ReportDocument = ({
   reportSections,
   gameDetails,
   backgroundBuffer,
-  playerImageBuffer,
+  playerImageSrc,
   logoOverlayBuffer,
   footerLogoBuffer, 
   footerLogoBuffer2, 
@@ -1492,12 +1523,14 @@ const ReportDocument = ({
   playerQrCodeDataUrl,
   gameQrCodeDataUrl,
   traitRatings,
+  teamLogosMap,
+  gamePageLogos,
 }: any) => (
   <Document>
     <CoverPage
       playerContext={playerContext}
       backgroundBuffer={backgroundBuffer}
-      playerImageBuffer={playerImageBuffer}
+      playerImageSrc={playerImageSrc}
       logoOverlayBuffer={logoOverlayBuffer}
       footerLogoBuffer={footerLogoBuffer}
     />
@@ -1598,9 +1631,16 @@ const ReportDocument = ({
       footerLogoBuffer2={footerLogoBuffer2}
     />
 
-    <StatsPage html={reportSections.seasonalStats} footerLogoBuffer2={footerLogoBuffer2} />
+    <StatsPage html={reportSections.seasonalStats} footerLogoBuffer2={footerLogoBuffer2} teamLogosMap={teamLogosMap} />
 
-    <ScoutedGamePage gameDetails={gameDetails} footerLogoBuffer2={footerLogoBuffer2} gameQrCodeDataUrl={gameQrCodeDataUrl}  />
+    <ScoutedGamePage 
+      gameDetails={gameDetails} 
+      footerLogoBuffer2={footerLogoBuffer2} 
+      gameQrCodeDataUrl={gameQrCodeDataUrl}
+      homeTeamLogo={gamePageLogos.homeTeamLogo}
+      awayTeamLogo={gamePageLogos.awayTeamLogo}
+      leagueLogo={gamePageLogos.leagueLogo}
+    />
 
     <TraitPage title="Skating" html={reportSections.skating} rating={traitRatings.skating} footerLogoBuffer2={footerLogoBuffer2} />
     <TraitPage title="Puck Skills" html={reportSections.puckSkills} rating={traitRatings.puckSkills} footerLogoBuffer2={footerLogoBuffer2} />
@@ -1629,7 +1669,7 @@ const ReportDocument = ({
     />
 
     <ScalingSystemPage footerLogoBuffer2={footerLogoBuffer2} />
-    {/* <ScoutingTeamPage footerLogoBuffer2={footerLogoBuffer2} /> */}
+    <ScoutingTeamPage footerLogoBuffer2={footerLogoBuffer2} />
   </Document>
 );
 
@@ -1665,11 +1705,139 @@ const getPositionImageFilename = (position: string | null | undefined): string |
   }
 };
 
+async function fetchTeamLogos(seasonalStatsHtml: string | null): Promise<Map<string, string>> {
+  const teamLogosMap = new Map<string, string>();
+  if (!seasonalStatsHtml) {
+    return teamLogosMap;
+  }
+
+  const root = parse(seasonalStatsHtml);
+  const teamNames = new Set<string>();
+  root.querySelectorAll('tr').slice(1).forEach(row => {
+    const cell = row.querySelector('td');
+    if (cell) {
+      teamNames.add(cell.innerText.trim());
+    }
+  });
+
+  const logoPromises = Array.from(teamNames).map(async (teamName) => {
+    try {
+      const query = `
+        query SearchTeams($filter: TeamsFilter!) {
+          teams(filter: $filter, pagination: { first: 1 }) {
+            edges {
+              node {
+                logo
+              }
+            }
+          }
+        }
+      `;
+      const variables = { filter: { searchQuery: teamName } };
+      
+      const response = await fetch("https://api.graet.dev", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, variables }),
+      });
+
+      if (!response.ok) return;
+
+      const result = await response.json();
+      const logoPath = result.data?.teams?.edges?.[0]?.node?.logo;
+
+      if (logoPath) {
+        const imageUrl = `https://assets.graet.com/${logoPath}`;
+        const imageResponse = await fetch(imageUrl);
+        if (imageResponse.ok) {
+          const contentType = imageResponse.headers.get('content-type') || 'image/png';
+          const buffer = await imageResponse.arrayBuffer();
+          const base64 = Buffer.from(buffer).toString('base64');
+          const dataUrl = `data:${contentType};base64,${base64}`;
+          teamLogosMap.set(teamName, dataUrl);
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to fetch logo for team: ${teamName}`, error);
+    }
+  });
+
+  await Promise.all(logoPromises);
+  return teamLogosMap;
+}
+
+async function fetchGamePageImages(gameDetails: GameDetails | null) {
+  if (!gameDetails) {
+    return { homeTeamLogo: null, awayTeamLogo: null, leagueLogo: null };
+  }
+
+  const { homeTeam, awayTeam, league } = gameDetails;
+
+  const fetchLogo = async (name: string, type: 'team' | 'league'): Promise<string | null> => {
+    if (!name) return null;
+    
+    // --- MODIFICATION START: DYNAMIC API ENDPOINT ---
+    const isTeam = type === 'team';
+    const apiEndpoint = isTeam ? "https://api.graet.dev" : "https://api.graet.com";
+    const query = isTeam
+      ? `query SearchTeams($filter: TeamsFilter!) { teams(filter: $filter, pagination: { first: 1 }) { edges { node { logo } } } }`
+      : `query SearchLeagues($filter: LeaguesFilter!) { leagues(filter: $filter, pagination: { first: 5 }) { edges { node { logo } } } }`;
+    // --- MODIFICATION END ---
+    
+    const variables = { filter: { searchQuery: name } };
+
+    try {
+      const response = await fetch(apiEndpoint, { // Use the dynamic endpoint
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, variables }),
+      });
+
+      if (!response.ok) return null;
+      const result = await response.json();
+      
+      let logoPath: string | null = null;
+      if (isTeam) {
+        logoPath = result.data?.teams?.edges?.[0]?.node?.logo;
+      } else {
+        const edges = result.data?.leagues?.edges || [];
+        for (const edge of edges) {
+          if (edge.node.logo) {
+            logoPath = edge.node.logo;
+            break;
+          }
+        }
+      }
+
+      if (logoPath) {
+        const imageUrl = `https://assets.graet.com/${logoPath}`;
+        const imageResponse = await fetch(imageUrl);
+        if (imageResponse.ok) {
+          const contentType = imageResponse.headers.get('content-type') || 'image/png';
+          const buffer = await imageResponse.arrayBuffer();
+          const base64 = Buffer.from(buffer).toString('base64');
+          return `data:${contentType};base64,${base64}`;
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to fetch logo for ${type}: ${name}`, error);
+    }
+    return null;
+  };
+
+  const [homeTeamLogo, awayTeamLogo, leagueLogo] = await Promise.all([
+    fetchLogo(homeTeam.name, 'team'),
+    fetchLogo(awayTeam.name, 'team'),
+    league ? fetchLogo(league, 'league') : Promise.resolve(null),
+  ]);
+
+  return { homeTeamLogo, awayTeamLogo, leagueLogo };
+}
+
 // --- 5. API ENDPOINT ---
 export async function POST(request: Request) {
   try {
     let backgroundBuffer: Buffer | null = null;
-    let playerImageBuffer: Buffer | null = null;
     let logoOverlayBuffer: Buffer | null = null;
     let footerLogoBuffer: Buffer | null = null;
     let footerLogoBuffer2: Buffer | null = null;
@@ -1677,9 +1845,6 @@ export async function POST(request: Request) {
     try {
       const backgroundPath = path.join(process.cwd(), 'public', 'reportBackground.png');
       backgroundBuffer = await fs.readFile(backgroundPath);
-
-      const playerImagePath = path.join(process.cwd(), 'public', 'player.png');
-      playerImageBuffer = await fs.readFile(playerImagePath);
       
       const logoOverlayPath = path.join(process.cwd(), 'public', 'premium.png');
       logoOverlayBuffer = await fs.readFile(logoOverlayPath);
@@ -1691,7 +1856,7 @@ export async function POST(request: Request) {
       footerLogoBuffer2 = await fs.readFile(footerLogoPath2);
 
     } catch (error) {
-      console.error("Could not read one or more cover page image files:", error);
+      console.error("Could not read one or more static image files:", error);
     }
     
     const { reportHtml, playerContext, teamContext, traitRatings } = await request.json();
@@ -1699,6 +1864,37 @@ export async function POST(request: Request) {
       return new NextResponse("Missing reportHtml or traitRatings for PDF generation", {
         status: 400,
       });
+    }
+
+    let playerImageSrc: string | null = null;
+    if (playerContext?.avatar) {
+      const playerImageUrl = `https://assets.graet.com/${playerContext.avatar}`;
+      try {
+        console.log(`Fetching player avatar from: ${playerImageUrl}`);
+        const response = await fetch(playerImageUrl);
+        if (response.ok) {
+          const contentType = response.headers.get('content-type') || 'image/jpeg';
+          const arrayBuffer = await response.arrayBuffer();
+          const base64 = Buffer.from(arrayBuffer).toString('base64');
+          playerImageSrc = `data:${contentType};base64,${base64}`;
+        } else {
+          console.error(`Failed to fetch player avatar: ${response.status} ${response.statusText}`);
+        }
+      } catch (error) {
+        console.error("Error fetching player avatar:", error);
+      }
+    }
+
+    if (!playerImageSrc) {
+      try {
+        const playerImagePath = path.join(process.cwd(), 'public', 'player.png');
+        const fileBuffer = await fs.readFile(playerImagePath);
+        const base64 = fileBuffer.toString('base64');
+        playerImageSrc = `data:image/png;base64,${base64}`;
+        console.log("Using fallback local player image.");
+      } catch (error) {
+        console.error("Could not read fallback player image file:", error);
+      }
     }
 
     let positionImageBuffer: Buffer | null = null;
@@ -1714,6 +1910,7 @@ export async function POST(request: Request) {
     }
 
     const reportSections = splitReportByHeadings(reportHtml);
+    const teamLogosMap = await fetchTeamLogos(reportSections.seasonalStats);
 
     let gameDetails: GameDetails | null = null;
     if (reportSections.gameInfo) {
@@ -1736,6 +1933,10 @@ export async function POST(request: Request) {
       }
     }
     
+    // --- MODIFICATION START: FETCH GAME PAGE LOGOS ---
+    const gamePageLogos = await fetchGamePageImages(gameDetails);
+    // --- MODIFICATION END ---
+    
     const formattedPlayerName = (playerContext?.name || '')
       .toLowerCase()
       .replace(/\s+/g, '-');
@@ -1752,7 +1953,7 @@ export async function POST(request: Request) {
         teamContext={teamContext}
         gameDetails={gameDetails}
         backgroundBuffer={backgroundBuffer}
-        playerImageBuffer={playerImageBuffer}
+        playerImageSrc={playerImageSrc}
         logoOverlayBuffer={logoOverlayBuffer}
         footerLogoBuffer={footerLogoBuffer}
         footerLogoBuffer2={footerLogoBuffer2}
@@ -1760,6 +1961,8 @@ export async function POST(request: Request) {
         playerQrCodeDataUrl={playerQrCodeDataUrl}
         gameQrCodeDataUrl={gameQrCodeDataUrl}
         traitRatings={traitRatings}
+        teamLogosMap={teamLogosMap}
+        gamePageLogos={gamePageLogos}
       />
     );
 
