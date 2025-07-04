@@ -53,6 +53,7 @@ import {
   PanelLeftClose,
   PanelRightClose,
   Languages,
+  Check,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -158,6 +159,7 @@ type Player = {
   country: string;
   dateOfBirth: string;
   possibleYearsOfBirth: number[];
+  avatar?: string;
   bio: {
     position: string;
     gender: string;
@@ -250,6 +252,22 @@ type TraitRatings = {
   competeLevel: number;
   defensiveGame: number;
 };
+
+type Language = {
+  code: string;
+  name: string;
+};
+
+const AVAILABLE_LANGUAGES: Language[] = [
+  { code: 'SE', name: 'Swedish' },
+  { code: 'FI', name: 'Finnish' },
+  { code: 'CZ', name: 'Czech' },
+  { code: 'SK', name: 'Slovak' },
+  { code: 'RU', name: 'Russian' },
+  { code: 'DE', name: 'German' },
+  { code: 'FR', name: 'French' },
+  { code: 'GE', name: 'Georgian' },
+];
 
 
 // --- TIPTAP CONFIGURATION ---
@@ -854,54 +872,127 @@ const TeamSearch: React.FC<{
   );
 };
 
-const LanguageToggle: React.FC<{
-  isEnglishReport: boolean;
-  setIsEnglishReport: (isEnglish: boolean) => void;
-  playerLanguage: string | null;
-  isTranslating: boolean;
-}> = ({ isEnglishReport, setIsEnglishReport, playerLanguage, isTranslating }) => {
-  if (!playerLanguage && !isTranslating) {
+const LanguageSelector: React.FC<{
+  selectedLanguages: string[];
+  onSelectionChange: (langCode: string) => void;
+}> = ({ selectedLanguages, onSelectionChange }) => {
+  return (
+    <div>
+      <h2 className="text-lg font-semibold text-gray-900 mb-3">
+        Translate Report To
+      </h2>
+      <div className="grid grid-cols-2 gap-2">
+        {AVAILABLE_LANGUAGES.map((lang) => {
+          const isSelected = selectedLanguages.includes(lang.code);
+          return (
+            <button
+              key={lang.code}
+              onClick={() => onSelectionChange(lang.code)}
+              className={`flex items-center justify-center space-x-2 p-2.5 rounded-lg text-sm font-semibold transition-colors
+                ${isSelected 
+                  ? 'bg-blue-600 text-white shadow-sm' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+            >
+              {isSelected && <Check className="w-4 h-4" />}
+              <span>{lang.name}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const ReportLanguageSwitcher: React.FC<{
+  activeLanguage: string;
+  onLanguageChange: (langCode: string) => void;
+  translatedReports: Record<string, string>;
+  translatingLanguages: Record<string, boolean>;
+}> = ({ activeLanguage, onLanguageChange, translatedReports, translatingLanguages }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const allLanguages = ['EN', ...Object.keys(translatedReports)];
+  const stillTranslating = Object.keys(translatingLanguages).filter(lang => translatingLanguages[lang]);
+  const totalLanguagesToShow = allLanguages.length + stillTranslating.filter(l => !allLanguages.includes(l)).length;
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
+  if (totalLanguagesToShow <= 1) {
     return null;
   }
 
-  const getLanguageAbbreviation = (lang: string | null) => {
-    if (!lang) return "";
-    const abbreviations: { [key: string]: string } = {
-      "Swedish": "SE",
-      "Finnish": "FI",
-      "Czech": "CZ",
-      "Slovak": "SK",
-      "Russian": "RU",
-      "German": "DE",
-      "Georgian": "GE",
-      "French": "FR"
-    };
-    return abbreviations[lang] || lang.substring(0, 2).toUpperCase();
-  };
-
-  const otherLangAbbr = getLanguageAbbreviation(playerLanguage);
+  if (totalLanguagesToShow >= 4) {
+    const activeLangName = AVAILABLE_LANGUAGES.find(l => l.code === activeLanguage)?.name || 'English';
+    return (
+      <div className="relative" ref={dropdownRef}>
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center justify-between w-32 p-2 border border-gray-300 bg-white rounded-lg text-sm hover:bg-gray-50"
+        >
+          <span className="truncate">{activeLangName}</span>
+          <ChevronDown className="w-4 h-4 ml-2 text-gray-500" />
+        </button>
+        {isOpen && (
+          <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-md shadow-lg border border-gray-200 z-30">
+            {allLanguages.map(langCode => (
+              <button
+                key={langCode}
+                onClick={() => { onLanguageChange(langCode); setIsOpen(false); }}
+                className={`w-full text-left p-2 text-sm hover:bg-gray-100 ${activeLanguage === langCode ? 'font-bold bg-gray-100' : ''}`}
+              >
+                {AVAILABLE_LANGUAGES.find(l => l.code === langCode)?.name || 'English'}
+              </button>
+            ))}
+            {stillTranslating.map(langCode => (
+              !allLanguages.includes(langCode) && (
+                <div key={langCode} className="flex items-center justify-between p-2 text-sm text-gray-400 cursor-not-allowed">
+                  <span>{AVAILABLE_LANGUAGES.find(l => l.code === langCode)?.name}</span>
+                  <Spinner className="w-4 h-4 text-gray-400" />
+                </div>
+              )
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center space-x-1 bg-gray-200 rounded-lg p-1">
-      <button 
-        onClick={() => setIsEnglishReport(true)}
-        title="Switch to English"
-        className={`w-10 h-7 flex items-center justify-center text-xs font-bold rounded-md transition-colors ${
-          isEnglishReport ? 'bg-white text-gray-800 shadow-sm' : 'bg-transparent text-gray-500 hover:text-gray-700'
-        }`}
-      >
-        EN
-      </button>
-      
-      <button 
-        onClick={() => setIsEnglishReport(false)}
-        title={`Switch to ${playerLanguage || 'Translated'}`}
-        className={`w-10 h-7 flex items-center justify-center text-xs font-bold rounded-md transition-colors ${
-          !isEnglishReport ? 'bg-white text-gray-800 shadow-sm' : 'bg-transparent text-gray-500 hover:text-gray-700'
-        }`}
-      >
-        {isTranslating ? <Spinner className="w-4 h-4" /> : otherLangAbbr}
-      </button>
+      {allLanguages.map(langCode => (
+        <button
+          key={langCode}
+          onClick={() => onLanguageChange(langCode)}
+          title={`Switch to ${AVAILABLE_LANGUAGES.find(l => l.code === langCode)?.name || 'English'}`}
+          className={`px-3 h-7 flex items-center justify-center text-xs font-bold rounded-md transition-colors ${
+            activeLanguage === langCode ? 'bg-white text-gray-800 shadow-sm' : 'bg-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          {langCode}
+        </button>
+      ))}
+      {stillTranslating.map(langCode => (
+        !allLanguages.includes(langCode) && (
+          <button
+            key={langCode}
+            disabled
+            title={`Translating to ${AVAILABLE_LANGUAGES.find(l => l.code === langCode)?.name}...`}
+            className="w-10 h-7 flex items-center justify-center text-xs font-bold rounded-md bg-transparent text-gray-500"
+          >
+            <Spinner className="w-4 h-4" />
+          </button>
+        )
+      ))}
     </div>
   );
 };
@@ -1097,20 +1188,20 @@ const EditorToolbar: React.FC<{
   isDesktopSidebarCollapsed: boolean;
   onToggleMobileSidebar: () => void;
   onToggleDesktopSidebar: () => void;
-  isEnglishReport: boolean;
-  setIsEnglishReport: (isEnglish: boolean) => void;
-  playerLanguage: string | null;
-  isTranslating: boolean;
+  activeLanguage: string;
+  onLanguageChange: (langCode: string) => void;
+  translatedReports: Record<string, string>;
+  translatingLanguages: Record<string, boolean>;
 }> = ({
   editor,
   isMobileSidebarOpen,
   isDesktopSidebarCollapsed,
   onToggleMobileSidebar,
   onToggleDesktopSidebar,
-  isEnglishReport,
-  setIsEnglishReport,
-  playerLanguage,
-  isTranslating,
+  activeLanguage,
+  onLanguageChange,
+  translatedReports,
+  translatingLanguages,
 }) => {
   const [isTableDropdownOpen, setTableDropdownOpen] = useState(false);
   const tableMenuRef = useRef<HTMLDivElement>(null);
@@ -1327,11 +1418,11 @@ const EditorToolbar: React.FC<{
           </div>
         </div>
         <div className="flex items-center space-x-1 border-l border-gray-300 pl-2 ml-2">
-          <LanguageToggle 
-            isEnglishReport={isEnglishReport}
-            setIsEnglishReport={setIsEnglishReport}
-            playerLanguage={playerLanguage}
-            isTranslating={isTranslating}
+          <ReportLanguageSwitcher 
+            activeLanguage={activeLanguage}
+            onLanguageChange={onLanguageChange}
+            translatedReports={translatedReports}
+            translatingLanguages={translatingLanguages}
           />
         </div>
       </div>
@@ -1380,11 +1471,11 @@ const ScoutingPlatform: React.FC = () => {
   const [isFetchingStats, setIsFetchingStats] = useState(false);
 
   // Translation State
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [originalReportHtml, setOriginalReportHtml] = useState<string | null>(null);
-  const [translatedReportHtml, setTranslatedReportHtml] = useState<string | null>(null);
-  const [isTranslating, setIsTranslating] = useState(false);
-  const [isEnglishReport, setIsEnglishReport] = useState(true);
-  const [playerLanguage, setPlayerLanguage] = useState<string | null>(null);
+  const [translatedReports, setTranslatedReports] = useState<Record<string, string>>({});
+  const [translatingLanguages, setTranslatingLanguages] = useState<Record<string, boolean>>({});
+  const [activeLanguage, setActiveLanguage] = useState('EN');
 
   const [traitRatings, setTraitRatings] = useState<TraitRatings>({
     skating: 0,
@@ -1408,7 +1499,6 @@ const ScoutingPlatform: React.FC = () => {
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Reusable function to apply font sizes
   const applyFontSizes = (editorInstance: Editor) => {
     const { tr, doc } = editorInstance.state;
     let modified = false;
@@ -1453,40 +1543,21 @@ const ScoutingPlatform: React.FC = () => {
         },
         onUpdate: ({ editor: updatedEditor }) => {
           const currentHtml = updatedEditor.getHTML();
-          if (isEnglishReportRef.current) {
+          if (activeLanguage === 'EN') {
             setOriginalReportHtml(currentHtml);
           } else {
-            setTranslatedReportHtml(currentHtml);
+            setTranslatedReports(prev => ({ ...prev, [activeLanguage]: currentHtml }));
           }
         },
       });
       setEditor(newEditor);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+    [activeLanguage]
   );
 
-  const isEnglishReportRef = useRef(isEnglishReport);
   useEffect(() => {
-    isEnglishReportRef.current = isEnglishReport;
-  }, [isEnglishReport]);
-
-
-  useEffect(() => {
-    const initialContent = marked.parse(
-      ""
-    ) as string;
-    initEditor(initialContent);
-    return () => {
-      editor?.destroy();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initEditor]);
-
-  useEffect(() => {
-    const initialContent = marked.parse(
-      ""
-    ) as string;
+    const initialContent = marked.parse("") as string;
     initEditor(initialContent);
     return () => {
       editor?.destroy();
@@ -1510,19 +1581,16 @@ const ScoutingPlatform: React.FC = () => {
     };
   }, [isExportMenuOpen]);
 
-  // Effect to switch editor content when language changes
   useEffect(() => {
     if (!editor) return;
-
-    const newContent = isEnglishReport ? originalReportHtml : translatedReportHtml;
-    
+    const newContent = activeLanguage === 'EN' ? originalReportHtml : translatedReports[activeLanguage];
     if (newContent && editor.getHTML() !== newContent) {
       editor.commands.setContent(newContent, false, {
         preserveWhitespace: 'full',
       });
       applyFontSizes(editor);
     }
-  }, [isEnglishReport, originalReportHtml, translatedReportHtml, editor]);
+  }, [activeLanguage, originalReportHtml, translatedReports, editor]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -1551,7 +1619,6 @@ const ScoutingPlatform: React.FC = () => {
     setSelectedFiles(prevFiles => prevFiles.filter(file => file !== fileToRemove));
   };
 
-  // Player Search Handlers
   const handleSelectPlayer = (player: Player) => {
     setSelectedPlayer(player);
     setSearchQuery('');
@@ -1575,7 +1642,6 @@ const ScoutingPlatform: React.FC = () => {
     setSeasonalStats([]);
   };
 
-  // Team Search Handlers
   const handleSelectTeam = (team: Team) => {
     setSelectedTeam(team);
     setTeamSearchQuery('');
@@ -1591,7 +1657,14 @@ const ScoutingPlatform: React.FC = () => {
     setTraitRatings(prev => ({ ...prev, [trait]: newRating }));
   }, []);
 
-  // Player Search API Fetching
+  const handleLanguageSelectionChange = (langCode: string) => {
+    setSelectedLanguages(prev => 
+      prev.includes(langCode)
+        ? prev.filter(code => code !== langCode)
+        : [...prev, langCode]
+    );
+  };
+
   useEffect(() => {
     if (debouncedSearchQuery.length < 2 || selectedPlayer) {
       setSearchResults([]);
@@ -1670,7 +1743,6 @@ const ScoutingPlatform: React.FC = () => {
         }
         
         const foundPlayers = result.data?.users?.edges || [];
-        console.log("Search Results (Players):", foundPlayers);
         setSearchResults(foundPlayers);
 
       } catch (error: any) {
@@ -1685,7 +1757,6 @@ const ScoutingPlatform: React.FC = () => {
     fetchPlayers();
   }, [debouncedSearchQuery, selectedPlayer]);
 
-  // Team Search API Fetching
   useEffect(() => {
     if (debouncedTeamSearchQuery.length < 2 || selectedTeam) {
       setTeamSearchResults([]);
@@ -1705,7 +1776,6 @@ const ScoutingPlatform: React.FC = () => {
                 name
                 shortName
                 country
-                logo
                 slug
                 leagues {
                   id
@@ -1749,7 +1819,6 @@ const ScoutingPlatform: React.FC = () => {
         }
 
         const foundTeams = result.data?.teams?.edges || [];
-        console.log("Search Results (Teams):", foundTeams);
         setTeamSearchResults(foundTeams);
 
       } catch (error: any) {
@@ -1764,7 +1833,6 @@ const ScoutingPlatform: React.FC = () => {
     fetchTeams();
   }, [debouncedTeamSearchQuery, selectedTeam]);
 
-  // League Standings API Fetching
   useEffect(() => {
     const fetchLeagueStandings = async () => {
       if (!selectedTeam || !selectedTeam.leagues?.[0]?.id) {
@@ -1822,7 +1890,6 @@ const ScoutingPlatform: React.FC = () => {
         }
 
         const standingsData = result.data?.leagueStandings;
-        console.log("League Standings:", standingsData);
         setLeagueStandings(standingsData);
         toast.success("League standings loaded!", { id: "standings-toast" });
 
@@ -1838,7 +1905,6 @@ const ScoutingPlatform: React.FC = () => {
     fetchLeagueStandings();
   }, [selectedTeam]);
 
-  // Seasonal Stats API Fetching
   useEffect(() => {
     if (!selectedPlayer) {
       setSeasonalStats([]);
@@ -1895,7 +1961,6 @@ const ScoutingPlatform: React.FC = () => {
         }
 
         const statsData = result.data?.seasons?.edges || [];
-        console.log("Seasonal Stats:", statsData);
         setSeasonalStats(statsData);
         toast.success("Player stats loaded!", { id: "player-stats-toast" });
 
@@ -1911,40 +1976,42 @@ const ScoutingPlatform: React.FC = () => {
     fetchSeasonalStats();
   }, [selectedPlayer]);
 
-  const handleTranslateReport = async (reportHtml: string, playerCountry: string) => {
-    setIsTranslating(true);
-    setPlayerLanguage(null);
-    toast.loading("Translating report...", { id: "translate-toast" });
+  const handleTranslateReport = async (reportHtml: string, targetLangCode: string) => {
+    const targetLanguage = AVAILABLE_LANGUAGES.find(l => l.code === targetLangCode);
+    if (!targetLanguage) return;
+
+    setTranslatingLanguages(prev => ({ ...prev, [targetLangCode]: true }));
+    const toastId = `translate-${targetLangCode}`;
+    toast.loading(`Translating to ${targetLanguage.name}...`, { id: toastId });
+
     try {
       const response = await fetch('/api/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reportText: reportHtml, playerCountry }),
+        body: JSON.stringify({ reportText: reportHtml, targetLang: targetLanguage.name }),
       });
 
       if (!response.ok) {
-        throw new Error('Translation failed');
+        throw new Error(`Translation to ${targetLanguage.name} failed`);
       }
 
       const data = await response.json();
-
-      if (data.translationSkipped) {
-        console.log("Translation skipped:", data.reason);
-        toast.dismiss("translate-toast");
-        return;
-      }
-
       const translatedHtml = marked.parse(data.translatedText) as string;
-      setTranslatedReportHtml(translatedHtml);
-      setPlayerLanguage(data.languageName);
-      toast.success("Translation complete!", { id: "translate-toast" });
+      setTranslatedReports(prev => ({ ...prev, [targetLangCode]: translatedHtml }));
+      toast.success(`Translated to ${targetLanguage.name}!`, { id: toastId });
 
     } catch (error) {
-      console.error("Translation error:", error);
-      toast.error("Could not translate report.", { id: "translate-toast" });
+      console.error(`Translation error for ${targetLanguage.name}:`, error);
+      toast.error(`Could not translate to ${targetLanguage.name}.`, { id: toastId });
     } finally {
-      setIsTranslating(false);
+      setTranslatingLanguages(prev => ({ ...prev, [targetLangCode]: false }));
     }
+  };
+
+  const triggerAllTranslations = (reportHtml: string) => {
+    selectedLanguages.forEach(langCode => {
+      handleTranslateReport(reportHtml, langCode);
+    });
   };
 
   const handleProcessAudio = async () => {
@@ -1962,9 +2029,9 @@ const ScoutingPlatform: React.FC = () => {
     }
 
     setOriginalReportHtml(null);
-    setTranslatedReportHtml(null);
-    setPlayerLanguage(null);
-    setIsEnglishReport(true);
+    setTranslatedReports({});
+    setTranslatingLanguages({});
+    setActiveLanguage('EN');
 
     const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
     if (!apiKey) {
@@ -2036,7 +2103,7 @@ const ScoutingPlatform: React.FC = () => {
       }
       toast.success("Report generated!", { id: "generate-toast" });
 
-      handleTranslateReport(data.report, selectedPlayer.country);
+      triggerAllTranslations(data.report);
 
     } catch (error: any) {
       console.error("Report Generation API Error:", error);
@@ -2211,7 +2278,9 @@ const ScoutingPlatform: React.FC = () => {
             standingsContext: leagueStandings,
             seasonalStatsContext: seasonalStats,
             reportHtml: editor.getHTML(),
+            reportHtmlBlueprint: originalReportHtml,
             traitRatings: traitRatings,
+            targetLang: activeLanguage, // <-- THIS IS THE UPDATED PART
           }),
         });
 
@@ -2290,10 +2359,9 @@ const ScoutingPlatform: React.FC = () => {
             ${isMobileSidebarOpen ? "translate-x-0 shadow-lg" : "-translate-x-full"}
           `}
         >
-          {/* --- MODIFICATION START: CORRECTED SIDEBAR LAYOUT FOR SCROLLING --- */}
-          <div className={`flex-1 flex flex-col min-h-0 ${isDesktopSidebarCollapsed ? 'lg:hidden' : ''}`}>
+          <div className={`flex-1 flex flex-col min-h-0 p-4 md:p-6 ${isDesktopSidebarCollapsed ? 'lg:hidden' : ''}`}>
             
-            <div className="flex-1 space-y-6 min-h-0 overflow-y-auto p-4 md:p-6">
+            <div className="flex-1 space-y-6 min-h-0 overflow-y-auto pr-2">
               {hasGeneratedReport && (
                 <div className="pb-4 border-b border-gray-200">
                   <h2 className="text-lg font-semibold text-gray-900 mb-3">
@@ -2329,6 +2397,11 @@ const ScoutingPlatform: React.FC = () => {
                 selectedTeam={selectedTeam}
                 onSelectTeam={handleSelectTeam}
                 onClearTeam={handleClearTeam}
+              />
+
+              <LanguageSelector 
+                selectedLanguages={selectedLanguages}
+                onSelectionChange={handleLanguageSelectionChange}
               />
 
               <div>
@@ -2415,7 +2488,6 @@ const ScoutingPlatform: React.FC = () => {
               </button>
             </div>
           </div>
-          {/* --- MODIFICATION END --- */}
         </div>
 
         {isMobileSidebarOpen && (
@@ -2432,10 +2504,10 @@ const ScoutingPlatform: React.FC = () => {
             isDesktopSidebarCollapsed={isDesktopSidebarCollapsed}
             onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
             onToggleDesktopSidebar={() => setIsDesktopSidebarCollapsed(!isDesktopSidebarCollapsed)}
-            isEnglishReport={isEnglishReport}
-            setIsEnglishReport={setIsEnglishReport}
-            playerLanguage={playerLanguage}
-            isTranslating={isTranslating}
+            activeLanguage={activeLanguage}
+            onLanguageChange={setActiveLanguage}
+            translatedReports={translatedReports}
+            translatingLanguages={translatingLanguages}
           />
           {editor && (
             <>

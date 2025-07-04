@@ -3,71 +3,42 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
-//export const runtime = "edge";
-
 export const maxDuration = 150;
-
-// Helper map to convert country codes to language names/codes
-const countryToLanguageMap: { [key: string]: { name: string; code: string } } = {
-  SE: { name: "Swedish", code: "se" },
-  FI: { name: "Finnish", code: "fi" },
-  CZ: { name: "Czech", code: "cz" },
-  SK: { name: "Slovak", code: "sk" },
-  RU: { name: "Russian", code: "ru" },
-  DE: { name: "German", code: "de" },
-  CH: { name: "German", code: "de" }, 
-  FR: {name: "French", code: "fr"},
-  GE: {name: "Georgian", code: "ge"},
-  // Add more mappings as needed
-};
-
-// Countries where English is the primary language (no translation needed)
-const englishSpeakingCountries = ["US", "CA", "GB", "AU", "NZ", "IE"];
 
 export async function POST(request: Request) {
   try {
-    const { reportText, playerCountry } = await request.json();
+    // --- MODIFICATION START: Expect `targetLang` instead of `playerCountry` ---
+    const { reportText, targetLang } = await request.json();
 
-    if (!reportText || !playerCountry) {
+    if (!reportText || !targetLang) {
       return NextResponse.json(
-        { error: "Report text and player country are required." },
+        { error: "Report text and target language are required." },
         { status: 400 }
       );
     }
-
-    // Check if translation is necessary
-    if (englishSpeakingCountries.includes(playerCountry.toUpperCase())) {
-      return NextResponse.json({
-        translationSkipped: true,
-        reason: "Player's country is English-speaking.",
-      });
-    }
-
-    const targetLanguage = countryToLanguageMap[playerCountry.toUpperCase()];
-    if (!targetLanguage) {
-      return NextResponse.json({
-        translationSkipped: true,
-        reason: `No language mapping found for country code: ${playerCountry}`,
-      });
-    }
+    // --- MODIFICATION END ---
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash-preview-05-20",
+      model: "gemini-2.5-flash-preview-05-20", // Using a slightly more robust model for translation can help
       generationConfig: {
         temperature: 0.2
       }
     });
 
+    // --- MODIFICATION START: Use `targetLang` directly in the prompt ---
     const prompt = `
-      Translate the following hockey scouting report into ${targetLanguage.name}. No english. The only thing that should be in english is the header "GRAET SCOUTING REPORT" - this must not be translated.
-      Preserve the exact Markdown and HTML formatting, including headings, bold text, lists, and tables. No markdown code blocks in the beginning or --- report should start with GRAET SCOUTING REPORT
-      Only provide the translated text as the response, with no additional commentary.
+      Translate the following hockey scouting report into ${targetLang}.
+      The only text that MUST remain in English is the main header: "GRAET SCOUTING REPORT".
+      Preserve the exact Markdown and HTML formatting, including headings (###), bold text (**text**), lists, and tables.
+      Do not add any extra commentary, introductory text, or markdown code blocks (like \`\`\`) to your response.
+      The response should start directly with the translated version of the report content.
 
       ---
       ${reportText}
       ---
     `;
+    // --- MODIFICATION END ---
 
     const result = await model.generateContent(prompt);
     const response = result.response;
@@ -75,7 +46,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ 
       translatedText,
-      languageName: targetLanguage.name,
+      languageName: targetLang, // Return the language name we received
     });
 
   } catch (error) {

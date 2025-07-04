@@ -176,37 +176,37 @@ export async function POST(request: Request) {
       ### SEASONAL STATS
       [SEASONAL_STATS_TABLE_HERE]
 
-      ### SKATING (Rating/5)
+      ### SKATING
       **Speed:** [Analysis of top speed and acceleration.]\n
       **Edgework and Agility:** [Analysis of movement in tight spaces.]\n
       **Stride Efficiency:** [Analysis of glide and dynamic movements.]\n
       **Notes:** [Overall summary of skating abilities and areas for improvement.]\n
 
-      ### PUCK SKILLS (Rating/5)
+      ### PUCK SKILLS
       **Stickhandling:**[Analysis of puck control.]\n
       **Passing:**[Analysis of vision and execution.]\n
       **Puck Protection:** [Analysis of using body to shield the puck.]\n
       **Notes:** [Overall summary of puck skills and decision-making.]\n
 
-      ### HOCKEY IQ (Rating/5)
+      ### HOCKEY IQ
       **Offensive Awareness:** [Analysis of positioning and proactivity in the offensive zone.]\n
       **Defensive Awareness:** [Analysis of positioning and engagement in the defensive zone.]\n
       **Decision Making:** [Analysis of playmaking choices and initiative.]\n
       **Notes:** [Overall summary of game understanding and play-driving ability.]\n
 
-      ### SHOT (Rating/5)
+      ### SHOT
       **Wrist Shot:** [Analysis of accuracy and power.]\n
       **Slap Shot:** [Analysis of technique and usage.]\n
       **One-Timer:** [Analysis of mechanics and execution speed.]\n
       **Notes:** [Overall summary of shooting mentality and effectiveness.]\n
 
-      ### COMPETE LEVEL (Rating/5)
+      ### COMPETE LEVEL
       **Work Ethic:** [Analysis of engagement in all zones.]\n
       **Physicality:** [Analysis of consistency and effectiveness of physical play.]\n
       **Leadership:** [Analysis of on-ice leadership qualities.]\n
       **Notes:** [Overall summary of competitiveness and impact in crucial moments.]\n
 
-      ### DEFENSIVE GAME (Rating/5)
+      ### DEFENSIVE GAME
       **Gap Control:** [Analysis of positioning relative to attackers.]\n
       **Stick Positioning:** [Analysis of ability to disrupt plays with the stick.]\n
       **Defensive Zone Reads:** [Analysis of anticipation and scanning.]\n
@@ -251,20 +251,15 @@ export async function POST(request: Request) {
       6.  **Data Presentation:**
           - **Use Tables for Structured Data:** If the transcription includes quantifiable stats (e.g., goals, assists, time on ice) or clear comparative points, you are strongly encouraged to present this information in a Markdown table for clarity.
 
-      7.  **Scoring and Ratings:**
-          - **Use Scout's Rating First:** If the scout provides a direct rating (e.g., "skating is a 4 out of 5"), you MUST use it.
-          - **Estimate When Necessary:** If no rating is given for a category, provide your own expert estimation based on the scout's analysis.
-          - **Format:** The rating should only appear in the main section headings, formatted as \`(X.X/5)\`.
-
-      8.  **Handling Missing Information:**
+      7.  **Handling Missing Information:**
           - If a core, essential skill for a position is completely missing from the transcription, it is appropriate to add a "Notes" sub-category under the relevant section stating: *"This aspect was not assessed in the current observation."*
           - if you cannot find any information in the transcript for a certain part in the report for example: **Stickhandling** - state "Insufficient information from the video to assess Stickhandling" - only nothing else after for the part
           - If the entire transcription is too brief or vague to form a meaningful report, your entire response MUST be the single line: "Insufficient information to generate a report."
           - Try your best to use your own knowledge about the leagues and the teams that play within them to correctly spell the names of the teams and leagues in the report - so do not default to N/A until you try your best to estimate the league
 
-      9.  **Formatting Rules:**
+      8.  **Formatting Rules:**
           - **Main Title:** You MUST use the exact HTML tag: \`<h1 style="text-align: center;">GRAET SCOUTING REPORT</h1>\`.
-          - **Section Headings:** Main section headings MUST strictly follow the format: \`### [SECTION NAME] (X.X/5)\`. Do not add any other text or context in parentheses, such as "(GOALIE SPECIFICS)" or "(NOT ASSESSED)".
+          - **Section Headings:** Main section headings MUST strictly follow the format: \`### [SECTION NAME] \`. Do not add any other text or context in parentheses, such as "(GOALIE SPECIFICS)" or "(NOT ASSESSED)".
           - **Sub-Categories:** Each header item (e.g., "**Player:**") and each sub-category (e.g., "**Speed:**") must be on its own line, followed by its analysis on the next line.
           - **Spacing:** There must be a blank line between each sub-category block. please response the \n you see in the template
           - **Final Output:** The final output MUST be only the Markdown/HTML of the report itself. No extra commentary.

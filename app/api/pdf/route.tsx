@@ -1,5 +1,3 @@
-// app/api/pdf/route.tsx
-
 import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
@@ -24,6 +22,43 @@ import {
 import { parse, HTMLElement } from "node-html-parser";
 import QRCode from 'qrcode';
 
+// --- 1. TRANSLATION & LOCALE HELPERS ---
+
+async function getTranslations(lang: string) {
+  const langCode = lang.toLowerCase();
+  const defaultLang = 'en';
+  
+  const loadFile = async (code: string) => {
+    try {
+      const filePath = path.join(process.cwd(), 'app', 'lib', 'pdf-translations', `${code}.json`);
+      const fileContent = await fs.readFile(filePath, 'utf-8');
+      return JSON.parse(fileContent);
+    } catch (error) {
+      console.warn(`Translations for '${code}' not found. Attempting to fall back to English.`);
+      return null;
+    }
+  };
+
+  let translations = await loadFile(langCode);
+  if (!translations) {
+    translations = await loadFile(defaultLang);
+    if (!translations) {
+        throw new Error("Default English translation file (en.json) is missing.");
+    }
+  }
+  
+  return translations;
+}
+
+const getLocaleForLang = (lang: string) => {
+    const map: { [key: string]: string } = {
+        'se': 'sv-SE', 'fi': 'fi-FI', 'cz': 'cs-CZ', 'sk': 'sk-SK',
+        'ru': 'ru-RU', 'de': 'de-DE', 'fr': 'fr-FR', 'ge': 'ka-GE',
+        'en': 'en-US'
+    };
+    return map[lang.toLowerCase()] || 'en-US';
+}
+
 // --- TYPE DEFINITIONS ---
 
 type GameDetails = {
@@ -42,7 +77,12 @@ type TraitRatings = {
   defensiveGame: number;
 };
 
-// --- 1. FONT REGISTRATION ---
+type ReportSection = {
+  title: string;
+  html: string;
+};
+
+// --- 2. FONT REGISTRATION ---
 Font.register({
   family: "DejaVu",
   fonts: [
@@ -65,7 +105,7 @@ Font.register({
   ],
 });
 
-// --- 2. STYLING ---
+// --- 3. STYLING ---
 const styles = StyleSheet.create({
   // General Styles
   page: { fontFamily: "DejaVu", backgroundColor: "#FFFFFF" },
@@ -304,8 +344,9 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   gameHeaderIcon: {
-    width: 60,
-    height: 60,
+    width: 40,
+    height: 40,
+    backgroundColor: "#D1D5DB",
     marginHorizontal: 16,
   },
   gameBody: {
@@ -658,7 +699,7 @@ const playstylePageStyles = StyleSheet.create({
   footer: { position: 'absolute', bottom: 40, left: 40, right: 40, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
 });
 
-// --- 3. HELPER FUNCTIONS & COMPONENTS ---
+// --- 4. HELPER FUNCTIONS & COMPONENTS ---
 const formatHeight = (
   h: { centimeters: number; inches: number } | null | undefined
 ): string => {
@@ -672,9 +713,9 @@ const formatHeight = (
 const formatWeight = (w: any) =>
   w?.pounds ? `${w.kilograms} kg / ${w.pounds} lbs` : "N/A";
 
-const formatDate = (d: string) =>
+const formatDate = (d: string, locale: string) =>
   d
-    ? new Date(d).toLocaleDateString("en-US", {
+    ? new Date(d).toLocaleDateString(locale, {
         year: "numeric",
         month: "long",
         day: "numeric",
@@ -711,52 +752,77 @@ const generateQrCodeDataUrl = async (text: string): Promise<string | null> => {
 };
 
 const splitReportByHeadings = (
-  html: string
-): { [key: string]: string | null } => {
-  if (!html) return {};
-  const root = parse(html);
-  const sections: { [key: string]: string } = {};
-  const hrSplit = root.innerHTML.split(/<hr\s*\/?>/i);
-  const gameInfoHtml = hrSplit.length > 1 ? hrSplit[1] : null;
-  const mainContentHtml =
-    hrSplit.length > 2
-      ? hrSplit.slice(2).join("<hr />")
-      : hrSplit.length === 1
-        ? hrSplit[0]
-        : "";
-  const mainRoot = parse(mainContentHtml);
-  const tableNode = mainRoot.querySelector("table");
-  const tableHtml = tableNode ? tableNode.outerHTML : null;
-  if (tableNode) tableNode.remove();
-  const analysisParts =
-    mainRoot.innerHTML.match(/<h3[\s\S]*?(?=<h3|$)/g) || [];
-  analysisParts.forEach((part) => {
-    const partRoot = parse(part);
-    const heading = partRoot.querySelector("h3");
-    if (heading) {
-      const headingText = heading.innerText.trim().toLowerCase();
-      if (headingText.startsWith("seasonal stats")) return;
-      const key = headingText
-        .replace(/\s*\(.*?\)\s*/g, "")
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-zA-Z0-9]+(.)?/g, (m, chr) =>
-          chr ? chr.toUpperCase() : ""
-        );
-      sections[key] = part;
+  blueprintHtml: string,
+  contentHtml: string
+): { [key: string]: ReportSection | string | null } => {
+  if (!blueprintHtml || !contentHtml) return {};
+
+  const blueprintRoot = parse(blueprintHtml);
+  const contentRoot = parse(contentHtml);
+
+  const sections: { [key: string]: ReportSection | string | null } = {};
+
+  const blueprintHrSplit = blueprintRoot.innerHTML.split(/<hr\s*\/?>/i);
+  const contentHrSplit = contentRoot.innerHTML.split(/<hr\s*\/?>/i);
+
+  sections.gameInfo = contentHrSplit.length > 1 ? contentHrSplit[1] : null;
+
+  const blueprintMainContent = blueprintHrSplit.length > 2 ? blueprintHrSplit.slice(2).join("<hr />") : blueprintHrSplit.length === 1 ? blueprintHrSplit[0] : "";
+  const contentMainContent = contentHrSplit.length > 2 ? contentHrSplit.slice(2).join("<hr />") : contentHrSplit.length === 1 ? contentHrSplit[0] : "";
+
+  const blueprintMainRoot = parse(blueprintMainContent);
+  const contentMainRoot = parse(contentMainContent);
+
+  const contentTableNode = contentMainRoot.querySelector("table");
+  sections.seasonalStats = contentTableNode ? contentTableNode.outerHTML : null;
+  if (contentTableNode) contentTableNode.remove();
+
+  const blueprintAnalysisParts = blueprintMainRoot.innerHTML.match(/<h3[\s\S]*?(?=<h3|$)/g) || [];
+  const contentAnalysisParts = contentMainRoot.innerHTML.match(/<h3[\s\S]*?(?=<h3|$)/g) || [];
+
+  const keyMap: { [key: string]: string } = {
+    skating: "skating",
+    "puck skills": "puckSkills",
+    "hockey iq": "hockeyIq",
+    shot: "shot",
+    "compete level": "competeLevel",
+    "defensive game": "defensiveGame",
+    "overall summary": "overallSummary",
+    projection: "projection",
+    recommendation: "recommendation",
+  };
+
+  blueprintAnalysisParts.forEach((blueprintPart, index) => {
+    const blueprintPartRoot = parse(blueprintPart);
+    const blueprintHeading = blueprintPartRoot.querySelector("h3");
+
+    if (blueprintHeading) {
+      const blueprintHeadingText = blueprintHeading.innerText.trim().toLowerCase().replace(/\s*\(.*?\)\s*/g, "").trim();
+      const key = Object.keys(keyMap).find(k => blueprintHeadingText.startsWith(k));
+
+      if (key && keyMap[key]) {
+        const contentPart = contentAnalysisParts[index];
+        if (contentPart) {
+          const contentPartRoot = parse(contentPart);
+          const contentHeading = contentPartRoot.querySelector("h3");
+          const title = contentHeading ? contentHeading.innerText.trim() : blueprintHeading.innerText.trim();
+          
+          if (contentHeading) contentHeading.remove();
+          
+          sections[keyMap[key]] = {
+            title: title,
+            html: contentPartRoot.innerHTML,
+          };
+        }
+      }
     }
   });
-  return { gameInfo: gameInfoHtml, seasonalStats: tableHtml, ...sections };
+
+  return sections;
 };
 
 const parseTraitHtml = (html: string) => {
   const root = parse(html);
-  const heading = root.querySelector('h3');
-  
-  if (heading) {
-    heading.remove();
-  }
-
   const subSections: { title: string; content: string }[] = [];
   const contentHtml = root.innerHTML;
   const parts = contentHtml.split(/(?=<strong>.+?:<\/strong>)/g).filter(part => part.trim() !== '');
@@ -874,17 +940,21 @@ const CoverPage = ({
   playerImageSrc,
   logoOverlayBuffer,
   footerLogoBuffer,
+  t,
+  locale,
 }: {
   playerContext: any;
   backgroundBuffer: Buffer | null;
   playerImageSrc: string | null;
   logoOverlayBuffer: Buffer | null;
   footerLogoBuffer: Buffer | null;
+  t: any;
+  locale: string;
 }) => {
   const nameParts = playerContext?.name?.split(' ') || ['Player', 'Name'];
   const firstName = nameParts[0];
   const lastName = nameParts.slice(1).join(' ');
-  const reportDate = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const reportDate = new Date().toLocaleDateString(locale, { month: 'long', year: 'numeric' });
 
   return (
     <Page size="A4" style={coverPageStyles.page}>
@@ -907,7 +977,7 @@ const CoverPage = ({
             <View style={coverPageStyles.titleBlock}>
               <Text style={coverPageStyles.playerFirstName}>{firstName}</Text>
               <Text style={coverPageStyles.playerLastName}>{lastName}</Text>
-              <Text style={coverPageStyles.reportTitle}>Development Report</Text>
+              <Text style={coverPageStyles.reportTitle}>{t.reportTitle}</Text>
             </View>
           </View>
         </View>
@@ -928,14 +998,18 @@ const PlaystylePage = ({
   playerContext,
   positionImageBuffer,
   footerLogoBuffer2,
+  t,
 }: {
   playerContext: any;
   positionImageBuffer: Buffer | null;
   footerLogoBuffer2: Buffer | null;
+  t: any;
 }) => {
   const playerType = playerContext?.bio?.playerType;
-  const formattedPlaystyle = formatPlaystyle(playerType);
-  const description = playstyleDescriptions[playerType] || 'No description available for this playstyle.';
+  const playstyleName = playerType 
+    ? (t.playstyleNames[playerType] || formatPlaystyle(playerType)) 
+    : 'N/A';
+  const description = t.playstyleDescriptions[playerType] || 'No description available for this playstyle.';
 
   return (
     <Page size="A4" style={playstylePageStyles.page}>
@@ -951,7 +1025,7 @@ const PlaystylePage = ({
               )}
             </View>
             <View style={playstylePageStyles.textContainer}>
-              <Text style={playstylePageStyles.playstyleName}>{formattedPlaystyle}</Text>
+              <Text style={playstylePageStyles.playstyleName}>{playstyleName}</Text>
               <Text style={playstylePageStyles.playstyleDescription}>{description}</Text>
             </View>
           </View>
@@ -963,10 +1037,10 @@ const PlaystylePage = ({
             <Text style={styles.logoPlaceholder}>GRAET</Text>
           )}
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Text style={styles.gameFooterText}>BIO</Text>
+            <Text style={styles.gameFooterText}>{t.bioFooter}</Text>
             <Text
               style={styles.pageNumber}
-              render={({ pageNumber, totalPages }) => `PAGE ${pageNumber} OF ${totalPages}`}
+              render={({ pageNumber, totalPages }) => `${t.pageLabel} ${pageNumber} ${t.ofLabel} ${totalPages}`}
               fixed
             />
           </View>
@@ -976,7 +1050,7 @@ const PlaystylePage = ({
   );
 };
 
-const StatsTable = ({ html, teamLogosMap }: { html: string, teamLogosMap: Map<string, string> }) => {
+const StatsTable = ({ html, teamLogosMap, t }: { html: string, teamLogosMap: Map<string, string>, t: any }) => {
   if (!html) return null;
 
   const root = parse(html);
@@ -1024,22 +1098,22 @@ const StatsTable = ({ html, teamLogosMap }: { html: string, teamLogosMap: Map<st
     <View style={styles.table}>
       <View style={styles.tableHeader}>
         <View style={[styles.tableCol, styles.seasonCol]}>
-          <Text style={styles.tableHeaderCell}>Season</Text>
+          <Text style={styles.tableHeaderCell}>{t.statsSeason}</Text>
         </View>
         <View style={[styles.tableCol, styles.teamCol]}>
-          <Text style={styles.tableHeaderCell}>Team</Text>
+          <Text style={styles.tableHeaderCell}>{t.statsTeam}</Text>
         </View>
         <View style={[styles.tableCol, styles.gpCol, styles.numericCol]}>
-          <Text style={styles.numericHeaderCell}>GP</Text>
+          <Text style={styles.numericHeaderCell}>{t.statsGP}</Text>
         </View>
         <View style={[styles.tableCol, styles.gCol, styles.numericCol]}>
-          <Text style={styles.numericHeaderCell}>G</Text>
+          <Text style={styles.numericHeaderCell}>{t.statsG}</Text>
         </View>
         <View style={[styles.tableCol, styles.aCol, styles.numericCol]}>
-          <Text style={styles.numericHeaderCell}>A</Text>
+          <Text style={styles.numericHeaderCell}>{t.statsA}</Text>
         </View>
         <View style={[styles.tableCol, styles.tpCol, styles.numericCol]}>
-          <Text style={styles.numericHeaderCell}>TP</Text>
+          <Text style={styles.numericHeaderCell}>{t.statsTP}</Text>
         </View>
       </View>
       <View style={styles.tableBody}>
@@ -1095,15 +1169,17 @@ const HtmlRenderer = ({
   teamLogosMap,
   ignoreHeadings = [],
   styleOverrides = {},
+  t,
 }: {
   html: string;
   isStatsTable?: boolean;
   teamLogosMap?: Map<string, string>;
   ignoreHeadings?: string[];
   styleOverrides?: { [key: string]: any };
+  t: any;
 }) => {
   if (isStatsTable) {
-    return <StatsTable html={html} teamLogosMap={teamLogosMap || new Map()} />;
+    return <StatsTable html={html} teamLogosMap={teamLogosMap || new Map()} t={t} />;
   }
 
   const root = parse(html);
@@ -1156,11 +1232,13 @@ const SummaryPage = ({
   footerTitle,
   html,
   footerLogoBuffer2,
+  t,
 }: {
   title: string;
   footerTitle: string;
   html: string | null;
   footerLogoBuffer2: Buffer | null;
+  t: any;
 }) => {
   if (!html) return null;
 
@@ -1174,6 +1252,7 @@ const SummaryPage = ({
             html={html}
             ignoreHeadings={['h3']}
             styleOverrides={{ p: styles.summaryParagraph }}
+            t={t}
           />
         </View>
       </View>
@@ -1188,7 +1267,7 @@ const SummaryPage = ({
           <Text
             style={styles.pageNumber}
             render={({ pageNumber, totalPages }) =>
-              `PAGE ${pageNumber} OF ${totalPages}`
+              `${t.pageLabel} ${pageNumber} ${t.ofLabel} ${totalPages}`
             }
             fixed
           />
@@ -1203,11 +1282,13 @@ const TraitPage = ({
   html,
   rating,
   footerLogoBuffer2,
+  t,
 }: {
   title: string;
   html: string | null;
   rating: number;
   footerLogoBuffer2: Buffer | null;
+  t: any;
 }) => {
   if (!html) return null;
 
@@ -1241,7 +1322,7 @@ const TraitPage = ({
             <Text style={styles.subSectionTitle}>
               {escapeForPdf(decodeHtmlEntities(section.title))}
             </Text>
-            <HtmlRenderer html={section.content} />
+            <HtmlRenderer html={section.content} t={t} />
           </View>
         ))}
       </View>
@@ -1257,7 +1338,7 @@ const TraitPage = ({
           <Text
             style={styles.pageNumber}
             render={({ pageNumber, totalPages }) =>
-              `PAGE ${pageNumber} OF ${totalPages}`
+              `${t.pageLabel} ${pageNumber} ${t.ofLabel} ${totalPages}`
             }
             fixed
           />
@@ -1267,18 +1348,18 @@ const TraitPage = ({
   );
 };
 
-const StatsPage = ({ html, footerLogoBuffer2, teamLogosMap }: { html: string | null, footerLogoBuffer2: Buffer | null, teamLogosMap: Map<string, string> }) => {
+const StatsPage = ({ html, footerLogoBuffer2, teamLogosMap, t }: { html: string | null, footerLogoBuffer2: Buffer | null, teamLogosMap: Map<string, string>, t: any }) => {
   if (!html) return null;
   return (
     <Page size="A4" style={styles.page}>
       <View style={styles.statsPageContainer}>
         <View style={styles.statsTitleHeader}>
           <BackgroundGradient />
-          <Text style={styles.statsTitleText}>STATS</Text>
+          <Text style={styles.statsTitleText}>{t.statsTitle}</Text>
         </View>
         <View style={styles.statsMainContent}>
           <View style={styles.statsTableWrapper}>
-            <HtmlRenderer html={html} isStatsTable={true} teamLogosMap={teamLogosMap} />
+            <HtmlRenderer html={html} isStatsTable={true} teamLogosMap={teamLogosMap} t={t} />
           </View>
         </View>
       </View>
@@ -1291,7 +1372,7 @@ const StatsPage = ({ html, footerLogoBuffer2, teamLogosMap }: { html: string | n
         <Text
           style={styles.pageNumber}
           render={({ pageNumber, totalPages }) =>
-            `PAGE ${pageNumber} OF ${totalPages}`
+            `${t.pageLabel} ${pageNumber} ${t.ofLabel} ${totalPages}`
           }
           fixed
         />
@@ -1300,7 +1381,6 @@ const StatsPage = ({ html, footerLogoBuffer2, teamLogosMap }: { html: string | n
   );
 };
 
-// --- MODIFICATION START: UPDATED ScoutedGamePage ---
 const ScoutedGamePage = ({ 
   gameDetails, 
   footerLogoBuffer2, 
@@ -1308,6 +1388,7 @@ const ScoutedGamePage = ({
   homeTeamLogo,
   awayTeamLogo,
   leagueLogo,
+  t,
 }: { 
   gameDetails: GameDetails | null, 
   footerLogoBuffer2: Buffer | null, 
@@ -1315,6 +1396,7 @@ const ScoutedGamePage = ({
   homeTeamLogo: string | null,
   awayTeamLogo: string | null,
   leagueLogo: string | null,
+  t: any,
 }) => {
   if (!gameDetails) return null;
 
@@ -1326,7 +1408,7 @@ const ScoutedGamePage = ({
     <Page size="A4" style={styles.page}>
       <View style={styles.scoutedGamePageContainer}>
         <BackgroundGradient />
-        <Text style={styles.scoutedGameTitle}>SCOUTED GAME</Text>
+        <Text style={styles.scoutedGameTitle}>{t.scoutedGameTitle}</Text>
         <View style={styles.scoutedGameMainContent}>
           <View style={styles.gameBox}>
             <View style={styles.gameHeader}>
@@ -1364,10 +1446,10 @@ const ScoutedGamePage = ({
           <View style={styles.qrCodeSection}>
             <View style={styles.qrCodeTextBlock}>
               <Text style={styles.qrCodeText}>
-                CHECK THE GAME DETAIL & STATS ON GRAET
+                {t.qrCheckGame}
               </Text>
               <View style={styles.qrCodeButton}>
-                <Text style={styles.qrCodeButtonText}>SHOW GAME</Text>
+                <Text style={styles.qrCodeButtonText}>{t.qrShowGame}</Text>
               </View>
             </View>
             {gameQrCodeDataUrl ? (
@@ -1385,45 +1467,44 @@ const ScoutedGamePage = ({
           <Text style={styles.logoPlaceholder}>GRAET</Text>
         )}
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Text style={styles.gameFooterText}>GAME</Text>
-          <Text style={styles.pageNumber} render={({ pageNumber, totalPages }) => (`PAGE ${pageNumber} OF ${totalPages}`)} fixed />
+          <Text style={styles.gameFooterText}>{t.gameFooter}</Text>
+          <Text style={styles.pageNumber} render={({ pageNumber, totalPages }) => (`${t.pageLabel} ${pageNumber} ${t.ofLabel} ${totalPages}`)} fixed />
         </View>
       </View>
     </Page>
   );
 };
-// --- MODIFICATION END ---
 
-const ScalingSystemPage = ({ footerLogoBuffer2 }: { footerLogoBuffer2: Buffer | null }) => (
+const ScalingSystemPage = ({ footerLogoBuffer2, t }: { footerLogoBuffer2: Buffer | null, t: any }) => (
   <Page size="A4" style={styles.page}>
     <BackgroundGradient />
     <View style={styles.infoPageContainer}>
-      <Text style={styles.infoPageTitle}>Scaling System</Text>
+      <Text style={styles.infoPageTitle}>{t.scalingTitle}</Text>
       <Text style={styles.infoPageIntroText}>
-        Ratings are contextualized by age group, position, and competitive level.
+        {t.scalingIntro}
       </Text>
       
       <View style={styles.scalingGrid}>
         <View style={styles.scalingColumn}>
           <View style={styles.ratingBlock}>
             <StarRating rating={5} />
-            <Text style={styles.ratingTitle}>Elite:</Text>
+            <Text style={styles.ratingTitle}>{t.scalingEliteTitle}</Text>
             <Text style={styles.ratingDescription}>
-              Exceptional at this skill, comparable to top-tier players in their age group or level.
+              {t.scalingEliteDesc}
             </Text>
           </View>
           <View style={styles.ratingBlock}>
             <StarRating rating={3} />
-            <Text style={styles.ratingTitle}>Solid:</Text>
+            <Text style={styles.ratingTitle}>{t.scalingSolidTitle}</Text>
             <Text style={styles.ratingDescription}>
-              Adequate for current level; can still be developed further.
+              {t.scalingSolidDesc}
             </Text>
           </View>
           <View style={styles.ratingBlock}>
             <StarRating rating={1} />
-            <Text style={styles.ratingTitle}>Needs Improvement:</Text>
+            <Text style={styles.ratingTitle}>{t.scalingNeedsImprovementTitle}</Text>
             <Text style={styles.ratingDescription}>
-              Below standard; requires focused development or training.
+              {t.scalingNeedsImprovementDesc}
             </Text>
           </View>
         </View>
@@ -1431,16 +1512,16 @@ const ScalingSystemPage = ({ footerLogoBuffer2 }: { footerLogoBuffer2: Buffer | 
         <View style={styles.scalingColumn}>
           <View style={styles.ratingBlock}>
             <StarRating rating={4} />
-            <Text style={styles.ratingTitle}>Strong:</Text>
+            <Text style={styles.ratingTitle}>{t.scalingStrongTitle}</Text>
             <Text style={styles.ratingDescription}>
-              Above average; consistently effective in high-level play.
+              {t.scalingStrongDesc}
             </Text>
           </View>
           <View style={styles.ratingBlock}>
             <StarRating rating={2} />
-            <Text style={styles.ratingTitle}>Developing:</Text>
+            <Text style={styles.ratingTitle}>{t.scalingDevelopingTitle}</Text>
             <Text style={styles.ratingDescription}>
-              Some signs of potential, but inconsistency or technical flaws are present.
+              {t.scalingDevelopingDesc}
             </Text>
           </View>
         </View>
@@ -1454,10 +1535,10 @@ const ScalingSystemPage = ({ footerLogoBuffer2 }: { footerLogoBuffer2: Buffer | 
         <Text style={styles.logoPlaceholder}>GRAET</Text>
       )}
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <Text style={styles.gameFooterText}>SCALING SYSTEM</Text>
+        <Text style={styles.gameFooterText}>{t.scalingFooter}</Text>
         <Text
           style={styles.pageNumber}
-          render={({ pageNumber, totalPages }) => `PAGE ${pageNumber} OF ${totalPages}`}
+          render={({ pageNumber, totalPages }) => `${t.pageLabel} ${pageNumber} ${t.ofLabel} ${totalPages}`}
           fixed
         />
       </View>
@@ -1465,26 +1546,26 @@ const ScalingSystemPage = ({ footerLogoBuffer2 }: { footerLogoBuffer2: Buffer | 
   </Page>
 );
 
-const ScoutingTeamPage = ({ footerLogoBuffer2 }: { footerLogoBuffer2: Buffer | null }) => (
+const ScoutingTeamPage = ({ footerLogoBuffer2, t }: { footerLogoBuffer2: Buffer | null, t: any }) => (
   <Page size="A4" style={styles.page}>
     <BackgroundGradient />
     <View style={styles.infoPageContainer}>
-      <Text style={styles.infoPageTitle}>Our Scouting Team</Text>
+      <Text style={styles.infoPageTitle}>{t.scoutingTeamTitle}</Text>
       <Text style={styles.infoPageIntroText}>
-        Our scouting team combines years of experience from top leagues in Europe and North America. Each report is created or reviewed by professionals who've evaluated hundreds of players at the junior, collegiate, and pro levels.
+        {t.scoutingTeamIntro}
       </Text>
 
       <View>
         <View style={styles.scoutProfile}>
-          <Text style={styles.scoutName}>John Doe</Text>
+          <Text style={styles.scoutName}>{t.scout1Name}</Text>
           <Text style={styles.scoutDescription}>
-            A seasoned scout with over 7 years of experience. He spent 5 years scouting in Sweden's SHL with Rögle BK and worked for 2 years with the NCAA's Boston University program. John specializes in identifying high-IQ forwards and defensive-zone play.
+            {t.scout1Desc}
           </Text>
         </View>
         <View style={styles.scoutProfile}>
-          <Text style={styles.scoutName}>Mark Thompson</Text>
+          <Text style={styles.scoutName}>{t.scout2Name}</Text>
           <Text style={styles.scoutDescription}>
-            A former junior coach turned scout from Canada, Mark has a sharp eye for player development and has contributed to WHL draft rankings.
+            {t.scout2Desc}
           </Text>
         </View>
       </View>
@@ -1497,10 +1578,10 @@ const ScoutingTeamPage = ({ footerLogoBuffer2 }: { footerLogoBuffer2: Buffer | n
         <Text style={styles.logoPlaceholder}>GRAET</Text>
       )}
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <Text style={styles.gameFooterText}>OUR SCOUTING TEAM</Text>
+        <Text style={styles.gameFooterText}>{t.scoutingTeamFooter}</Text>
         <Text
           style={styles.pageNumber}
-          render={({ pageNumber, totalPages }) => `PAGE ${pageNumber} OF ${totalPages}`}
+          render={({ pageNumber, totalPages }) => `${t.pageLabel} ${pageNumber} ${t.ofLabel} ${totalPages}`}
           fixed
         />
       </View>
@@ -1508,7 +1589,7 @@ const ScoutingTeamPage = ({ footerLogoBuffer2 }: { footerLogoBuffer2: Buffer | n
   </Page>
 );
 
-// --- 4. MAIN DOCUMENT COMPONENT ---
+// --- 5. MAIN DOCUMENT COMPONENT ---
 const ReportDocument = ({
   playerContext,
   teamContext,
@@ -1525,6 +1606,8 @@ const ReportDocument = ({
   traitRatings,
   teamLogosMap,
   gamePageLogos,
+  t,
+  locale,
 }: any) => (
   <Document>
     <CoverPage
@@ -1533,6 +1616,8 @@ const ReportDocument = ({
       playerImageSrc={playerImageSrc}
       logoOverlayBuffer={logoOverlayBuffer}
       footerLogoBuffer={footerLogoBuffer}
+      t={t}
+      locale={locale}
     />
     <Page size="A4" style={styles.page}>
       <BackgroundGradient />
@@ -1549,7 +1634,7 @@ const ReportDocument = ({
           <View style={styles.infoSection}>
             <View style={styles.infoRow}>
               <View style={styles.infoBlock}>
-                <Text style={styles.infoLabel}>Team</Text>
+                <Text style={styles.infoLabel}>{t.teamLabel}</Text>
                 <Text style={styles.infoValue}>
                   {teamContext?.name || "N/A"}
                 </Text>
@@ -1557,13 +1642,13 @@ const ReportDocument = ({
             </View>
             <View style={styles.infoRow}>
               <View style={styles.infoBlock}>
-                <Text style={styles.infoLabel}>Date of Birth</Text>
+                <Text style={styles.infoLabel}>{t.dobLabel}</Text>
                 <Text style={styles.infoValue}>
-                  {formatDate(playerContext?.dateOfBirth)}
+                  {formatDate(playerContext?.dateOfBirth, locale)}
                 </Text>
               </View>
               <View style={styles.infoBlock}>
-                <Text style={styles.infoLabel}>Nationality</Text>
+                <Text style={styles.infoLabel}>{t.nationalityLabel}</Text>
                 <Text style={styles.infoValue}>
                   {playerContext?.country || "N/A"}
                 </Text>
@@ -1571,13 +1656,13 @@ const ReportDocument = ({
             </View>
             <View style={styles.infoRow}>
               <View style={styles.infoBlock}>
-                <Text style={styles.infoLabel}>Height</Text>
+                <Text style={styles.infoLabel}>{t.heightLabel}</Text>
                 <Text style={styles.infoValue}>
                   {formatHeight(playerContext?.bio?.height)}
                 </Text>
               </View>
               <View style={styles.infoBlock}>
-                <Text style={styles.infoLabel}>Weight</Text>
+                <Text style={styles.infoLabel}>{t.weightLabel}</Text>
                 <Text style={styles.infoValue}>
                   {formatWeight(playerContext?.bio?.weight)}
                 </Text>
@@ -1585,9 +1670,11 @@ const ReportDocument = ({
             </View>
             <View style={styles.infoRow}>
               <View style={styles.infoBlock}>
-                <Text style={styles.infoLabel}>Shoots</Text>
+                <Text style={styles.infoLabel}>{t.shootsLabel}</Text>
                 <Text style={styles.infoValue}>
-                  {playerContext?.bio?.handedness || "N/A"}
+                  {playerContext?.bio?.handedness 
+                    ? (t.handedness[playerContext.bio.handedness.toUpperCase()] || playerContext.bio.handedness) 
+                    : "N/A"}
                 </Text>
               </View>
             </View>
@@ -1595,10 +1682,10 @@ const ReportDocument = ({
           <View style={styles.qrCodeSection}>
             <View style={styles.qrCodeTextBlock}>
               <Text style={styles.qrCodeText}>
-                Check {playerContext?.firstname || "Player"}'s Profile on Graet
+                {t.qrCheckProfile.replace('{playerName}', playerContext?.firstname || "Player")}
               </Text>
               <View style={styles.qrCodeButton}>
-                <Text style={styles.qrCodeButtonText}>View Profile</Text>
+                <Text style={styles.qrCodeButtonText}>{t.qrViewProfile}</Text>
               </View>
             </View>
             {playerQrCodeDataUrl ? (
@@ -1618,7 +1705,7 @@ const ReportDocument = ({
         <Text
           style={styles.pageNumber}
           render={({ pageNumber, totalPages }) =>
-            `PAGE ${pageNumber} OF ${totalPages}`
+            `${t.pageLabel} ${pageNumber} ${t.ofLabel} ${totalPages}`
           }
           fixed
         />
@@ -1629,9 +1716,10 @@ const ReportDocument = ({
       playerContext={playerContext}
       positionImageBuffer={positionImageBuffer}
       footerLogoBuffer2={footerLogoBuffer2}
+      t={t}
     />
 
-    <StatsPage html={reportSections.seasonalStats} footerLogoBuffer2={footerLogoBuffer2} teamLogosMap={teamLogosMap} />
+    <StatsPage html={reportSections.seasonalStats} footerLogoBuffer2={footerLogoBuffer2} teamLogosMap={teamLogosMap} t={t} />
 
     <ScoutedGamePage 
       gameDetails={gameDetails} 
@@ -1640,52 +1728,42 @@ const ReportDocument = ({
       homeTeamLogo={gamePageLogos.homeTeamLogo}
       awayTeamLogo={gamePageLogos.awayTeamLogo}
       leagueLogo={gamePageLogos.leagueLogo}
+      t={t}
     />
 
-    <TraitPage title="Skating" html={reportSections.skating} rating={traitRatings.skating} footerLogoBuffer2={footerLogoBuffer2} />
-    <TraitPage title="Puck Skills" html={reportSections.puckSkills} rating={traitRatings.puckSkills} footerLogoBuffer2={footerLogoBuffer2} />
-    <TraitPage title="Hockey IQ" html={reportSections.hockeyIq} rating={traitRatings.hockeyIq} footerLogoBuffer2={footerLogoBuffer2} />
-    <TraitPage title="Shot" html={reportSections.shot} rating={traitRatings.shot} footerLogoBuffer2={footerLogoBuffer2} />
-    <TraitPage title="Compete Level" html={reportSections.competeLevel} rating={traitRatings.competeLevel} footerLogoBuffer2={footerLogoBuffer2} />
-    <TraitPage title="Defensive Game" html={reportSections.defensiveGame} rating={traitRatings.defensiveGame} footerLogoBuffer2={footerLogoBuffer2} />
+    <TraitPage title={reportSections.skating.title} html={reportSections.skating.html} rating={traitRatings.skating} footerLogoBuffer2={footerLogoBuffer2} t={t} />
+    <TraitPage title={reportSections.puckSkills.title} html={reportSections.puckSkills.html} rating={traitRatings.puckSkills} footerLogoBuffer2={footerLogoBuffer2} t={t} />
+    <TraitPage title={reportSections.hockeyIq.title} html={reportSections.hockeyIq.html} rating={traitRatings.hockeyIq} footerLogoBuffer2={footerLogoBuffer2} t={t} />
+    <TraitPage title={reportSections.shot.title} html={reportSections.shot.html} rating={traitRatings.shot} footerLogoBuffer2={footerLogoBuffer2} t={t} />
+    <TraitPage title={reportSections.competeLevel.title} html={reportSections.competeLevel.html} rating={traitRatings.competeLevel} footerLogoBuffer2={footerLogoBuffer2} t={t} />
+    <TraitPage title={reportSections.defensiveGame.title} html={reportSections.defensiveGame.html} rating={traitRatings.defensiveGame} footerLogoBuffer2={footerLogoBuffer2} t={t} />
 
     <SummaryPage
-      title="Overall Summary"
-      footerTitle="SUMMARY"
-      html={reportSections.overallSummary}
+      title={reportSections.overallSummary.title}
+      footerTitle={t.summaryFooter}
+      html={reportSections.overallSummary.html}
       footerLogoBuffer2={footerLogoBuffer2}
+      t={t}
     />
     <SummaryPage
-      title="Projection"
-      footerTitle="PROJECTION"
-      html={reportSections.projection}
+      title={reportSections.projection.title}
+      footerTitle={t.projectionFooter}
+      html={reportSections.projection.html}
       footerLogoBuffer2={footerLogoBuffer2}
+      t={t}
     />
     <SummaryPage
-      title="Recommendation"
-      footerTitle="RECOMMENDATION"
-      html={reportSections.recommendation}
+      title={reportSections.recommendation.title}
+      footerTitle={t.recommendationFooter}
+      html={reportSections.recommendation.html}
       footerLogoBuffer2={footerLogoBuffer2}
+      t={t}
     />
 
-    <ScalingSystemPage footerLogoBuffer2={footerLogoBuffer2} />
-    <ScoutingTeamPage footerLogoBuffer2={footerLogoBuffer2} />
+    <ScalingSystemPage footerLogoBuffer2={footerLogoBuffer2} t={t} />
+    <ScoutingTeamPage footerLogoBuffer2={footerLogoBuffer2} t={t} />
   </Document>
 );
-
-const playstyleDescriptions: { [key: string]: string } = {
-  BUTTERFLY: 'Drops to butterfly and covers upper net with glove and blocker.',
-  STANDUP: 'Stays on their feet, relying on good positioning.',
-  HYBRID: 'Combines elements of both butterfly and stand-up styles.',
-  DEFENSIVE: 'Main strength is stopping opponents and preventing goals.',
-  TWO_WAY: 'Combines defensive and offensive skills. Contributes both offensively and defensively, a well-rounded player.',
-  OFFENSIVE: 'Excels in initiating attacks and high activity in offensive plays.',
-  PLAYMAKER: 'Exceptional passer, sets up scoring chances for teammates.',
-  POWER_FORWARD: 'Strong, aggressive player who creates space and excels near the net.',
-  SNIPER: 'Main strength in finding open spaces and making precise shots.',
-  GRINDER: 'Known for a high work rate, forechecking, and physical play.',
-  ENFORCER: 'Primarily focuses on physical intimidation and protecting teammates.',
-};
 
 const formatPlaystyle = (playstyle: string | null | undefined): string => {
   if (!playstyle) return 'N/A';
@@ -1776,18 +1854,16 @@ async function fetchGamePageImages(gameDetails: GameDetails | null) {
   const fetchLogo = async (name: string, type: 'team' | 'league'): Promise<string | null> => {
     if (!name) return null;
     
-    // --- MODIFICATION START: DYNAMIC API ENDPOINT ---
     const isTeam = type === 'team';
     const apiEndpoint = isTeam ? "https://api.graet.dev" : "https://api.graet.com";
     const query = isTeam
       ? `query SearchTeams($filter: TeamsFilter!) { teams(filter: $filter, pagination: { first: 1 }) { edges { node { logo } } } }`
       : `query SearchLeagues($filter: LeaguesFilter!) { leagues(filter: $filter, pagination: { first: 5 }) { edges { node { logo } } } }`;
-    // --- MODIFICATION END ---
     
     const variables = { filter: { searchQuery: name } };
 
     try {
-      const response = await fetch(apiEndpoint, { // Use the dynamic endpoint
+      const response = await fetch(apiEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query, variables }),
@@ -1834,7 +1910,7 @@ async function fetchGamePageImages(gameDetails: GameDetails | null) {
   return { homeTeamLogo, awayTeamLogo, leagueLogo };
 }
 
-// --- 5. API ENDPOINT ---
+// --- 6. API ENDPOINT ---
 export async function POST(request: Request) {
   try {
     let backgroundBuffer: Buffer | null = null;
@@ -1859,12 +1935,15 @@ export async function POST(request: Request) {
       console.error("Could not read one or more static image files:", error);
     }
     
-    const { reportHtml, playerContext, teamContext, traitRatings } = await request.json();
-    if (!reportHtml || !traitRatings) {
-      return new NextResponse("Missing reportHtml or traitRatings for PDF generation", {
+    const { reportHtml, reportHtmlBlueprint, playerContext, teamContext, traitRatings, targetLang } = await request.json();
+    if (!reportHtml || !reportHtmlBlueprint || !traitRatings) {
+      return new NextResponse("Missing reportHtml, blueprint, or traitRatings for PDF generation", {
         status: 400,
       });
     }
+
+    const t = await getTranslations(targetLang || 'EN');
+    const locale = getLocaleForLang(targetLang || 'EN');
 
     let playerImageSrc: string | null = null;
     if (playerContext?.avatar) {
@@ -1909,8 +1988,8 @@ export async function POST(request: Request) {
       }
     }
 
-    const reportSections = splitReportByHeadings(reportHtml);
-    const teamLogosMap = await fetchTeamLogos(reportSections.seasonalStats);
+    const reportSections = splitReportByHeadings(reportHtmlBlueprint, reportHtml);
+    const teamLogosMap = await fetchTeamLogos(reportSections.seasonalStats as string | null);
 
     let gameDetails: GameDetails | null = null;
     if (reportSections.gameInfo) {
@@ -1933,9 +2012,7 @@ export async function POST(request: Request) {
       }
     }
     
-    // --- MODIFICATION START: FETCH GAME PAGE LOGOS ---
     const gamePageLogos = await fetchGamePageImages(gameDetails);
-    // --- MODIFICATION END ---
     
     const formattedPlayerName = (playerContext?.name || '')
       .toLowerCase()
@@ -1963,6 +2040,8 @@ export async function POST(request: Request) {
         traitRatings={traitRatings}
         teamLogosMap={teamLogosMap}
         gamePageLogos={gamePageLogos}
+        t={t}
+        locale={locale}
       />
     );
 
