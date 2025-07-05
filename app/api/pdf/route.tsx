@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   },
   traitPageHeader: {
     alignItems: "center",
-    marginBottom: 40,
+    marginBottom: 10,
   },
   subSectionContainer: {
     marginBottom: 24,
@@ -374,9 +374,9 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   gameHeaderIcon: {
-    width: 40,
-    height: 40,
-    backgroundColor: "#D1D5DB",
+    width: 60,
+    height: 60,
+    backgroundColor: "#FFFFFF",
     marginHorizontal: 16,
     objectFit: 'contain',
   },
@@ -417,11 +417,11 @@ const styles = StyleSheet.create({
   },
 
   // HTML Renderer Styles
-  p: { fontSize: 11, marginBottom: 8, lineHeight: 1.5, color: '#374151', textAlign: 'justify' },
+  p: { fontSize: 14, marginBottom: 8, lineHeight: 1.5, color: '#1b1663', textAlign: 'justify' },
   pLarge: { fontFamily: "DejaVu", fontSize: 14, lineHeight: 1.6, color: '#e79b4d', textAlign: 'justify' },
-  h1: { fontWeight: "bold", fontSize: 18, marginBottom: 10 },
-  h2: { fontWeight: "bold", fontSize: 16, marginBottom: 8 },
-  h3: { fontWeight: "bold", fontSize: 14, marginBottom: 6 },
+  h1: { fontWeight: "bold", fontSize: 22, marginBottom: 10 },
+  h2: { fontWeight: "bold", fontSize: 18, marginBottom: 8 },
+  h3: { fontWeight: "bold", fontSize: 16, marginBottom: 6 },
   strong: { fontWeight: "bold" },
   em: { fontStyle: "italic" },
   ul: { marginLeft: 15 },
@@ -521,7 +521,7 @@ const styles = StyleSheet.create({
     color: '#161160',
     textAlign: 'center',
     textTransform: 'uppercase',
-    marginBottom: 16, // CHANGED: Was 40, now matches traitPageTitle
+    marginBottom: 45, // CHANGED: Was 40, now matches traitPageTitle
   },
   summaryContentWrapper: {
     width: '90%',
@@ -600,7 +600,7 @@ const styles = StyleSheet.create({
   // --- MODIFICATION END ---
   
   footerLogo: {
-    width: 90,
+    width: 50,
     height: 'auto',
   },
 });
@@ -1209,18 +1209,15 @@ interface HtmlRendererProps {
   t?: any;
 }
 
-// 3. THE COMPLETE, TYPE-SAFE RENDERER
 const HtmlRenderer = ({
   html,
   isStatsTable = false,
-  baseStyle = {}, // Default to an empty object
+  baseStyle = {}, 
   styleOverrides = {},
   teamLogosMap,
   t,
 }: HtmlRendererProps) => {
-  // --- FIX 1: Handle the StatsTable case first ---
   if (isStatsTable) {
-    // Ensure required props are passed to StatsTable
     if (!teamLogosMap || !t) {
       console.error("HtmlRenderer: 'teamLogosMap' and 't' are required when 'isStatsTable' is true.");
       return null;
@@ -1240,8 +1237,7 @@ const HtmlRenderer = ({
     inheritedStyles: Style
   ): JSX.Element | JSX.Element[] | null => {
     
-    // RENDER A TEXT NODE
-    if (node.nodeType === 3) { // Text node
+    if (node.nodeType === 3) { 
       const textContent = node.text;
       if (textContent.trim().length === 0) {
         return null;
@@ -1255,7 +1251,6 @@ const HtmlRenderer = ({
       );
     }
 
-    // RENDER AN ELEMENT NODE
     if (node.nodeType === 1) { // Element node
       const element = node as HTMLElement;
       const tagName = element.tagName.toLowerCase();
@@ -1338,7 +1333,7 @@ const OverallSummaryPage = ({
           <HtmlRenderer 
             html={html} 
             t={t} 
-            styleOverrides={{ p: styles.pLarge }} 
+            styleOverrides={{ p: styles.p }} 
           />
         </View>
       </View>
@@ -1604,7 +1599,7 @@ const ScoutedGamePage = ({
             </View>
           </View>
           
-          <View style={styles.qrCodeSection}>
+          {/* <View style={styles.qrCodeSection}>
             <View style={styles.qrCodeTextBlock}>
               <Text style={styles.qrCodeText}>
                 {t.qrCheckGame}
@@ -1618,7 +1613,7 @@ const ScoutedGamePage = ({
             ) : (
               <View style={styles.qrCodePlaceholder} />
             )}
-          </View>
+          </View> */}
         </View>
       </View>
       <View style={styles.footer} fixed>
@@ -1924,7 +1919,7 @@ const ReportDocument = ({
     />
 
     <ScalingSystemPage footerLogoBuffer2={footerLogoBuffer2} t={t} />
-    <ScoutingTeamPage footerLogoBuffer2={footerLogoBuffer2} t={t} />
+    {/* <ScoutingTeamPage footerLogoBuffer2={footerLogoBuffer2} t={t} /> */}
   </Document>
 );
 
