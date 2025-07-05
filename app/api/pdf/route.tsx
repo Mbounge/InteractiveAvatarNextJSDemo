@@ -1,3 +1,5 @@
+//app/api/pdf/route.tsx
+
 import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
@@ -17,10 +19,11 @@ import {
   Stop,
   Rect,
   Path,
-  Image
+  Image,
 } from "@react-pdf/renderer";
 import { parse, HTMLElement } from "node-html-parser";
 import QRCode from 'qrcode';
+import { type Style } from '@react-pdf/types'; 
 
 // --- 1. TRANSLATION & LOCALE HELPERS ---
 
@@ -105,8 +108,34 @@ Font.register({
   ],
 });
 
+Font.registerHyphenationCallback(word => [word]);
+
 // --- 3. STYLING ---
 const styles = StyleSheet.create({
+  pageTitle: {
+    fontWeight: "bold",
+    fontStyle: "italic",
+    fontSize: 32,
+    color: "#161160",
+    textAlign: "center",
+    textTransform: "uppercase",
+    marginBottom: 16,
+  },
+  pageSubHeader: {
+    fontWeight: "bold",
+    fontStyle: "italic",
+    fontSize: 14,
+    color: "#161160",
+    textTransform: "uppercase",
+    marginBottom: 8,
+  },
+  pageBodyText: {
+    fontSize: 11,
+    lineHeight: 1.5,
+    color: '#374151',
+    textAlign: 'justify',
+  },
+
   // General Styles
   page: { fontFamily: "DejaVu", backgroundColor: "#FFFFFF" },
   contentWrapper: { padding: 40 },
@@ -255,6 +284,7 @@ const styles = StyleSheet.create({
   },
   subSectionTitle: {
     fontWeight: "bold",
+    fontStyle: "italic",
     fontSize: 14,
     color: "#161160",
     textTransform: "uppercase",
@@ -348,6 +378,7 @@ const styles = StyleSheet.create({
     height: 40,
     backgroundColor: "#D1D5DB",
     marginHorizontal: 16,
+    objectFit: 'contain',
   },
   gameBody: {
     flexDirection: "row",
@@ -360,6 +391,7 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 16,
     backgroundColor: "#F3F4F6",
+    objectFit: 'contain',
   },
   teamNameText: {
     fontWeight: "bold",
@@ -385,7 +417,8 @@ const styles = StyleSheet.create({
   },
 
   // HTML Renderer Styles
-  p: { fontSize: 10, marginBottom: 8, lineHeight: 1.4, color: '#374151' },
+  p: { fontSize: 11, marginBottom: 8, lineHeight: 1.5, color: '#374151', textAlign: 'justify' },
+  pLarge: { fontFamily: "DejaVu", fontSize: 14, lineHeight: 1.6, color: '#e79b4d', textAlign: 'justify' },
   h1: { fontWeight: "bold", fontSize: 18, marginBottom: 10 },
   h2: { fontWeight: "bold", fontSize: 16, marginBottom: 8 },
   h3: { fontWeight: "bold", fontSize: 14, marginBottom: 6 },
@@ -450,6 +483,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#D1D5DB",
     borderRadius: 10,
     marginRight: 8,
+    objectFit: 'contain',
   },
   teamNameContainer: { flexDirection: "row", alignItems: "center" },
   teamName: { fontSize: 11, color: "#374151", fontWeight: "normal" },
@@ -471,7 +505,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   
-  // Summary & Info Page Styles
+  // --- MODIFICATION START: Unifying Info/Summary Page Styles ---
   summaryPageContainer: {
     display: 'flex',
     flexDirection: 'column',
@@ -483,20 +517,14 @@ const styles = StyleSheet.create({
   summaryPageTitle: {
     fontWeight: 'bold',
     fontStyle: 'italic',
-    fontSize: 36,
+    fontSize: 32,
     color: '#161160',
     textAlign: 'center',
     textTransform: 'uppercase',
-    marginBottom: 40,
+    marginBottom: 16, // CHANGED: Was 40, now matches traitPageTitle
   },
   summaryContentWrapper: {
     width: '90%',
-  },
-  summaryParagraph: {
-    fontSize: 12,
-    lineHeight: 1.6,
-    color: '#1F2937',
-    marginBottom: 16,
   },
   infoPageContainer: {
     display: 'flex',
@@ -508,19 +536,20 @@ const styles = StyleSheet.create({
   infoPageTitle: {
     fontWeight: 'bold',
     fontStyle: 'italic',
-    fontSize: 36,
+    fontSize: 32, // Matched to traitPageTitle
     color: '#161160',
     textAlign: 'center',
     textTransform: 'uppercase',
     marginBottom: 30,
   },
   infoPageIntroText: {
-    fontSize: 11.5,
+    fontSize: 11,
     lineHeight: 1.6,
     color: '#374151',
     marginBottom: 40,
-    textAlign: 'left',
-    width: '80%',
+    textAlign: 'justify',
+    width: '90%', // Increased width for better flow
+    alignSelf: 'center',
   },
 
   // Scaling System Page Styles
@@ -547,14 +576,16 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     lineHeight: 1.5,
     color: '#4B5563',
+    textAlign: 'justify',
   },
 
   // Scouting Team Page Styles
   scoutProfile: {
     marginBottom: 28,
   },
-  scoutName: {
+  scoutName: { // Matched to subSectionTitle
     fontWeight: 'bold',
+    fontStyle: 'italic',
     fontSize: 14,
     color: '#161160',
     textTransform: 'uppercase',
@@ -564,9 +595,10 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 1.6,
     color: '#374151',
+    textAlign: 'justify',
   },
+  // --- MODIFICATION END ---
   
-  // Footer Logo
   footerLogo: {
     width: 90,
     height: 'auto',
@@ -724,15 +756,15 @@ const formatDate = (d: string, locale: string) =>
     : "N/A";
 
 
-const decodeHtmlEntities = (text: string): string => {
-  if (!text) return '';
-  return text.replace(/&/gi, '&');
-};
-
-const escapeForPdf = (text: string): string => {
-  if (!text) return '';
-  return text.replace(/&/g, '\u0026');
-};
+    const decodeHtmlEntities = (text: string | null): string => {
+      if (!text) return '';
+      return text.replace(/&/gi, '&');
+    };
+    
+    const escapeForPdf = (text: string | null): string => {
+      if (!text) return '';
+      return text.replace(/&/g, '\u0026');
+    };
 
 const generateQrCodeDataUrl = async (text: string): Promise<string | null> => {
   try {
@@ -821,24 +853,40 @@ const splitReportByHeadings = (
   return sections;
 };
 
-const parseTraitHtml = (html: string) => {
-  const root = parse(html);
-  const subSections: { title: string; content: string }[] = [];
-  const contentHtml = root.innerHTML;
-  const parts = contentHtml.split(/(?=<strong>.+?:<\/strong>)/g).filter(part => part.trim() !== '');
+const parseTraitHtml = (html: string | null) => {
+  if (!html) return { subSections: [] };
 
-  if (parts.length === 0 && contentHtml.trim()) {
-    subSections.push({ title: 'Analysis', content: contentHtml });
-  } else {
-    for (const part of parts) {
-      const partRoot = parse(part);
-      const titleNode = partRoot.querySelector('strong');
+  const subSections: { title: string | null; content: string }[] = [];
+  // The regex splits the string into sections, keeping the <strong> tag as a delimiter.
+  const parts = html.split(/(?=<strong>.+?:<\/strong>)/g).filter(part => part.trim() !== '');
+
+  for (const part of parts) {
+    // For each section, we parse it to easily manipulate its structure.
+    const partRoot = parse(part);
+    const titleNode = partRoot.querySelector('strong');
+
+    if (titleNode) {
+      // --- CASE 1: This part has a title (e.g., "Gap Control: <p>...</p>") ---
       
-      if (titleNode) {
-        const title = decodeHtmlEntities(titleNode.innerText.replace(':', '').trim());
-        titleNode.remove();
-        const content = partRoot.innerHTML.trim();
-        subSections.push({ title, content });
+      // Extract the title text.
+      const title = decodeHtmlEntities(titleNode.innerText.replace(':', '').trim());
+      
+      // CRITICAL FIX: Remove the <strong> tag itself from the content.
+      // This prevents "Gap Control:" from appearing twice.
+      titleNode.remove();
+      
+      // The rest of the HTML in the part is the content.
+      const content = partRoot.innerHTML.trim();
+      subSections.push({ title, content });
+
+    } else {
+      
+      const content = part.trim();
+
+      if (content.startsWith('<p>') && content.endsWith('</p>')) {
+        subSections.push({ title: null, content: content });
+      } else {
+        subSections.push({ title: null, content: `<p>${content}</p>` });
       }
     }
   }
@@ -886,53 +934,31 @@ const BackgroundGradient2 = () => (
   </Svg>
 );
 
-const Star = ({ fillType }: { fillType: 'full' | 'half' | 'empty' }) => {
+const Star = ({ filled }: { filled: boolean }) => {
   const starPath = "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27z";
-  const clipId = `clip-${Math.random()}`;
-
-  if (fillType === 'full') {
-    return (
-      <Svg viewBox="0 0 24 24" style={styles.starSvg}>
-        <Path d={starPath} fill="#2B21C1" />
-      </Svg>
-    );
-  }
-
-  if (fillType === 'half') {
-    return (
-      <Svg viewBox="0 0 24 24" style={styles.starSvg}>
-        <Defs>
-          <ClipPath id={clipId}>
-            <Rect x="0" y="0" width="12" height="24" />
-          </ClipPath>
-        </Defs>
-        <Path d={starPath} fill="#E8E6F9" stroke="#2B21C1" strokeWidth={1.5} />
-        <Path d={starPath} fill="#2B21C1" clipPath={`url(#${clipId})`} />
-      </Svg>
-    );
-  }
+  const starColor = "#2B21C1";
 
   return (
     <Svg viewBox="0 0 24 24" style={styles.starSvg}>
-      <Path d={starPath} fill="#E8E6F9" stroke="#2B21C1" strokeWidth={1.5} />
+      {filled ? (
+        <Path d={starPath} fill={starColor} />
+      ) : (
+        <Path d={starPath} stroke={starColor} strokeWidth={1.5} />
+      )}
     </Svg>
   );
 };
 
-const StarRating = ({ rating, max = 5 }: { rating: number; max?: number }) => (
-  <View style={styles.starsContainer}>
-    {Array.from({ length: max }).map((_, i) => {
-      const starValue = i + 1;
-      let fillType: 'full' | 'half' | 'empty' = 'empty';
-      if (rating >= starValue) {
-        fillType = 'full';
-      } else if (rating > i && rating < starValue) {
-        fillType = 'half';
-      }
-      return <Star key={i} fillType={fillType} />;
-    })}
-  </View>
-);
+const StarRating = ({ rating, max = 5 }: { rating: number; max?: number }) => {
+  const roundedRating = Math.round(rating);
+  return (
+    <View style={styles.starsContainer}>
+      {Array.from({ length: max }).map((_, i) => (
+        <Star key={i} filled={i < roundedRating} />
+      ))}
+    </View>
+  );
+};
 
 const CoverPage = ({
   playerContext,
@@ -1163,71 +1189,129 @@ const StatsTable = ({ html, teamLogosMap, t }: { html: string, teamLogosMap: Map
   );
 };
 
-const HtmlRenderer = ({
+const supportedStyleTags = ['p', 'h1', 'h2', 'h3', 'strong', 'em', 'ul', 'li'] as const;
+type StyleKey = typeof supportedStyleTags[number];
+
+function isStyleKey(key: string): key is StyleKey {
+  return (supportedStyleTags as readonly string[]).includes(key);
+}
+
+// 2. UPDATE THE COMPONENT PROPS
+interface HtmlRendererProps {
+  html: string;
+  // Add a flag to handle the special case for the stats table.
+  isStatsTable?: boolean; 
+  // Add a prop for base styles (like font family) to be inherited.
+  baseStyle?: Style;
+  styleOverrides?: Partial<Record<StyleKey, Style>>;
+  // Props needed only for StatsTable
+  teamLogosMap?: Map<string, string>;
+  t?: any;
+}
+
+// 3. THE COMPLETE, TYPE-SAFE RENDERER
+export const HtmlRenderer = ({
   html,
   isStatsTable = false,
-  teamLogosMap,
-  ignoreHeadings = [],
+  baseStyle = {}, // Default to an empty object
   styleOverrides = {},
+  teamLogosMap,
   t,
-}: {
-  html: string;
-  isStatsTable?: boolean;
-  teamLogosMap?: Map<string, string>;
-  ignoreHeadings?: string[];
-  styleOverrides?: { [key: string]: any };
-  t: any;
-}) => {
+}: HtmlRendererProps) => {
+  // --- FIX 1: Handle the StatsTable case first ---
   if (isStatsTable) {
-    return <StatsTable html={html} teamLogosMap={teamLogosMap || new Map()} t={t} />;
+    // Ensure required props are passed to StatsTable
+    if (!teamLogosMap || !t) {
+      console.error("HtmlRenderer: 'teamLogosMap' and 't' are required when 'isStatsTable' is true.");
+      return null;
+    }
+    return <StatsTable html={html} teamLogosMap={teamLogosMap} t={t} />;
+  }
+
+  if (!html) {
+    return null;
   }
 
   const root = parse(html);
-  const renderNode = (node: any, index: number): JSX.Element | null => {
-    if (node.nodeType === 3) {
-      const decodedText = decodeHtmlEntities(node.text);
-      const escapedText = escapeForPdf(decodedText);
-      return <Text key={index}>{escapedText}</Text>;
-    }
 
-    if (node.nodeType === 1) {
-      const element = node as HTMLElement;
-      const tagName = element.tagName.toLowerCase();
-      
-      if (ignoreHeadings.includes(tagName)) {
+  const renderNode = (
+    node: any,
+    index: number,
+    inheritedStyles: Style
+  ): JSX.Element | JSX.Element[] | null => {
+    
+    // RENDER A TEXT NODE
+    if (node.nodeType === 3) { // Text node
+      const textContent = node.text;
+      if (textContent.trim().length === 0) {
         return null;
       }
+      const decodedText = decodeHtmlEntities(textContent);
+      const escapedText = escapeForPdf(decodedText);
+      return (
+        <Text key={index} style={inheritedStyles}>
+          {escapedText}
+        </Text>
+      );
+    }
 
-      const children = element.childNodes.map(renderNode);
-      
-      const getStyle = (baseStyle: any, overrideStyle: any) => 
-        overrideStyle ? [baseStyle, overrideStyle] : baseStyle;
+    // RENDER AN ELEMENT NODE
+    if (node.nodeType === 1) { // Element node
+      const element = node as HTMLElement;
+      const tagName = element.tagName.toLowerCase();
+
+      let currentTagStyle: Style = {};
+      if (isStyleKey(tagName)) {
+        const defaultStyle = styles[tagName] || {};
+        const overrideStyle = styleOverrides[tagName] || {};
+        currentTagStyle = { ...defaultStyle, ...overrideStyle };
+      }
+
+      const newInheritedStyles: Style = { ...inheritedStyles, ...currentTagStyle };
+
+      const children = element.childNodes.map((child, i) =>
+        renderNode(child, i, newInheritedStyles)
+      );
 
       switch (tagName) {
-        case "h1": return <Text key={index} style={getStyle(styles.h1, styleOverrides.h1)}>{children}</Text>;
-        case "h2": return <Text key={index} style={getStyle(styles.h2, styleOverrides.h2)}>{children}</Text>;
-        case "h3": return <Text key={index} style={getStyle(styles.h3, styleOverrides.h3)}>{children}</Text>;
-        case "p": return <Text key={index} style={getStyle(styles.p, styleOverrides.p)}>{children}</Text>;
-        case "strong": return <Text key={index} style={styles.strong}>{children}</Text>;
-        case "em": return <Text key={index} style={styles.em}>{children}</Text>;
-        case "ul": return <View key={index} style={styles.ul}>{children}</View>;
-        case "li":
+        case 'p':
+        case 'h1':
+        case 'h2':
+        case 'h3':
+        case 'ul':
           return (
-            <View key={index} style={styles.li}>
-              <Text style={styles.liBullet}>• </Text>
-              <Text>{children}</Text>
+            <View key={index} style={currentTagStyle}>
+              {children}
             </View>
           );
+
+        case 'li':
+          return (
+            <View key={index} style={styles.li}>
+              <Text style={newInheritedStyles}>{'\u2022' + '  '}</Text>
+              <View style={{ flex: 1 }}>{children}</View>
+            </View>
+          );
+
+        case 'strong':
+        case 'em':
+          return <React.Fragment key={index}>{children}</React.Fragment>;
+
         default:
-          return <View key={index}>{children}</View>;
+          return <React.Fragment key={index}>{children}</React.Fragment>;
       }
     }
+
     return null;
   };
-  return <>{root.childNodes.map(renderNode)}</>;
+
+  // --- FIX 2: Start the recursion with the baseStyle prop ---
+  return <>{root.childNodes.map((node, i) => renderNode(node, i, baseStyle))}</>;
 };
 
-const SummaryPage = ({
+
+
+const OverallSummaryPage = ({
   title,
   footerTitle,
   html,
@@ -1246,16 +1330,93 @@ const SummaryPage = ({
     <Page size="A4" style={styles.page} wrap>
       <BackgroundGradient />
       <View style={styles.summaryPageContainer}>
+        {/* Render the large, main title */}
         <Text style={styles.summaryPageTitle}>{title}</Text>
+        
         <View style={styles.summaryContentWrapper}>
-          <HtmlRenderer
-            html={html}
-            ignoreHeadings={['h3']}
-            styleOverrides={{ p: styles.summaryParagraph }}
-            t={t}
+          {/* Render the HTML content with the LARGER paragraph style */}
+          <HtmlRenderer 
+            html={html} 
+            t={t} 
+            styleOverrides={{ p: styles.pLarge }} 
           />
         </View>
       </View>
+      <View style={styles.footer} fixed>
+        {footerLogoBuffer2 ? (
+          <Image style={styles.footerLogo} src={{ data: footerLogoBuffer2, format: 'png' }} />
+        ) : (
+          <Text style={styles.logoPlaceholder}>GRAET</Text>
+        )}
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Text style={styles.gameFooterText}>{footerTitle}</Text>
+          <Text
+            style={styles.pageNumber}
+            render={({ pageNumber, totalPages }) =>
+              `${t.pageLabel} ${pageNumber} ${t.ofLabel} ${totalPages}`
+            }
+            fixed
+          />
+        </View>
+      </View>
+    </Page>
+  );
+};
+
+const StructuredSummaryPage = ({
+  title,
+  footerTitle,
+  html,
+  footerLogoBuffer2,
+  t,
+}: {
+  title: string;
+  footerTitle: string;
+  html: string | null;
+  footerLogoBuffer2: Buffer | null;
+  t: any;
+}) => {
+  if (!html) return null;
+
+  // This uses the same parsing logic as TraitPage to find sub-headings
+  const { subSections } = parseTraitHtml(html);
+
+  return (
+    <Page size="A4" style={styles.traitPageLayout} wrap>
+      <Svg style={styles.traitPageBackground}>
+        <Defs>
+          <LinearGradient
+            id={`pageGradient-${title.replace(/\s/g, "")}`}
+            x1="1" y1="0" x2="0" y2="1"
+            gradientUnits="objectBoundingBox"
+          >
+            <Stop offset="0%" stopColor="#D0CEF2" />
+            <Stop offset="40%" stopColor="#E8E6F9" />
+            <Stop offset="90%" stopColor="#FFFFFF" />
+          </LinearGradient>
+        </Defs>
+        <Rect x="0" y="0" width="595.28" height="160" fill={`url(#pageGradient-${title.replace(/\s/g, "")})`} />
+      </Svg>
+      
+      <View>
+        <View style={styles.traitPageHeader}>
+          <Text style={styles.traitPageTitle}>{title}</Text>
+        </View>
+        
+        {/* Renders sub-sections with styled titles, just like TraitPage */}
+        {subSections.map((section, index) => (
+          <View key={index} style={styles.subSectionContainer}>
+            {section.title && (
+              <Text style={styles.subSectionTitle}>
+                {escapeForPdf(decodeHtmlEntities(section.title))}
+              </Text>
+            )}
+            <HtmlRenderer html={section.content} t={t} baseStyle={styles.p}  />
+            
+          </View>
+        ))}
+      </View>
+      
       <View style={styles.footer} fixed>
         {footerLogoBuffer2 ? (
           <Image style={styles.footerLogo} src={{ data: footerLogoBuffer2, format: 'png' }} />
@@ -1322,7 +1483,7 @@ const TraitPage = ({
             <Text style={styles.subSectionTitle}>
               {escapeForPdf(decodeHtmlEntities(section.title))}
             </Text>
-            <HtmlRenderer html={section.content} t={t} />
+            <HtmlRenderer html={section.content} t={t} baseStyle={styles.p} />
           </View>
         ))}
       </View>
@@ -1738,21 +1899,23 @@ const ReportDocument = ({
     <TraitPage title={reportSections.competeLevel.title} html={reportSections.competeLevel.html} rating={traitRatings.competeLevel} footerLogoBuffer2={footerLogoBuffer2} t={t} />
     <TraitPage title={reportSections.defensiveGame.title} html={reportSections.defensiveGame.html} rating={traitRatings.defensiveGame} footerLogoBuffer2={footerLogoBuffer2} t={t} />
 
-    <SummaryPage
+    <OverallSummaryPage
       title={reportSections.overallSummary.title}
       footerTitle={t.summaryFooter}
       html={reportSections.overallSummary.html}
       footerLogoBuffer2={footerLogoBuffer2}
       t={t}
     />
-    <SummaryPage
+
+    {/* Use StructuredSummaryPage for the rest, which may have sub-headings */}
+    <StructuredSummaryPage
       title={reportSections.projection.title}
       footerTitle={t.projectionFooter}
       html={reportSections.projection.html}
       footerLogoBuffer2={footerLogoBuffer2}
       t={t}
     />
-    <SummaryPage
+    <StructuredSummaryPage
       title={reportSections.recommendation.title}
       footerTitle={t.recommendationFooter}
       html={reportSections.recommendation.html}
