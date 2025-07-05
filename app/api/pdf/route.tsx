@@ -1210,7 +1210,7 @@ interface HtmlRendererProps {
 }
 
 // 3. THE COMPLETE, TYPE-SAFE RENDERER
-export const HtmlRenderer = ({
+const HtmlRenderer = ({
   html,
   isStatsTable = false,
   baseStyle = {}, // Default to an empty object
@@ -1411,7 +1411,7 @@ const StructuredSummaryPage = ({
                 {escapeForPdf(decodeHtmlEntities(section.title))}
               </Text>
             )}
-            <HtmlRenderer html={section.content} t={t} baseStyle={styles.p}  />
+            <HtmlRenderer html={section.content} t={t} baseStyle={styles.p} />
             
           </View>
         ))}
