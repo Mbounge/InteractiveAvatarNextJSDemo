@@ -934,28 +934,61 @@ const BackgroundGradient2 = () => (
   </Svg>
 );
 
-const Star = ({ filled }: { filled: boolean }) => {
+const Star = ({ state }: { state: 'filled' | 'half' | 'empty' }) => {
   const starPath = "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27z";
   const starColor = "#2B21C1";
+  // Using a random ID is safe here as the PDF is rendered once from scratch.
+  const clipId = `clip-${Math.random().toString(36).substring(7)}`;
 
+  if (state === 'empty') {
+    return (
+      <Svg viewBox="0 0 24 24" style={styles.starSvg}>
+        <Path d={starPath} stroke={starColor} strokeWidth={1.5} />
+      </Svg>
+    );
+  }
+
+  if (state === 'filled') {
+    return (
+      <Svg viewBox="0 0 24 24" style={styles.starSvg}>
+        <Path d={starPath} fill={starColor} />
+      </Svg>
+    );
+  }
+
+  // This renders the half-filled star
   return (
     <Svg viewBox="0 0 24 24" style={styles.starSvg}>
-      {filled ? (
-        <Path d={starPath} fill={starColor} />
-      ) : (
-        <Path d={starPath} stroke={starColor} strokeWidth={1.5} />
-      )}
+      <Defs>
+        <ClipPath id={clipId}>
+          {/* This rectangle clips the fill to the left half of the star */}
+          <Rect x="0" y="0" width="12" height="24" />
+        </ClipPath>
+      </Defs>
+      {/* First, draw the empty star as a background */}
+      <Path d={starPath} stroke={starColor} strokeWidth={1.5} />
+      {/* Then, draw the filled star on top, but apply the clip path */}
+      <Path d={starPath} fill={starColor} clipPath={`url(#${clipId})`} />
     </Svg>
   );
 };
 
 const StarRating = ({ rating, max = 5 }: { rating: number; max?: number }) => {
-  const roundedRating = Math.round(rating);
   return (
     <View style={styles.starsContainer}>
-      {Array.from({ length: max }).map((_, i) => (
-        <Star key={i} filled={i < roundedRating} />
-      ))}
+      {Array.from({ length: max }).map((_, i) => {
+        let state: 'filled' | 'half' | 'empty' = 'empty';
+
+        if (rating >= i + 1) {
+          // If the rating is 3.5, this will be true for i=0, 1, 2 (rating >= 1, 2, 3)
+          state = 'filled';
+        } else if (rating >= i + 0.5) {
+          // If the rating is 3.5, this will be true for i=3 (rating >= 3.5)
+          state = 'half';
+        }
+
+        return <Star key={i} state={state} />;
+      })}
     </View>
   );
 };

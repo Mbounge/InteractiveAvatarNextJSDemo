@@ -1962,6 +1962,7 @@ const ScoutingPlatform: React.FC = () => {
 
         const statsData = result.data?.seasons?.edges || [];
         setSeasonalStats(statsData);
+        console.log(statsData)
         toast.success("Player stats loaded!", { id: "player-stats-toast" });
 
       } catch (error: any) {

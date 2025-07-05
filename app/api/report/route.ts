@@ -240,7 +240,8 @@ export async function POST(request: Request) {
           ii. **Select a Maximum of Four:** From this sorted list, take ONLY the top 4 entries.
           iii. **Generate Table:** Create a Markdown table using this final selection of 4 (or fewer) seasons, sorted with the most recent season at the top. The first three columns MUST be Team, League, and Season. The subsequent columns must be position-relevant.
       c. **Fallback to Player Data:** If the \`Player's Full Seasonal History Stats\` array is empty, check the \`playerContext.stats.season\` object. If it contains data, create a single-row Markdown table.
-      d. **No Data:** If no stats are available from either source, you MUST replace the placeholder with the text: "No seasonal stats available."
+      d. If any entry in the data of the seasonal stats contains no team name for example: N/A - do not put it into the table and skip to the next entry
+      e. **No Data:** If no stats are available from either source, you MUST replace the placeholder with the text: "No seasonal stats available."
 
       3.  **Objectivity and Balance:** This is a critical principle. Your analysis MUST be unbiased and directly reflect the information in the transcription. If the scout mentions both strengths and weaknesses within a category, you must represent both. Do not sugarcoat or downplay negative feedback. The goal is an honest, professional assessment.
       
