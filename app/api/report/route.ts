@@ -250,6 +250,7 @@ export async function POST(request: Request) {
       5.  **Intelligent Section Management:**
           - **Omit Irrelevance:** You have the autonomy to completely omit any sub-category or even a main "###" section if it is irrelevant to the player's position or not substantively discussed in the transcription. Never write "N/A"; simply leave it out.
           - **Create Relevance:** If the scout repeatedly emphasizes a specific skill not in the template (e.g., "Forechecking," "Penalty Kill," "Rebound Control"), you are encouraged to create a new, appropriate "### [New Skill]" section or sub-category.
+          - Make sure you use the full name of the teams - especially in gameInfo for the away and home teams - You have been given one of the team names in full in the Team Data - use that full name and no short names - even if in the transcript the scout starts using the shortened name - you always use the full name
 
       6.  **Data Presentation:**
           - **Use Tables for Structured Data:** If the transcription includes quantifiable stats (e.g., goals, assists, time on ice) or clear comparative points, you are strongly encouraged to present this information in a Markdown table for clarity.
