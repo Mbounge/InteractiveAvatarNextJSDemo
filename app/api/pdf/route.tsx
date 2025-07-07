@@ -578,13 +578,21 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   infoPageIntroText: {
-    fontSize: 11,
+    fontSize: 13,
     lineHeight: 1.6,
     color: "#374151",
     marginBottom: 40,
     textAlign: "justify",
-    width: "90%", // Increased width for better flow
+    width: "99%", // Increased width for better flow
     alignSelf: "center",
+  },
+  infoPageIntroEmphasized: {
+    fontWeight: 'bold',
+    fontSize: 12, // Slightly larger than the base 11pt for emphasis
+  },
+  introHighlightText: {
+    fontWeight: 'bold',
+    fontSize: 13, // A bit larger than the base 11pt font for emphasis
   },
 
   // Scaling System Page Styles
@@ -1874,13 +1882,13 @@ const ScoutedGamePage = ({
                 {homeTeamLogo ? (
                   <Image style={styles.teamLogo} src={homeTeamLogo} />
                 ) : (
-                  // --- MODIFICATION START ---
+                  
                   <TeamLogoPlaceholder
                     teamName={homeTeam.name}
                     containerStyle={styles.placeholderContainer}
                     textStyle={styles.placeholderText}
                   />
-                  // --- MODIFICATION END ---
+        
                 )}
                 <Text style={styles.teamNameText}>
                   {homeTeam.name || "Home Team"}
@@ -1895,13 +1903,13 @@ const ScoutedGamePage = ({
                 {awayTeamLogo ? (
                   <Image style={styles.teamLogo} src={awayTeamLogo} />
                 ) : (
-                  // --- MODIFICATION START ---
+                  
                   <TeamLogoPlaceholder
                     teamName={awayTeam.name}
                     containerStyle={styles.placeholderContainer}
                     textStyle={styles.placeholderText}
                   />
-                  // --- MODIFICATION END ---
+                  
                 )}
                 <Text style={styles.teamNameText}>
                   {awayTeam.name || "Away Team"}
@@ -1962,7 +1970,16 @@ const ScalingSystemPage = ({
     <BackgroundGradient />
     <View style={styles.infoPageContainer}>
       <Text style={styles.infoPageTitle}>{t.scalingTitle}</Text>
-      <Text style={styles.infoPageIntroText}>{t.scalingIntro}</Text>
+
+      <Text style={styles.infoPageIntroText}>
+        <Text>{t.scalingIntro_part1}</Text>
+        <Text style={styles.introHighlightText}>{t.scalingIntro_bold1}</Text>
+        <Text>{t.scalingIntro_part2}</Text>
+        <Text style={styles.introHighlightText}>{t.scalingIntro_bold2}</Text>
+        <Text>{t.scalingIntro_part3}</Text>
+        <Text style={styles.introHighlightText}>{t.scalingIntro_bold3}</Text>
+        <Text>{t.scalingIntro_part4}</Text>
+      </Text>
 
       <View style={styles.scalingGrid}>
         <View style={styles.scalingColumn}>
@@ -2571,7 +2588,7 @@ export async function POST(request: Request) {
     if (playerContext?.avatar) {
       const playerImageUrl = `https://assets.graet.com/${playerContext.avatar}`;
       try {
-        console.log(`Fetching player avatar from: ${playerImageUrl}`);
+        //console.log(`Fetching player avatar from: ${playerImageUrl}`);
         const response = await fetch(playerImageUrl);
         if (response.ok) {
           const contentType =
@@ -2599,7 +2616,7 @@ export async function POST(request: Request) {
         const fileBuffer = await fs.readFile(playerImagePath);
         const base64 = fileBuffer.toString("base64");
         playerImageSrc = `data:image/png;base64,${base64}`;
-        console.log("Using fallback local player image.");
+        //console.log("Using fallback local player image.");
       } catch (error) {
         console.error("Could not read fallback player image file:", error);
       }
