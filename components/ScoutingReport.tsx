@@ -1923,6 +1923,7 @@ const ScoutingPlatform: React.FC = () => {
               node {
                 team { name shortName }
                 user { name id }
+                externalInfo { externalLeagueName externalPlayerName externalTeamName }
                 position season seasonType gamesPlayed goals assists points
                 plusMinus pim wins losses ties gaa svp shutouts toi
               }
@@ -2125,7 +2126,18 @@ const ScoutingPlatform: React.FC = () => {
       standingsContext = `For context, the teams in this league include: ${Array.from(new Set(teamNames)).join(', ')}.`;
     }
 
-    const promptText = `Transcribe the following audio of a sports scout discussing the player ${player.name} of the team ${team.name}. Focus on clarity and accuracy, correctly identifying hockey-specific terms. If you recognize the names of the opponent team and the league they play in correctly spell them out in the transcript (use the right capitalization the letters in words for some nations). ${standingsContext}`;
+    const promptText = `
+      You are a highly specialized hockey transcription assistant. Your primary goal is to produce a clean, accurate transcript of a scout's audio notes.
+
+      **Transcription Rules:**
+      1.  **Accuracy First:** Focus on clarity and accuracy.
+      2.  **Team & League Names:** Correctly identify and spell the full names of teams and leagues. Use proper capitalization for these proper nouns (e.g., "Leksands IF", "SHL"). ${standingsContext}
+      3.  **Hockey Terminology (Crucial):** Do NOT capitalize common hockey-specific technical terms, even if they are also proper nouns in other contexts. Treat them as common nouns.
+          - **Correct Examples:** mohawk turn, texas hockey, michigan goal, slapshot, crossover, backcheck.
+          - **Incorrect Examples:** Mohawk Turn, Texas Hockey, Michigan Goal.
+
+      **Audio for Player:** ${player.name} of ${team.name}.
+    `;
 
     const requestBody = {
         contents: [{
@@ -2200,7 +2212,18 @@ const ScoutingPlatform: React.FC = () => {
         standingsContext = `For context, the teams in this league include: ${Array.from(new Set(teamNames)).join(', ')}.`;
       }
 
-      const promptText = `Transcribe the following audio of a sports scout discussing the player ${player.name} of the team ${team.name}. Focus on clarity and accuracy, correctly identifying hockey-specific terms. If you recognize the names of the opponent team and the league they play in correctly spell them out in the transcript. ${standingsContext}`;
+      const promptText = `
+      You are a highly specialized hockey transcription assistant. Your primary goal is to produce a clean, accurate transcript of a scout's audio notes.
+
+      **Transcription Rules:**
+      1.  **Accuracy First:** Focus on clarity and accuracy.
+      2.  **Team & League Names:** Correctly identify and spell the full names of teams and leagues. Use proper capitalization for these proper nouns (e.g., "Leksands IF", "SHL"). ${standingsContext}
+      3.  **Hockey Terminology (Crucial):** Do NOT capitalize common hockey-specific technical terms, even if they are also proper nouns in other contexts. Treat them as common nouns.
+          - **Correct Examples:** mohawk turn, texas hockey, michigan goal, slapshot, crossover, backcheck.
+          - **Incorrect Examples:** Mohawk Turn, Texas Hockey, Michigan Goal.
+
+      **Audio for Player:** ${player.name} of ${team.name}.
+    `;
 
       const generateContentBody = {
         contents: [{
