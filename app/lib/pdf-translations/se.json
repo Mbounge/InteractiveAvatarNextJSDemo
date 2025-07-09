@@ -1,5 +1,5 @@
 {
-  "reportTitle": "Utvecklingsrapport",
+  "reportTitle": "Development Report",
   "teamLabel": "Lag",
   "dobLabel": "Födelsedatum",
   "nationalityLabel": "Nationalitet",
@@ -59,14 +59,14 @@
     "BUTTERFLY": "Butterfly",
     "STANDUP": "Stand Up",
     "HYBRID": "Hybrid",
-    "DEFENSIVE": "Defensiv",
-    "TWO_WAY": "Tvåvägs",
-    "OFFENSIVE": "Offensiv",
-    "PLAYMAKER": "Speluppläggare",
+    "DEFENSIVE": "Defensive",
+    "TWO_WAY": "Two Way",
+    "OFFENSIVE": "Offensive",
+    "PLAYMAKER": "Playmaker",
     "POWER_FORWARD": "Power Forward",
-    "SNIPER": "Målskytt",
-    "GRINDER": "Grovarbetare",
-    "ENFORCER": "Tuffing"
+    "SNIPER": "Sniper",
+    "GRINDER": "Grinder",
+    "ENFORCER": "Enforcer"
   },
   "playstyleDescriptions": {
     "BUTTERFLY": "Går ner i butterfly och täcker övre delen av målet med plock och stöt.",

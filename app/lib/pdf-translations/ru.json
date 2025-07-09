@@ -1,5 +1,5 @@
 {
-  "reportTitle": "Отчет о развитии",
+  "reportTitle": "Development Report",
   "teamLabel": "Команда",
   "dobLabel": "Дата рождения",
   "nationalityLabel": "Национальность",
@@ -56,17 +56,17 @@
     "RIGHT": "Правый"
   },
   "playstyleNames": {
-    "BUTTERFLY": "Баттерфляй",
-    "STANDUP": "Стенд-ап",
-    "HYBRID": "Гибридный",
-    "DEFENSIVE": "Оборонительный",
-    "TWO_WAY": "Двусторонний",
-    "OFFENSIVE": "Атакующий",
-    "PLAYMAKER": "Плеймейкер",
-    "POWER_FORWARD": "Силовой форвард",
-    "SNIPER": "Снайпер",
-    "GRINDER": "Силовик",
-    "ENFORCER": "Тафгай"
+    "BUTTERFLY": "Butterfly",
+    "STANDUP": "Stand Up",
+    "HYBRID": "Hybrid",
+    "DEFENSIVE": "Defensive",
+    "TWO_WAY": "Two Way",
+    "OFFENSIVE": "Offensive",
+    "PLAYMAKER": "Playmaker",
+    "POWER_FORWARD": "Power Forward",
+    "SNIPER": "Sniper",
+    "GRINDER": "Grinder",
+    "ENFORCER": "Enforcer"
   },
   "playstyleDescriptions": {
     "BUTTERFLY": "Опускается в баттерфляй и закрывает верхнюю часть ворот ловушкой и блокером.",

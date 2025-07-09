@@ -1,5 +1,5 @@
 {
-  "reportTitle": "განვითარების ანგარიში",
+  "reportTitle": "Development Report",
   "teamLabel": "გუნდი",
   "dobLabel": "დაბადების თარიღი",
   "nationalityLabel": "ეროვნება",
@@ -56,17 +56,17 @@
     "RIGHT": "მარჯვენა"
   },
   "playstyleNames": {
-    "BUTTERFLY": "პეპელა",
-    "STANDUP": "ფეხზე მდგომი",
-    "HYBRID": "ჰიბრიდული",
-    "DEFENSIVE": "დაცვითი",
-    "TWO_WAY": "ორმხრივი",
-    "OFFENSIVE": "შემტევი",
-    "PLAYMAKER": "გამთამაშებელი",
-    "POWER_FORWARD": "ძალისმიერი ფორვარდი",
-    "SNIPER": "სნაიპერი",
-    "GRINDER": "მებრძოლი",
-    "ENFORCER": "დამცველი"
+    "BUTTERFLY": "Butterfly",
+    "STANDUP": "Stand Up",
+    "HYBRID": "Hybrid",
+    "DEFENSIVE": "Defensive",
+    "TWO_WAY": "Two Way",
+    "OFFENSIVE": "Offensive",
+    "PLAYMAKER": "Playmaker",
+    "POWER_FORWARD": "Power Forward",
+    "SNIPER": "Sniper",
+    "GRINDER": "Grinder",
+    "ENFORCER": "Enforcer"
   },
   "playstyleDescriptions": {
     "BUTTERFLY": "ეცემა პეპელას სტილში და ფარავს კარის ზედა ნაწილს ხელთათმანითა და ბლოკერით.",

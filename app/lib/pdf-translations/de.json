@@ -1,5 +1,5 @@
 {
-  "reportTitle": "Entwicklungsbericht",
+  "reportTitle": "Development Report",
   "teamLabel": "Team",
   "dobLabel": "Geburtsdatum",
   "nationalityLabel": "Nationalität",
@@ -59,13 +59,13 @@
     "BUTTERFLY": "Butterfly",
     "STANDUP": "Stand Up",
     "HYBRID": "Hybrid",
-    "DEFENSIVE": "Defensiv",
-    "TWO_WAY": "Zwei-Wege",
-    "OFFENSIVE": "Offensiv",
-    "PLAYMAKER": "Spielmacher",
+    "DEFENSIVE": "Defensive",
+    "TWO_WAY": "Two Way",
+    "OFFENSIVE": "Offensive",
+    "PLAYMAKER": "Playmaker",
     "POWER_FORWARD": "Power Forward",
-    "SNIPER": "Scharfschütze",
-    "GRINDER": "Arbeiter",
+    "SNIPER": "Sniper",
+    "GRINDER": "Grinder",
     "ENFORCER": "Enforcer"
   },
   "playstyleDescriptions": {

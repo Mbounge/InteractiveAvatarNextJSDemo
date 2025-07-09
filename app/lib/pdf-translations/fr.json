@@ -1,5 +1,5 @@
 {
-  "reportTitle": "Rapport de développement",
+  "reportTitle": "Development Report",
   "teamLabel": "Équipe",
   "dobLabel": "Date de naissance",
   "nationalityLabel": "Nationalité",
@@ -56,17 +56,17 @@
     "RIGHT": "Droite"
   },
   "playstyleNames": {
-    "BUTTERFLY": "Papillon",
-    "STANDUP": "Debout",
-    "HYBRID": "Hybride",
-    "DEFENSIVE": "Défensif",
-    "TWO_WAY": "Bidirectionnel",
-    "OFFENSIVE": "Offensif",
-    "PLAYMAKER": "Meneur de jeu",
-    "POWER_FORWARD": "Attaquant de puissance",
-    "SNIPER": "Franc-tireur",
-    "GRINDER": "Travailleur",
-    "ENFORCER": "Dur à cuire"
+    "BUTTERFLY": "Butterfly",
+    "STANDUP": "Stand Up",
+    "HYBRID": "Hybrid",
+    "DEFENSIVE": "Defensive",
+    "TWO_WAY": "Two Way",
+    "OFFENSIVE": "Offensive",
+    "PLAYMAKER": "Playmaker",
+    "POWER_FORWARD": "Power Forward",
+    "SNIPER": "Sniper",
+    "GRINDER": "Grinder",
+    "ENFORCER": "Enforcer"
   },
   "playstyleDescriptions": {
     "BUTTERFLY": "Se laisse tomber en papillon et couvre le haut du filet avec la mitaine et le bloqueur.",

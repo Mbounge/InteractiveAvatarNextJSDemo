@@ -1,5 +1,5 @@
 {
-  "reportTitle": "Zpráva o vývoji",
+  "reportTitle": "Development Report",
   "teamLabel": "Tým",
   "dobLabel": "Datum narození",
   "nationalityLabel": "Národnost",
@@ -56,17 +56,17 @@
     "RIGHT": "Pravá"
   },
   "playstyleNames": {
-    "BUTTERFLY": "Motýlek",
+    "BUTTERFLY": "Butterfly",
     "STANDUP": "Stand Up",
-    "HYBRID": "Hybridní",
-    "DEFENSIVE": "Obranný",
-    "TWO_WAY": "Obousměrný",
-    "OFFENSIVE": "Útočný",
-    "PLAYMAKER": "Tvořivý hráč",
-    "POWER_FORWARD": "Silový útočník",
-    "SNIPER": "Střelec",
-    "GRINDER": "Bojovník",
-    "ENFORCER": "Bitkař"
+    "HYBRID": "Hybrid",
+    "DEFENSIVE": "Defensive",
+    "TWO_WAY": "Two Way",
+    "OFFENSIVE": "Offensive",
+    "PLAYMAKER": "Playmaker",
+    "POWER_FORWARD": "Power Forward",
+    "SNIPER": "Sniper",
+    "GRINDER": "Grinder",
+    "ENFORCER": "Enforcer"
   },
   "playstyleDescriptions": {
     "BUTTERFLY": "Klesá do motýlka a kryje horní část branky lapačkou a vyrážečkou.",

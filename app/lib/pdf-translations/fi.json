@@ -1,5 +1,5 @@
 {
-  "reportTitle": "Kehitysraportti",
+  "reportTitle": "Development Report",
   "teamLabel": "Joukkue",
   "dobLabel": "Syntymäaika",
   "nationalityLabel": "Kansalaisuus",
@@ -56,17 +56,17 @@
     "RIGHT": "Oikea"
   },
   "playstyleNames": {
-    "BUTTERFLY": "Perhonen",
-    "STANDUP": "Pysty",
-    "HYBRID": "Hybridi",
-    "DEFENSIVE": "Puolustava",
-    "TWO_WAY": "Kaksisuuntainen",
-    "OFFENSIVE": "Hyökkäävä",
-    "PLAYMAKER": "Pelinrakentaja",
-    "POWER_FORWARD": "Voimahyökkääjä",
-    "SNIPER": "Tarkka-ampuja",
-    "GRINDER": "Raataja",
-    "ENFORCER": "Kovanyrkki"
+    "BUTTERFLY": "Butterfly",
+    "STANDUP": "Stand Up",
+    "HYBRID": "Hybrid",
+    "DEFENSIVE": "Defensive",
+    "TWO_WAY": "Two Way",
+    "OFFENSIVE": "Offensive",
+    "PLAYMAKER": "Playmaker",
+    "POWER_FORWARD": "Power Forward",
+    "SNIPER": "Sniper",
+    "GRINDER": "Grinder",
+    "ENFORCER": "Enforcer"
   },
   "playstyleDescriptions": {
     "BUTTERFLY": "Pudottautuu perhoseen ja peittää maalin yläosan hanskalla ja kilvellä.",
