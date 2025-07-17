@@ -2361,7 +2361,6 @@ async function fetchAndValidateLogo(
 ): Promise<string | null> {
   if (!name) return null;
 
-  // --- Helper to fetch and convert a logo from a path ---
   const getLogoDataUrl = async (logoPath: string): Promise<string | null> => {
     try {
       const imageUrl = `https://assets.graet.com/${logoPath}`;
@@ -2379,9 +2378,9 @@ async function fetchAndValidateLogo(
     return null;
   };
 
-  // --- Logic for Leagues (Unchanged) ---
+  // Logic for Leagues remains the same
   if (type === "league") {
-    const query = `query SearchLeagues($filter: LeaguesFilter!) { leagues(filter: $filter, pagination: { first: 5 }) { edges { node { logo } } } }`;
+    const query = `query SearchLeagues($filter: LeaguesFilter!) { leagues(filter: $filter, pagination: { first: 1 }) { edges { node { logo } } } }`;
     const variables = { filter: { searchQuery: name } };
     try {
       const response = await fetch("https://api.graet.com", {
@@ -2391,11 +2390,9 @@ async function fetchAndValidateLogo(
       });
       if (!response.ok) return null;
       const result = await response.json();
-      const edges = result.data?.leagues?.edges || [];
-      for (const edge of edges) {
-        if (edge.node.logo) {
-          return await getLogoDataUrl(edge.node.logo);
-        }
+      const logoPath = result.data?.leagues?.edges?.[0]?.node?.logo;
+      if (logoPath) {
+        return await getLogoDataUrl(logoPath);
       }
     } catch (error) {
       console.error(`Failed to fetch logo for league: ${name}`, error);
@@ -2403,43 +2400,53 @@ async function fetchAndValidateLogo(
     return null;
   }
 
-  // --- New Two-Step Logic for Teams ---
+  // New multi-step logic for Teams
   if (type === "team") {
-    const query = `query SearchTeams($filter: TeamsFilter!) { teams(filter: $filter, pagination: { first: 1 }) { edges { node { name logo } } } }`;
+    const query = `query SearchTeams($filter: TeamsFilter!, $pagination: Pagination) { teams(filter: $filter, pagination: $pagination) { edges { node { name logo } } } }`;
 
-    // --- Attempt 1: Exact Match ---
+    // --- Attempt 1: Broader Search (handles "HC Energie" matching "HC Energie U17") ---
     try {
-      const exactVariables = { filter: { searchQuery: name } };
+      console.log(`Attempting broader search for team: "${name}"`);
+      const broadVariables = {
+        filter: { searchQuery: name },
+        pagination: { first: 5 }, // Fetch a few results to check
+      };
       const response = await fetch("https://api.graet.dev", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, variables: exactVariables }),
+        body: JSON.stringify({ query, variables: broadVariables }),
       });
+
       if (response.ok) {
         const result = await response.json();
-        const foundNode = result.data?.teams?.edges?.[0]?.node;
-        if (
-          foundNode &&
-          foundNode.logo &&
-          foundNode.name.trim().toLowerCase() === name.trim().toLowerCase()
-        ) {
-          console.log(`Found exact logo match for: "${name}"`);
-          return await getLogoDataUrl(foundNode.logo);
+        const edges = result.data?.teams?.edges || [];
+        
+        // Find the first result that starts with the name and has a logo
+        for (const edge of edges) {
+          const foundNode = edge.node;
+          if (
+            foundNode &&
+            foundNode.logo &&
+            foundNode.name.trim().toLowerCase().startsWith(name.trim().toLowerCase())
+          ) {
+            console.log(`Found broader match for "${name}" with result "${foundNode.name}"`);
+            return await getLogoDataUrl(foundNode.logo);
+          }
         }
       }
     } catch (error) {
-      console.error(`API error on exact match for team: ${name}`, error);
+      console.error(`API error on broader search for team: ${name}`, error);
     }
 
-    // --- Attempt 2: Base Name Match (if exact match failed) ---
+    // --- Attempt 2: Fallback to Base Name (handles "Team Name U17" matching "Team Name") ---
     const baseName = getBaseTeamName(name);
     if (baseName !== name) {
-      // Only try again if a suffix was actually stripped
-      console.log(
-        `Exact match failed for "${name}". Trying base name: "${baseName}"`
-      );
+      console.log(`Broader search failed for "${name}". Trying base name: "${baseName}"`);
       try {
-        const baseVariables = { filter: { searchQuery: baseName } };
+        const baseVariables = {
+          filter: { searchQuery: baseName },
+          pagination: { first: 1 }, // We expect a more direct match here
+        };
         const response = await fetch("https://api.graet.dev", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -2448,32 +2455,18 @@ async function fetchAndValidateLogo(
         if (response.ok) {
           const result = await response.json();
           const foundNode = result.data?.teams?.edges?.[0]?.node;
-          // For a base match, we accept if the result *starts with* the base name.
-          // This allows "HK Dukla Trencin" to match "HK Dukla Trencin U18".
-          if (
-            foundNode &&
-            foundNode.logo &&
-            foundNode.name
-              .trim()
-              .toLowerCase()
-              .startsWith(baseName.toLowerCase())
-          ) {
-            console.log(
-              `Found base name logo match for "${baseName}" with result "${foundNode.name}"`
-            );
+          if (foundNode && foundNode.logo) {
+            console.log(`Found base name logo match for "${baseName}" with result "${foundNode.name}"`);
             return await getLogoDataUrl(foundNode.logo);
           }
         }
       } catch (error) {
-        console.error(
-          `API error on base name match for team: ${baseName}`,
-          error
-        );
+        console.error(`API error on base name match for team: ${baseName}`, error);
       }
     }
   }
 
-  // If all attempts fail, return null.
+  console.log(`All attempts to find a logo for team "${name}" have failed.`);
   return null;
 }
 

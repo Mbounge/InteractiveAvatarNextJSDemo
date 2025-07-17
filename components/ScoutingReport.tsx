@@ -2264,6 +2264,17 @@ const ScoutingPlatform: React.FC = () => {
 
   const handleExport = async (format: "pdf" | "txt") => {
     if (!editor) return;
+
+    // --- UPDATE START: Validation for Trait Ratings ---
+    // Check if a report has been generated and if any trait rating is still at its default value of 0.
+    const areAllTraitsRated = Object.values(traitRatings).every(rating => rating > 0);
+    if (hasGeneratedReport && !areAllTraitsRated) {
+      toast.error("Please rate all player traits before exporting the report.");
+      setIsExportMenuOpen(false); // Close the menu
+      return; // Stop the export process
+    }
+    // --- UPDATE END ---
+
     setIsExportMenuOpen(false);
 
     const reportTitle =
@@ -2304,7 +2315,7 @@ const ScoutingPlatform: React.FC = () => {
             reportHtml: editor.getHTML(),
             reportHtmlBlueprint: originalReportHtml,
             traitRatings: traitRatings,
-            targetLang: activeLanguage, // <-- THIS IS THE UPDATED PART
+            targetLang: activeLanguage,
           }),
         });
 
