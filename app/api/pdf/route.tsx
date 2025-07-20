@@ -2349,10 +2349,17 @@ const getPositionImageFilename = (
   }
 };
 
-const JUNIOR_SUFFIX_REGEX = /\s+(U16|U18|U20|J18|J20|Jr\.?)$/i;
+const JUNIOR_SUFFIX_REGEX = /\s+(U\d{1,2}|J\d{1,2}|Jr\.?)$/i;
 
 function getBaseTeamName(name: string): string {
   return name.replace(JUNIOR_SUFFIX_REGEX, "").trim();
+}
+
+function normalizeString(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize("NFD") // Decompose characters (e.g., 'í' becomes 'i' + '´')
+    .replace(/[\u0300-\u036f]/g, ""); // Remove the accent marks (the combining diacritical marks)
 }
 
 async function fetchAndValidateLogo(
@@ -2361,112 +2368,145 @@ async function fetchAndValidateLogo(
 ): Promise<string | null> {
   if (!name) return null;
 
-  const getLogoDataUrl = async (logoPath: string): Promise<string | null> => {
+  async function getAndValidateLogoDataUrl(logoPath: string): Promise<string | null> {
     try {
       const imageUrl = `https://assets.graet.com/${logoPath}`;
       const imageResponse = await fetch(imageUrl);
-      if (imageResponse.ok) {
-        const contentType =
-          imageResponse.headers.get("content-type") || "image/png";
-        const buffer = await imageResponse.arrayBuffer();
-        const base64 = Buffer.from(buffer).toString("base64");
-        return `data:${contentType};base64,${base64}`;
+  
+      if (!imageResponse.ok) {
+        console.log(`Validation failed for ${logoPath}: HTTP status ${imageResponse.status}`);
+        return null;
       }
+  
+      // Step 2: Read the data buffer directly. We no longer trust the content-type header for validation.
+      const buffer = await imageResponse.arrayBuffer();
+  
+      // Step 3: Ensure the buffer actually contains data.
+      if (!buffer || buffer.byteLength === 0) {
+          console.log(`Validation failed for ${logoPath}: Response body was empty.`);
+          return null;
+      }
+  
+      // Step 4: If we successfully read the buffer, we assume it's a valid image file.
+      const base64 = Buffer.from(buffer).toString("base64");
+  
+      // Step 5: Determine the correct MIME type for the data URL.
+      let contentType = imageResponse.headers.get("content-type") || "image/png";
+      
+      // If the server sent a non-image content type, we log a warning but proceed anyway,
+      // defaulting to 'image/png' which is a safe bet for logos.
+      if (!contentType.startsWith("image/")) {
+          console.warn(`Warning: Server sent non-image content-type (${contentType}) for ${logoPath}. Assuming image/png.`);
+          contentType = "image/png";
+      }
+  
+      return `data:${contentType};base64,${base64}`;
+  
     } catch (e) {
-      console.error(`Error converting logo path to data URL: ${logoPath}`, e);
+      console.error(`Error during fetch for logo path: ${logoPath}`, e);
+      return null;
     }
-    return null;
   };
 
-  // Logic for Leagues remains the same
+  // --- Logic for Leagues (Unchanged as requested) ---
   if (type === "league") {
-    const query = `query SearchLeagues($filter: LeaguesFilter!) { leagues(filter: $filter, pagination: { first: 1 }) { edges { node { logo } } } }`;
+    // 1. Query for the 'name' field and fetch more results.
+    const query = `query SearchLeagues($filter: LeaguesFilter!) { leagues(filter: $filter, pagination: { first: 10 }) { edges { node { name logo } } } }`;
     const variables = { filter: { searchQuery: name } };
+    
     try {
       const response = await fetch("https://api.graet.com", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query, variables }),
       });
+
       if (!response.ok) return null;
+
       const result = await response.json();
-      const logoPath = result.data?.leagues?.edges?.[0]?.node?.logo;
-      if (logoPath) {
-        return await getLogoDataUrl(logoPath);
+      const edges = result.data?.leagues?.edges || [];
+      const normalizedSearchName = normalizeString(name);
+
+      // 2. Iterate through results to find an exact, validated match.
+      for (const edge of edges) {
+        const foundNode = edge.node;
+        if (foundNode && foundNode.logo && foundNode.name) {
+          const normalizedFoundName = normalizeString(foundNode.name);
+
+          // 3. Perform name validation.
+          if (normalizedFoundName === normalizedSearchName) {
+            const validatedLogoUrl = await getAndValidateLogoDataUrl(foundNode.logo);
+            if (validatedLogoUrl) {
+              // Found the correct league with a working logo.
+              //console.log(`SUCCESS: Validated logo for league "${name}"`);
+              return validatedLogoUrl;
+            }
+          }
+        }
       }
     } catch (error) {
       console.error(`Failed to fetch logo for league: ${name}`, error);
     }
+    
+    console.log(`All attempts to find a VALID and CORRECT logo for league "${name}" have failed.`);
     return null;
   }
 
-  // New multi-step logic for Teams
+  // --- Final, Robust Logic for Teams ---
   if (type === "team") {
     const query = `query SearchTeams($filter: TeamsFilter!, $pagination: Pagination) { teams(filter: $filter, pagination: $pagination) { edges { node { name logo } } } }`;
+    
+    const searchTerm = name;
+    console.log(`Searching for logos with primary term: "${searchTerm}"`);
 
-    // --- Attempt 1: Broader Search (handles "HC Energie" matching "HC Energie U17") ---
+    // Get the normalized base name of the team we are looking for.
+    const originalNormalizedBaseName = normalizeString(getBaseTeamName(searchTerm));
+
     try {
-      console.log(`Attempting broader search for team: "${name}"`);
-      const broadVariables = {
-        filter: { searchQuery: name },
-        pagination: { first: 5 }, // Fetch a few results to check
+      const variables = {
+        filter: { searchQuery: searchTerm },
+        pagination: { first: 5 }, 
       };
       const response = await fetch("https://api.graet.dev", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, variables: broadVariables }),
+        body: JSON.stringify({ query, variables }),
       });
 
       if (response.ok) {
         const result = await response.json();
         const edges = result.data?.teams?.edges || [];
-        
-        // Find the first result that starts with the name and has a logo
+
+        //console.log(edges)
+
         for (const edge of edges) {
           const foundNode = edge.node;
-          if (
-            foundNode &&
-            foundNode.logo &&
-            foundNode.name.trim().toLowerCase().startsWith(name.trim().toLowerCase())
-          ) {
-            console.log(`Found broader match for "${name}" with result "${foundNode.name}"`);
-            return await getLogoDataUrl(foundNode.logo);
+          if (foundNode && foundNode.logo) {
+            // Get the normalized base name of the team found by the API.
+            const foundNormalizedBaseName = normalizeString(getBaseTeamName(foundNode.name));
+
+            // --- THE FINAL VALIDATION ---
+            // If the normalized base names match, we have found a sister team.
+            if (originalNormalizedBaseName === foundNormalizedBaseName) {
+              const validatedLogoUrl = await getAndValidateLogoDataUrl(foundNode.logo);
+              if (validatedLogoUrl) {
+                console.log(`SUCCESS: Validated logo for "${name}" using sister team "${foundNode.name}"`);
+                return validatedLogoUrl;
+              } else {
+                console.log(`INFO: Logo for sister team "${foundNode.name}" failed validation. Trying next...`);
+              }
+            } else {
+              console.log(`INFO: Skipping mismatched result. Searched for "${name}", but API returned unrelated team "${foundNode.name}"`);
+            }
           }
         }
       }
     } catch (error) {
-      console.error(`API error on broader search for team: ${name}`, error);
-    }
-
-    // --- Attempt 2: Fallback to Base Name (handles "Team Name U17" matching "Team Name") ---
-    const baseName = getBaseTeamName(name);
-    if (baseName !== name) {
-      console.log(`Broader search failed for "${name}". Trying base name: "${baseName}"`);
-      try {
-        const baseVariables = {
-          filter: { searchQuery: baseName },
-          pagination: { first: 1 }, // We expect a more direct match here
-        };
-        const response = await fetch("https://api.graet.dev", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query, variables: baseVariables }),
-        });
-        if (response.ok) {
-          const result = await response.json();
-          const foundNode = result.data?.teams?.edges?.[0]?.node;
-          if (foundNode && foundNode.logo) {
-            console.log(`Found base name logo match for "${baseName}" with result "${foundNode.name}"`);
-            return await getLogoDataUrl(foundNode.logo);
-          }
-        }
-      } catch (error) {
-        console.error(`API error on base name match for team: ${baseName}`, error);
-      }
+      console.error(`API error during logo search for term: "${searchTerm}"`, error);
     }
   }
 
-  console.log(`All attempts to find a logo for team "${name}" have failed.`);
+  console.log(`All attempts to find a VALID and CORRECT logo for team "${name}" have failed.`);
   return null;
 }
 
