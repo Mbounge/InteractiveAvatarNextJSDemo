@@ -1498,6 +1498,7 @@ const ScoutingPlatform: React.FC = () => {
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const sidebarScrollRef = useRef<HTMLDivElement>(null);
 
   const applyFontSizes = (editorInstance: Editor) => {
     const { tr, doc } = editorInstance.state;
@@ -1591,6 +1592,19 @@ const ScoutingPlatform: React.FC = () => {
       applyFontSizes(editor);
     }
   }, [activeLanguage, originalReportHtml, translatedReports, editor]);
+
+  // --- MODIFICATION: ADDED - This effect reliably scrolls the sidebar ---
+  useEffect(() => {
+    // This effect runs after the component re-renders.
+    // If hasGeneratedReport just became true, we scroll the sidebar.
+    if (hasGeneratedReport) {
+      sidebarScrollRef.current?.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+  }, [hasGeneratedReport]); // Dependency array ensures this runs only when hasGeneratedReport changes.
+
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -2105,6 +2119,9 @@ const ScoutingPlatform: React.FC = () => {
       }
       toast.success("Report generated!", { id: "generate-toast" });
 
+      // --- MODIFICATION: REMOVED - The old, unreliable scroll logic ---
+      // The new useEffect handles this automatically and more reliably.
+
       triggerAllTranslations(data.report);
 
     } catch (error: any) {
@@ -2265,15 +2282,12 @@ const ScoutingPlatform: React.FC = () => {
   const handleExport = async (format: "pdf" | "txt") => {
     if (!editor) return;
 
-    // --- UPDATE START: Validation for Trait Ratings ---
-    // Check if a report has been generated and if any trait rating is still at its default value of 0.
     const areAllTraitsRated = Object.values(traitRatings).every(rating => rating > 0);
     if (hasGeneratedReport && !areAllTraitsRated) {
       toast.error("Please rate all player traits before exporting the report.");
-      setIsExportMenuOpen(false); // Close the menu
-      return; // Stop the export process
+      setIsExportMenuOpen(false);
+      return;
     }
-    // --- UPDATE END ---
 
     setIsExportMenuOpen(false);
 
@@ -2396,7 +2410,7 @@ const ScoutingPlatform: React.FC = () => {
         >
           <div className={`flex-1 flex flex-col min-h-0 p-4 md:p-6 ${isDesktopSidebarCollapsed ? 'lg:hidden' : ''}`}>
             
-            <div className="flex-1 space-y-6 min-h-0 overflow-y-auto pr-2">
+            <div ref={sidebarScrollRef} className="flex-1 space-y-6 min-h-0 overflow-y-auto pr-2">
               {hasGeneratedReport && (
                 <div className="pb-4 border-b border-gray-200">
                   <h2 className="text-lg font-semibold text-gray-900 mb-3">
