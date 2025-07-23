@@ -1,4 +1,4 @@
-// ScoutingPlatform.tsx
+// app/components/ScoutingReport.tsx
 
 "use client";
 
@@ -16,6 +16,7 @@ import TextStyle from "@tiptap/extension-text-style";
 import Link from "@tiptap/extension-link";
 import { marked } from "marked";
 import { Toaster, toast } from "react-hot-toast";
+import { showToast } from "./CustomToast";
 import Table from "@tiptap/extension-table";
 import TableRow from "@tiptap/extension-table-row";
 import TableCell from "@tiptap/extension-table-cell";
@@ -54,84 +55,130 @@ import {
   PanelRightClose,
   Languages,
   Check,
+  ArrowLeft,
+  Loader2,
+  CheckCircle,
+  XCircle,
+  Search,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import Image from "next/image";
-import logo2 from "../public/Graet_Logo.svg"
+import logo2 from "../public/Graet_Logo.svg";
+
+// --- NOTIFICATION COMPONENT ---
+interface ProcessStatusProps {
+  status:
+    | "idle"
+    | "loading"
+    | "transcribing"
+    | "generating"
+    | "success"
+    | "error";
+  message: string;
+}
+
+const ProcessStatus: React.FC<ProcessStatusProps> = ({ status, message }) => {
+  if (status === "idle") {
+    return null;
+  }
+
+  const getIcon = () => {
+    switch (status) {
+      case "loading":
+      case "transcribing":
+      case "generating":
+        return <Loader2 className="w-5 h-5 animate-spin text-indigo-500" />;
+      case "success":
+        return <CheckCircle className="w-5 h-5 text-emerald-500" />;
+      case "error":
+        return <XCircle className="w-5 h-5 text-red-500" />;
+      default:
+        return null;
+    }
+  };
+
+  const getTextColor = () => {
+    switch (status) {
+      case "success":
+        return "text-emerald-800";
+      case "error":
+        return "text-red-800";
+      default:
+        return "text-indigo-800";
+    }
+  };
+
+  const getBgColor = () => {
+    switch (status) {
+      case "success":
+        return "bg-emerald-50 border-emerald-200";
+      case "error":
+        return "bg-red-50 border-red-200";
+      default:
+        return "bg-indigo-50 border-indigo-200";
+    }
+  };
+
+  return (
+    <div
+      className={`w-full ${getBgColor()} backdrop-blur-sm border rounded-xl p-4 flex items-center gap-3 transition-all duration-300`}
+    >
+      <div className="flex-shrink-0">{getIcon()}</div>
+      <p className={`text-sm font-medium ${getTextColor()}`}>{message}</p>
+    </div>
+  );
+};
+
+// --- PROPS INTERFACE ---
+interface ScoutingPlatformProps {
+  accessCode: string;
+  reportId: string | null;
+  onBackToDashboard: () => void;
+}
 
 // --- HELPER HOOK & FUNCTIONS ---
 
 const useMediaQuery = (query: string) => {
   const [matches, setMatches] = useState(false);
-
   useEffect(() => {
     const media = window.matchMedia(query);
-    if (media.matches !== matches) {
-      setMatches(media.matches);
-    }
+    if (media.matches !== matches) setMatches(media.matches);
     const listener = () => setMatches(media.matches);
     window.addEventListener("resize", listener);
     return () => window.removeEventListener("resize", listener);
   }, [matches, query]);
-
   return matches;
 };
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  let binary = '';
+  let binary = "";
   const bytes = new Uint8Array(buffer);
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
+  for (let i = 0; i < bytes.byteLength; i++)
     binary += String.fromCharCode(bytes[i]);
-  }
   return window.btoa(binary);
 }
 
 const getErrorMessage = async (response: Response): Promise<string> => {
-  const clonedResponse = response.clone();
   try {
-    const errorJson = await clonedResponse.json();
+    const errorJson = await response.clone().json();
     return errorJson.error?.message || JSON.stringify(errorJson);
   } catch (e) {
-    return await response.text() || `HTTP error! Status: ${response.status}`;
+    return (await response.text()) || `HTTP error! Status: ${response.status}`;
   }
 };
 
 const useDebounce = <T,>(value: T, delay: number): T => {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
   useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-    return () => {
-      clearTimeout(handler);
-    };
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
   }, [value, delay]);
   return debouncedValue;
 };
 
 const Spinner: React.FC<{ className?: string }> = ({ className }) => (
-  <svg
-    className={`animate-spin h-5 w-5 text-[#0e0c66] ${className}`}
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 24 24"
-  >
-    <circle
-      className="opacity-25"
-      cx="12"
-      cy="12"
-      r="10"
-      stroke="currentColor"
-      strokeWidth="4"
-    ></circle>
-    <path
-      className="opacity-75"
-      fill="currentColor"
-      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-    ></path>
-  </svg>
+  <Loader2 className={`animate-spin h-5 w-5 text-[#0e0c66] ${className}`} />
 );
 
 // --- TYPE DEFINITIONS ---
@@ -148,7 +195,6 @@ type Stats = {
   losses: number;
   ties: number;
 };
-
 type Player = {
   id: string;
   slug: string;
@@ -176,51 +222,23 @@ type Player = {
     hasGames: boolean;
     leagues: { id: string; name: string }[];
   } | null;
-  stats: {
-    career: Stats;
-    season: Stats;
-  };
+  stats: { career: Stats; season: Stats };
 };
-
-type PlayerSearchResult = {
-  node: Player;
-};
-
+type PlayerSearchResult = { node: Player };
 type Team = {
   id: string;
   name: string;
   shortName: string;
   country: string;
   slug: string;
-  leagues: {
-    id: string;
-    name: string;
-  }[];
+  leagues: { id: string; name: string }[];
 };
-
-type TeamSearchResult = {
-  node: Team;
-};
-
-type Standing = {
-  id: string;
-  team: {
-    id: string;
-    name: string;
-  };
-};
-
+type TeamSearchResult = { node: Team };
+type Standing = { id: string; team: { id: string; name: string } };
 type LeagueStandingsResponse = {
-  league: {
-    id: string;
-    name: string;
-  };
-  groups: {
-    group: string;
-    standings: Standing[];
-  }[];
+  league: { id: string; name: string };
+  groups: { group: string; standings: Standing[] }[];
 };
-
 type SeasonalStat = {
   node: {
     team: { name: string; shortName: string };
@@ -241,9 +259,8 @@ type SeasonalStat = {
     svp: number;
     shutouts: number;
     toi: number;
-  }
+  };
 };
-
 type TraitRatings = {
   skating: number;
   puckSkills: number;
@@ -252,23 +269,18 @@ type TraitRatings = {
   competeLevel: number;
   defensiveGame: number;
 };
-
-type Language = {
-  code: string;
-  name: string;
-};
+type Language = { code: string; name: string };
 
 const AVAILABLE_LANGUAGES: Language[] = [
-  { code: 'SE', name: 'Swedish' },
-  { code: 'FI', name: 'Finnish' },
-  { code: 'CZ', name: 'Czech' },
-  { code: 'SK', name: 'Slovak' },
-  { code: 'RU', name: 'Russian' },
-  { code: 'DE', name: 'German' },
-  { code: 'FR', name: 'French' },
-  { code: 'GE', name: 'Georgian' },
+  { code: "SE", name: "Swedish" },
+  { code: "FI", name: "Finnish" },
+  { code: "CZ", name: "Czech" },
+  { code: "SK", name: "Slovak" },
+  { code: "RU", name: "Russian" },
+  { code: "DE", name: "German" },
+  { code: "FR", name: "French" },
+  { code: "GE", name: "Georgian" },
 ];
-
 
 // --- TIPTAP CONFIGURATION ---
 const PREDEFINED_SIZES: { [key: string]: string } = {
@@ -294,11 +306,10 @@ const editorExtensions = [
               this.type,
               { level }
             );
-            if (size) {
+            if (size)
               tr.addStoredMark(
                 state.schema.marks.textStyle.create({ fontSize: size })
               );
-            }
           },
         });
       });
@@ -326,8 +337,7 @@ const editorExtensions = [
           },
         },
       ];
-    },
-    //@ts-ignore
+    }, //@ts-ignore
     addCommands() {
       return {
         setFontSize:
@@ -368,29 +378,26 @@ const editorExtensions = [
 
 // --- HELPER COMPONENTS ---
 const formatPosition = (rawPosition: string | null | undefined): string => {
-  if (!rawPosition) {
-    return 'N/A';
-  }
+  if (!rawPosition) return "N/A";
   switch (rawPosition) {
-    case 'CENTER':
-      return 'Center';
-    case 'LEFT_WING':
-      return 'LW';
-    case 'RIGHT_WING':
-      return 'RW';
-    case 'LEFT_DEFENSIVE':
-      return 'LD';
-    case 'RIGHT_DEFENSIVE':
-      return 'RD';
-    case 'DEFENDER':
-      return 'D';
-    case 'GOALTENDER':
-      return 'Goalie';
+    case "CENTER":
+      return "Center";
+    case "LEFT_WING":
+      return "LW";
+    case "RIGHT_WING":
+      return "RW";
+    case "LEFT_DEFENSIVE":
+      return "LD";
+    case "RIGHT_DEFENSIVE":
+      return "RD";
+    case "DEFENDER":
+      return "D";
+    case "GOALTENDER":
+      return "Goalie";
     default:
       return rawPosition;
   }
 };
-
 type ToolbarButtonProps = {
   onClick: () => void;
   title: string;
@@ -409,9 +416,10 @@ const ToolbarButton: React.FC<ToolbarButtonProps> = ({
     onClick={onClick}
     title={title}
     disabled={disabled}
-    className={`p-2 rounded-md transition-colors ${isActive ? "bg-gray-300" : "hover:bg-gray-200"} disabled:opacity-40 disabled:cursor-not-allowed`}
+    className={`p-2 rounded-lg transition-colors ${isActive ? "bg-indigo-100 text-indigo-700" : "hover:bg-gray-100 text-gray-600"} disabled:opacity-40 disabled:cursor-not-allowed`}
   >
-    {children}
+    {" "}
+    {children}{" "}
   </button>
 );
 type DropdownOption = { label: string; value: string };
@@ -432,28 +440,27 @@ const CustomDropdown: React.FC<CustomDropdownProps> = React.memo(
         if (
           dropdownRef.current &&
           !dropdownRef.current.contains(event.target as Node)
-        ) {
+        )
           setIsOpen(false);
-        }
       };
-      if (isOpen) {
-        document.addEventListener("mousedown", handleClickOutside);
-      }
-      return () => {
+      if (isOpen) document.addEventListener("mousedown", handleClickOutside);
+      return () =>
         document.removeEventListener("mousedown", handleClickOutside);
-      };
     }, [isOpen]);
     return (
       <div ref={dropdownRef} className="relative" title={title}>
+        {" "}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center justify-between w-32 p-2 border border-gray-300 bg-white rounded-md text-sm hover:bg-gray-50"
+          className="flex items-center justify-between w-32 p-2 border border-gray-200 bg-white rounded-lg text-sm hover:bg-gray-50 shadow-sm"
         >
-          <span className="truncate">{selectedLabel}</span>
-          <ChevronDown className="w-4 h-4 ml-2 text-gray-500" />
-        </button>
+          {" "}
+          <span className="truncate">{selectedLabel}</span>{" "}
+          <ChevronDown className="w-4 h-4 ml-2 text-gray-500" />{" "}
+        </button>{" "}
         {isOpen && (
           <div className="absolute z-20 top-full mt-1 w-full bg-white rounded-md shadow-lg border border-gray-200">
+            {" "}
             {options.map((option) => (
               <button
                 key={option.value}
@@ -463,11 +470,12 @@ const CustomDropdown: React.FC<CustomDropdownProps> = React.memo(
                 }}
                 className={`w-full text-left p-2 text-sm hover:bg-gray-100 ${value === option.value ? "font-bold bg-gray-100" : ""}`}
               >
-                {option.label}
+                {" "}
+                {option.label}{" "}
               </button>
-            ))}
+            ))}{" "}
           </div>
-        )}
+        )}{" "}
       </div>
     );
   }
@@ -488,8 +496,10 @@ const TableCreationGrid: React.FC<{ editor: Editor; close: () => void }> = ({
   };
   return (
     <div className="absolute z-10 bg-white shadow-lg border rounded-md p-2 mt-1">
+      {" "}
       {Array.from({ length: 5 }).map((_, rowIndex) => (
         <div key={rowIndex} className="flex">
+          {" "}
           {Array.from({ length: 5 }).map((_, colIndex) => (
             <div
               key={colIndex}
@@ -499,12 +509,13 @@ const TableCreationGrid: React.FC<{ editor: Editor; close: () => void }> = ({
               onClick={() => createTable(rowIndex + 1, colIndex + 1)}
               className={`w-6 h-6 border border-gray-300 cursor-pointer ${rowIndex < hovered.rows && colIndex < hovered.cols ? "bg-blue-300" : "bg-white"}`}
             />
-          ))}
+          ))}{" "}
         </div>
-      ))}
+      ))}{" "}
       <div className="text-center text-sm mt-1">
-        {hovered.rows} x {hovered.cols}
-      </div>
+        {" "}
+        {hovered.rows} x {hovered.cols}{" "}
+      </div>{" "}
     </div>
   );
 };
@@ -529,24 +540,22 @@ const TableMenus: React.FC<{ editor: Editor }> = ({ editor }) => {
       disabled={disabled}
       className="flex items-center w-full text-left p-2 text-sm rounded-md hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
     >
-      {children}
+      {" "}
+      {children}{" "}
     </button>
   );
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node))
         setDropdownOpen(false);
-      }
     };
-    if (isDropdownOpen) {
+    if (isDropdownOpen)
       document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isDropdownOpen]);
   return (
     <>
+      {" "}
       <BubbleMenu
         pluginKey="tableMain"
         editor={editor}
@@ -559,92 +568,104 @@ const TableMenus: React.FC<{ editor: Editor }> = ({ editor }) => {
             const { view } = editor;
             const { $anchor } = editor.state.selection;
             const node = view.domAtPos($anchor.pos).node;
-
-            const element = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node) as HTMLElement | null;
-
-            if (!element) {
-              return new DOMRect(0, 0, 0, 0);
-            }
-            
+            const element = (
+              node.nodeType === Node.TEXT_NODE ? node.parentElement : node
+            ) as HTMLElement | null;
+            if (!element) return new DOMRect(0, 0, 0, 0);
             const tableElement = element.closest("table");
-            if (!tableElement) {
-              return new DOMRect(0, 0, 0, 0);
-            }
+            if (!tableElement) return new DOMRect(0, 0, 0, 0);
             return tableElement.getBoundingClientRect();
           },
           placement: "top-start",
           offset: [0, 8],
         }}
       >
+        {" "}
         <div ref={menuRef} className="relative">
+          {" "}
           <button
             onClick={() => setDropdownOpen(!isDropdownOpen)}
             className="bg-white text-gray-700 p-1.5 rounded-md shadow-md border border-gray-300 hover:bg-gray-100"
             title="Table options"
           >
-            <TableIcon className="w-4 h-4" />
-          </button>
+            {" "}
+            <TableIcon className="w-4 h-4" />{" "}
+          </button>{" "}
           {isDropdownOpen && (
             <div className="absolute z-10 top-full mt-2 bg-white text-black p-2 rounded-lg shadow-xl border border-gray-200 w-max">
+              {" "}
               <div className="flex divide-x divide-gray-200">
+                {" "}
                 <div className="px-3 py-1">
+                  {" "}
                   <div className="font-bold text-xs uppercase text-gray-500 pb-2">
-                    Row
-                  </div>
+                    {" "}
+                    Row{" "}
+                  </div>{" "}
                   <MenuItem
                     onClick={() => editor.chain().focus().addRowBefore().run()}
                   >
-                    <Plus className="w-4 h-4 mr-2" /> Add Above
-                  </MenuItem>
+                    {" "}
+                    <Plus className="w-4 h-4 mr-2" /> Add Above{" "}
+                  </MenuItem>{" "}
                   <MenuItem
                     onClick={() => editor.chain().focus().addRowAfter().run()}
                   >
-                    <Plus className="w-4 h-4 mr-2" /> Add Below
-                  </MenuItem>
+                    {" "}
+                    <Plus className="w-4 h-4 mr-2" /> Add Below{" "}
+                  </MenuItem>{" "}
                   <MenuItem
                     onClick={() => editor.chain().focus().deleteRow().run()}
                   >
-                    <Minus className="w-4 h-4 mr-2" /> Delete Row
-                  </MenuItem>
-                </div>
+                    {" "}
+                    <Minus className="w-4 h-4 mr-2" /> Delete Row{" "}
+                  </MenuItem>{" "}
+                </div>{" "}
                 <div className="px-3 py-1">
+                  {" "}
                   <div className="font-bold text-xs uppercase text-gray-500 pb-2">
-                    Column
-                  </div>
+                    {" "}
+                    Column{" "}
+                  </div>{" "}
                   <MenuItem
                     onClick={() =>
                       editor.chain().focus().addColumnBefore().run()
                     }
                   >
-                    <Plus className="w-4 h-4 mr-2" /> Add Left
-                  </MenuItem>
+                    {" "}
+                    <Plus className="w-4 h-4 mr-2" /> Add Left{" "}
+                  </MenuItem>{" "}
                   <MenuItem
                     onClick={() =>
                       editor.chain().focus().addColumnAfter().run()
                     }
                   >
-                    <Plus className="w-4 h-4 mr-2" /> Add Right
-                  </MenuItem>
+                    {" "}
+                    <Plus className="w-4 h-4 mr-2" /> Add Right{" "}
+                  </MenuItem>{" "}
                   <MenuItem
                     onClick={() => editor.chain().focus().deleteColumn().run()}
                   >
-                    <Minus className="w-4 h-4 mr-2" /> Delete Column
-                  </MenuItem>
-                </div>
-              </div>
-              <hr className="my-2" />
+                    {" "}
+                    <Minus className="w-4 h-4 mr-2" /> Delete Column{" "}
+                  </MenuItem>{" "}
+                </div>{" "}
+              </div>{" "}
+              <hr className="my-2" />{" "}
               <div className="px-1">
+                {" "}
                 <MenuItem
                   onClick={() => editor.chain().focus().deleteTable().run()}
                 >
-                  <Trash2 className="w-4 h-4 mr-2 text-red-500" />
-                  <span className="text-red-500">Delete Table</span>
-                </MenuItem>
-              </div>
+                  {" "}
+                  <Trash2 className="w-4 h-4 mr-2 text-red-500" />{" "}
+                  <span className="text-red-500">Delete Table</span>{" "}
+                </MenuItem>{" "}
+              </div>{" "}
             </div>
-          )}
-        </div>
-      </BubbleMenu>
+          )}{" "}
+        </div>{" "}
+      </BubbleMenu>{" "}
       <BubbleMenu
         pluginKey="tableCellSelection"
         editor={editor}
@@ -654,23 +675,26 @@ const TableMenus: React.FC<{ editor: Editor }> = ({ editor }) => {
         tippyOptions={{ placement: "top" }}
         className="flex items-center space-x-1 bg-black text-white p-2 rounded-lg shadow-xl"
       >
+        {" "}
         <button
           onClick={() => editor.chain().focus().mergeCells().run()}
           disabled={!editor.can().mergeCells()}
           className="p-1 rounded hover:bg-gray-700 disabled:opacity-40"
           title="Merge cells"
         >
-          <Merge className="w-4 h-4" />
-        </button>
+          {" "}
+          <Merge className="w-4 h-4" />{" "}
+        </button>{" "}
         <button
           onClick={() => editor.chain().focus().splitCell().run()}
           disabled={!editor.can().splitCell()}
           className="p-1 rounded hover:bg-gray-700 disabled:opacity-40"
           title="Split cell"
         >
-          <Split className="w-4 h-4" />
-        </button>
-      </BubbleMenu>
+          {" "}
+          <Split className="w-4 h-4" />{" "}
+        </button>{" "}
+      </BubbleMenu>{" "}
     </>
   );
 };
@@ -694,82 +718,107 @@ const PlayerSearch: React.FC<{
 }) => {
   const searchResultsRef = useRef<HTMLDivElement>(null);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
-
   useEffect(() => {
-    if (searchResults.length > 0) {
-      setIsResultsOpen(true);
-    } else {
-      setIsResultsOpen(false);
-    }
+    setIsResultsOpen(searchResults.length > 0);
   }, [searchResults]);
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchResultsRef.current && !searchResultsRef.current.contains(event.target as Node)) {
+      if (
+        searchResultsRef.current &&
+        !searchResultsRef.current.contains(event.target as Node)
+      )
         setIsResultsOpen(false);
-      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-
   if (selectedPlayer) {
     return (
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">
-          Selected Player
-        </h2>
-        <div className="flex items-center justify-between p-3 border rounded-lg bg-green-50 border-green-200">
+        {" "}
+        <h2 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-4">
+          {" "}
+          Selected Player{" "}
+        </h2>{" "}
+        <div className="flex items-center justify-between p-3 border rounded-xl bg-green-50 border-green-200/80">
+          {" "}
           <div className="flex flex-col">
-            <span className="font-bold text-gray-800">{selectedPlayer.name}</span>
-            <span className="text-sm text-gray-600">{formatPosition(selectedPlayer.bio?.position)} - {selectedPlayer.currentTeam?.name || 'No Team'}</span>
-          </div>
+            {" "}
+            <span className="font-bold text-gray-800">
+              {selectedPlayer.name}
+            </span>{" "}
+            <span className="text-sm text-gray-600">
+              {formatPosition(selectedPlayer.bio?.position)} -{" "}
+              {selectedPlayer.currentTeam?.name || "No Team"}
+            </span>{" "}
+          </div>{" "}
           <button
             onClick={onClearPlayer}
-            className="text-sm font-semibold text-blue-600 hover:text-blue-800"
+            className="text-sm font-semibold text-indigo-600 hover:text-indigo-800"
           >
-            Change
-          </button>
-        </div>
+            {" "}
+            Change{" "}
+          </button>{" "}
+        </div>{" "}
       </div>
     );
   }
-
   return (
     <div>
-      <h2 className="text-lg font-semibold text-gray-900 mb-3">
-        Select Player
-      </h2>
+      {" "}
+      <h2 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-4">
+        {" "}
+        Select Player{" "}
+      </h2>{" "}
       <div className="relative" ref={searchResultsRef}>
+        {" "}
         <div className="relative">
+          {" "}
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            {" "}
+            <Search className="h-5 w-5 text-gray-800" />{" "}
+          </div>{" "}
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search for a player..."
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0e0c66] ml-1"
-          />
-          {isSearching && <div className="absolute right-3 top-1/2 -translate-y-1/2"><Spinner /></div>}
-        </div>
+            className="block w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm placeholder-gray-500"
+          />{" "}
+          {isSearching && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <Spinner />
+            </div>
+          )}{" "}
+        </div>{" "}
         {isResultsOpen && searchResults.length > 0 && (
           <div className="absolute top-full mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 z-10 max-h-60 overflow-y-auto">
+            {" "}
             {searchResults.map(({ node: player }) => (
               <button
                 key={player.id}
                 onClick={() => onSelectPlayer(player)}
                 className="w-full text-left p-3 hover:bg-gray-100 transition-colors flex justify-between items-center"
               >
+                {" "}
                 <div>
-                  <p className="font-medium text-gray-800">{player.name}</p>
-                  <p className="text-sm text-gray-500">{formatPosition(player.bio?.position)} - {player.currentTeam?.name || 'No Team'}</p>
-                </div>
-                <span className="text-xs text-gray-400">{player.country}</span>
+                  {" "}
+                  <p className="font-medium text-gray-800">
+                    {player.name}
+                  </p>{" "}
+                  <p className="text-sm text-gray-500">
+                    {formatPosition(player.bio?.position)} -{" "}
+                    {player.currentTeam?.name || "No Team"}
+                  </p>{" "}
+                </div>{" "}
+                <span className="text-xs text-gray-400">
+                  {player.country}
+                </span>{" "}
               </button>
-            ))}
+            ))}{" "}
           </div>
-        )}
-      </div>
+        )}{" "}
+      </div>{" "}
     </div>
   );
 };
@@ -793,81 +842,104 @@ const TeamSearch: React.FC<{
 }) => {
   const searchResultsRef = useRef<HTMLDivElement>(null);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
-
   useEffect(() => {
-    if (searchResults.length > 0) {
-      setIsResultsOpen(true);
-    } else {
-      setIsResultsOpen(false);
-    }
+    setIsResultsOpen(searchResults.length > 0);
   }, [searchResults]);
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchResultsRef.current && !searchResultsRef.current.contains(event.target as Node)) {
+      if (
+        searchResultsRef.current &&
+        !searchResultsRef.current.contains(event.target as Node)
+      )
         setIsResultsOpen(false);
-      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
   if (selectedTeam) {
     return (
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">
-          Selected Team
-        </h2>
-        <div className="flex items-center justify-between p-3 border rounded-lg bg-green-50 border-green-200">
+        {" "}
+        <h2 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-4">
+          {" "}
+          Selected Team{" "}
+        </h2>{" "}
+        <div className="flex items-center justify-between p-3 border rounded-xl bg-green-50 border-green-200/80">
+          {" "}
           <div className="flex flex-col">
-            <span className="font-bold text-gray-800">{selectedTeam.name}</span>
-            <span className="text-sm text-gray-600">{selectedTeam.leagues?.[0]?.name || 'No League'} - {selectedTeam.country}</span>
-          </div>
+            {" "}
+            <span className="font-bold text-gray-800">
+              {selectedTeam.name}
+            </span>{" "}
+            <span className="text-sm text-gray-600">
+              {selectedTeam.leagues?.[0]?.name || "No League"} -{" "}
+              {selectedTeam.country}
+            </span>{" "}
+          </div>{" "}
           <button
             onClick={onClearTeam}
-            className="text-sm font-semibold text-blue-600 hover:text-blue-800"
+            className="text-sm font-semibold text-indigo-600 hover:text-indigo-800"
           >
-            Change
-          </button>
-        </div>
+            {" "}
+            Change{" "}
+          </button>{" "}
+        </div>{" "}
       </div>
     );
   }
-
   return (
     <div>
-      <h2 className="text-lg font-semibold text-gray-900 mb-3">
-        Select Team
-      </h2>
+      {" "}
+      <h2 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-4">
+        {" "}
+        Select Team{" "}
+      </h2>{" "}
       <div className="relative" ref={searchResultsRef}>
+        {" "}
         <div className="relative">
+          {" "}
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            {" "}
+            <Search className="h-5 w-5 text-gray-800" />{" "}
+          </div>{" "}
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search for a team..."
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0e0c66] ml-1"
-          />
-          {isSearching && <div className="absolute right-3 top-1/2 -translate-y-1/2"><Spinner /></div>}
-        </div>
+            className="block w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm placeholder-gray-500"
+          />{" "}
+          {isSearching && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <Spinner />
+            </div>
+          )}{" "}
+        </div>{" "}
         {isResultsOpen && searchResults.length > 0 && (
           <div className="absolute top-full mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 z-10 max-h-60 overflow-y-auto">
+            {" "}
             {searchResults.map(({ node: team }) => (
               <button
                 key={team.id}
                 onClick={() => onSelectTeam(team)}
                 className="w-full text-left p-3 hover:bg-gray-100 transition-colors flex justify-between items-center"
               >
+                {" "}
                 <div>
-                  <p className="font-medium text-gray-800">{team.name}</p>
-                  <p className="text-sm text-gray-500">{team.leagues?.[0]?.name || 'No League'}</p>
-                </div>
-                <span className="text-xs text-gray-400">{team.country}</span>
+                  {" "}
+                  <p className="font-medium text-gray-800">{team.name}</p>{" "}
+                  <p className="text-sm text-gray-500">
+                    {team.leagues?.[0]?.name || "No League"}
+                  </p>{" "}
+                </div>{" "}
+                <span className="text-xs text-gray-400">
+                  {team.country}
+                </span>{" "}
               </button>
-            ))}
+            ))}{" "}
           </div>
-        )}
-      </div>
+        )}{" "}
+      </div>{" "}
     </div>
   );
 };
@@ -878,28 +950,28 @@ const LanguageSelector: React.FC<{
 }> = ({ selectedLanguages, onSelectionChange }) => {
   return (
     <div>
-      <h2 className="text-lg font-semibold text-gray-900 mb-3">
-        Translate Report To
-      </h2>
-      <div className="grid grid-cols-2 gap-2">
+      {" "}
+      <h2 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-4">
+        {" "}
+        Translate Report To{" "}
+      </h2>{" "}
+      <div className="grid grid-cols-2 gap-3">
+        {" "}
         {AVAILABLE_LANGUAGES.map((lang) => {
           const isSelected = selectedLanguages.includes(lang.code);
           return (
             <button
               key={lang.code}
               onClick={() => onSelectionChange(lang.code)}
-              className={`flex items-center justify-center space-x-2 p-2.5 rounded-lg text-sm font-semibold transition-colors
-                ${isSelected 
-                  ? 'bg-blue-600 text-white shadow-sm' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+              className={`flex items-center justify-center space-x-2 p-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${isSelected ? "bg-indigo-600 text-white shadow-md transform scale-105" : "bg-white border border-gray-300 text-gray-800 hover:bg-gray-50 shadow-sm"}`}
             >
-              {isSelected && <Check className="w-4 h-4" />}
-              <span>{lang.name}</span>
+              {" "}
+              {isSelected && <Check className="w-4 h-4" />}{" "}
+              <span>{lang.name}</span>{" "}
             </button>
           );
-        })}
-      </div>
+        })}{" "}
+      </div>{" "}
     </div>
   );
 };
@@ -909,112 +981,144 @@ const ReportLanguageSwitcher: React.FC<{
   onLanguageChange: (langCode: string) => void;
   translatedReports: Record<string, string>;
   translatingLanguages: Record<string, boolean>;
-}> = ({ activeLanguage, onLanguageChange, translatedReports, translatingLanguages }) => {
+}> = ({
+  activeLanguage,
+  onLanguageChange,
+  translatedReports,
+  translatingLanguages,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const allLanguages = ['EN', ...Object.keys(translatedReports)];
-  const stillTranslating = Object.keys(translatingLanguages).filter(lang => translatingLanguages[lang]);
-  const totalLanguagesToShow = allLanguages.length + stillTranslating.filter(l => !allLanguages.includes(l)).length;
-
+  const allLanguages = ["EN", ...Object.keys(translatedReports)];
+  const stillTranslating = Object.keys(translatingLanguages).filter(
+    (lang) => translatingLanguages[lang]
+  );
+  const totalLanguagesToShow =
+    allLanguages.length +
+    stillTranslating.filter((l) => !allLanguages.includes(l)).length;
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      )
         setIsOpen(false);
-      }
     };
     if (isOpen) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
-
-  if (totalLanguagesToShow <= 1) {
-    return null;
-  }
-
+  if (totalLanguagesToShow <= 1) return null;
   if (totalLanguagesToShow >= 4) {
-    const activeLangName = AVAILABLE_LANGUAGES.find(l => l.code === activeLanguage)?.name || 'English';
+    const activeLangName =
+      AVAILABLE_LANGUAGES.find((l) => l.code === activeLanguage)?.name ||
+      "English";
     return (
       <div className="relative" ref={dropdownRef}>
+        {" "}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center justify-between w-32 p-2 border border-gray-300 bg-white rounded-lg text-sm hover:bg-gray-50"
+          className="flex items-center justify-between w-32 p-2 border border-gray-200 bg-white rounded-lg text-sm hover:bg-gray-50 shadow-sm"
         >
-          <span className="truncate">{activeLangName}</span>
-          <ChevronDown className="w-4 h-4 ml-2 text-gray-500" />
-        </button>
+          {" "}
+          <span className="truncate">{activeLangName}</span>{" "}
+          <ChevronDown className="w-4 h-4 ml-2 text-gray-500" />{" "}
+        </button>{" "}
         {isOpen && (
           <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-md shadow-lg border border-gray-200 z-30">
-            {allLanguages.map(langCode => (
+            {" "}
+            {allLanguages.map((langCode) => (
               <button
                 key={langCode}
-                onClick={() => { onLanguageChange(langCode); setIsOpen(false); }}
-                className={`w-full text-left p-2 text-sm hover:bg-gray-100 ${activeLanguage === langCode ? 'font-bold bg-gray-100' : ''}`}
+                onClick={() => {
+                  onLanguageChange(langCode);
+                  setIsOpen(false);
+                }}
+                className={`w-full text-left p-2 text-sm hover:bg-gray-100 ${activeLanguage === langCode ? "font-bold bg-gray-100" : ""}`}
               >
-                {AVAILABLE_LANGUAGES.find(l => l.code === langCode)?.name || 'English'}
+                {" "}
+                {AVAILABLE_LANGUAGES.find((l) => l.code === langCode)?.name ||
+                  "English"}{" "}
               </button>
-            ))}
-            {stillTranslating.map(langCode => (
-              !allLanguages.includes(langCode) && (
-                <div key={langCode} className="flex items-center justify-between p-2 text-sm text-gray-400 cursor-not-allowed">
-                  <span>{AVAILABLE_LANGUAGES.find(l => l.code === langCode)?.name}</span>
-                  <Spinner className="w-4 h-4 text-gray-400" />
-                </div>
-              )
-            ))}
+            ))}{" "}
+            {stillTranslating.map(
+              (langCode) =>
+                !allLanguages.includes(langCode) && (
+                  <div
+                    key={langCode}
+                    className="flex items-center justify-between p-2 text-sm text-gray-400 cursor-not-allowed"
+                  >
+                    {" "}
+                    <span>
+                      {
+                        AVAILABLE_LANGUAGES.find((l) => l.code === langCode)
+                          ?.name
+                      }
+                    </span>{" "}
+                    <Spinner className="w-4 h-4 text-gray-400" />{" "}
+                  </div>
+                )
+            )}{" "}
           </div>
-        )}
+        )}{" "}
       </div>
     );
   }
-
   return (
-    <div className="flex items-center space-x-1 bg-gray-200 rounded-lg p-1">
-      {allLanguages.map(langCode => (
+    <div className="flex items-center space-x-1 bg-gray-200/70 rounded-lg p-1">
+      {" "}
+      {allLanguages.map((langCode) => (
         <button
           key={langCode}
           onClick={() => onLanguageChange(langCode)}
-          title={`Switch to ${AVAILABLE_LANGUAGES.find(l => l.code === langCode)?.name || 'English'}`}
-          className={`px-3 h-7 flex items-center justify-center text-xs font-bold rounded-md transition-colors ${
-            activeLanguage === langCode ? 'bg-white text-gray-800 shadow-sm' : 'bg-transparent text-gray-500 hover:text-gray-700'
-          }`}
+          title={`Switch to ${AVAILABLE_LANGUAGES.find((l) => l.code === langCode)?.name || "English"}`}
+          className={`px-3 h-7 flex items-center justify-center text-xs font-bold rounded-md transition-colors ${activeLanguage === langCode ? "bg-white text-gray-800 shadow-sm" : "bg-transparent text-gray-500 hover:text-gray-700"}`}
         >
-          {langCode}
+          {" "}
+          {langCode}{" "}
         </button>
-      ))}
-      {stillTranslating.map(langCode => (
-        !allLanguages.includes(langCode) && (
-          <button
-            key={langCode}
-            disabled
-            title={`Translating to ${AVAILABLE_LANGUAGES.find(l => l.code === langCode)?.name}...`}
-            className="w-10 h-7 flex items-center justify-center text-xs font-bold rounded-md bg-transparent text-gray-500"
-          >
-            <Spinner className="w-4 h-4" />
-          </button>
-        )
-      ))}
+      ))}{" "}
+      {stillTranslating.map(
+        (langCode) =>
+          !allLanguages.includes(langCode) && (
+            <button
+              key={langCode}
+              disabled
+              title={`Translating to ${AVAILABLE_LANGUAGES.find((l) => l.code === langCode)?.name}...`}
+              className="w-10 h-7 flex items-center justify-center text-xs font-bold rounded-md bg-transparent text-gray-500"
+            >
+              {" "}
+              <Spinner className="w-4 h-4" />{" "}
+            </button>
+          )
+      )}{" "}
     </div>
   );
 };
 
 const StarIcon: React.FC<{
-  fillType: 'full' | 'half' | 'empty';
+  fillType: "full" | "half" | "empty";
   className?: string;
-}> = ({ fillType, className = 'w-6 h-6' }) => {
-  const starPath = "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z";
+}> = ({ fillType, className = "w-6 h-6" }) => {
+  const starPath =
+    "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z";
   const uniqueId = `grad-${Math.random().toString(36).substr(2, 9)}`;
-
-  if (fillType === 'full') {
+  if (fillType === "full")
     return (
-      <svg className={`${className} text-blue-600`} fill="currentColor" viewBox="0 0 24 24">
+      <svg
+        className={`${className} text-blue-600`}
+        fill="currentColor"
+        viewBox="0 0 24 24"
+      >
         <path d={starPath} />
       </svg>
     );
-  }
-
-  if (fillType === 'half') {
+  if (fillType === "half")
     return (
-      <svg className={`${className} text-blue-600`} fill={`url(#${uniqueId})`} viewBox="0 0 24 24">
+      <svg
+        className={`${className} text-blue-600`}
+        fill={`url(#${uniqueId})`}
+        viewBox="0 0 24 24"
+      >
         <defs>
           <linearGradient id={uniqueId}>
             <stop offset="50%" stopColor="currentColor" />
@@ -1024,54 +1128,89 @@ const StarIcon: React.FC<{
         <path d={starPath} />
       </svg>
     );
-  }
-
   return (
-    <svg className={`${className} text-gray-300`} fill="currentColor" viewBox="0 0 24 24">
+    <svg
+      className={`${className} text-gray-300`}
+      fill="currentColor"
+      viewBox="0 0 24 24"
+    >
       <path d={starPath} />
     </svg>
   );
 };
 
 const RatingScaleLegend: React.FC = () => (
-  <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg mb-4">
-    <h3 className="text-sm font-semibold text-gray-800 mb-3">Rating Scale</h3>
+  <div className="p-4 bg-gray-50/50 border border-gray-200/80 rounded-xl mb-4">
+    {" "}
+    <h3 className="text-sm font-semibold text-gray-800 mb-3">
+      Rating Scale
+    </h3>{" "}
     <div className="grid grid-cols-1 gap-3 text-xs text-gray-600">
+      {" "}
       <div className="flex items-start space-x-2">
         <div className="flex pt-0.5">
-          {[...Array(5)].map((_, i) => <StarIcon key={i} fillType="full" className="w-3 h-3" />)}
+          {[...Array(5)].map((_, i) => (
+            <StarIcon key={i} fillType="full" className="w-3 h-3" />
+          ))}
         </div>
-        <div><span className="font-bold text-gray-700">Elite:</span> Exceptional at this skill, comparable to top-tier players in their age group or level.</div>
-      </div>
+        <div>
+          <span className="font-bold text-gray-700">Elite:</span> Exceptional,
+          top-tier skill.
+        </div>
+      </div>{" "}
       <div className="flex items-start space-x-2">
         <div className="flex pt-0.5">
-          {[...Array(4)].map((_, i) => <StarIcon key={i} fillType="full" className="w-3 h-3" />)}
+          {[...Array(4)].map((_, i) => (
+            <StarIcon key={i} fillType="full" className="w-3 h-3" />
+          ))}
           <StarIcon fillType="empty" className="w-3 h-3" />
         </div>
-        <div><span className="font-bold text-gray-700">Strong:</span> Above average; consistently effective in high-level play.</div>
-      </div>
+        <div>
+          <span className="font-bold text-gray-700">Strong:</span> Above
+          average, highly effective.
+        </div>
+      </div>{" "}
       <div className="flex items-start space-x-2">
         <div className="flex pt-0.5">
-          {[...Array(3)].map((_, i) => <StarIcon key={i} fillType="full" className="w-3 h-3" />)}
-          {[...Array(2)].map((_, i) => <StarIcon key={i} fillType="empty" className="w-3 h-3" />)}
+          {[...Array(3)].map((_, i) => (
+            <StarIcon key={i} fillType="full" className="w-3 h-3" />
+          ))}
+          {[...Array(2)].map((_, i) => (
+            <StarIcon key={i} fillType="empty" className="w-3 h-3" />
+          ))}
         </div>
-        <div><span className="font-bold text-gray-700">Solid:</span> Adequate for current level; can still be developed further.</div>
-      </div>
+        <div>
+          <span className="font-bold text-gray-700">Solid:</span> Adequate for
+          the level.
+        </div>
+      </div>{" "}
       <div className="flex items-start space-x-2">
         <div className="flex pt-0.5">
-          {[...Array(2)].map((_, i) => <StarIcon key={i} fillType="full" className="w-3 h-3" />)}
-          {[...Array(3)].map((_, i) => <StarIcon key={i} fillType="empty" className="w-3 h-3" />)}
+          {[...Array(2)].map((_, i) => (
+            <StarIcon key={i} fillType="full" className="w-3 h-3" />
+          ))}
+          {[...Array(3)].map((_, i) => (
+            <StarIcon key={i} fillType="empty" className="w-3 h-3" />
+          ))}
         </div>
-        <div><span className="font-bold text-gray-700">Developing:</span> Some signs of potential, but inconsistency or technical flaws are present.</div>
-      </div>
+        <div>
+          <span className="font-bold text-gray-700">Developing:</span> Shows
+          potential, inconsistent.
+        </div>
+      </div>{" "}
       <div className="flex items-start space-x-2">
         <div className="flex pt-0.5">
           <StarIcon fillType="full" className="w-3 h-3" />
-          {[...Array(4)].map((_, i) => <StarIcon key={i} fillType="empty" className="w-3 h-3" />)}
+          {[...Array(4)].map((_, i) => (
+            <StarIcon key={i} fillType="empty" className="w-3 h-3" />
+          ))}
         </div>
-        <div><span className="font-bold text-gray-700">Needs Improvement:</span> Below standard; requires focused development or training.</div>
-      </div>
-    </div>
+        <div>
+          <span className="font-bold text-gray-700">Needs Improvement:</span>{" "}
+          Below standard.
+        </div>
+      </div>{" "}
+    </div>{" "}
   </div>
 );
 
@@ -1081,46 +1220,46 @@ const TraitRatingSelector: React.FC<{
   onRatingChange: (newRating: number) => void;
 }> = ({ title, rating, onRatingChange }) => {
   const [hoverRating, setHoverRating] = useState(0);
-
-  const calculateRatingFromEvent = (e: React.MouseEvent<HTMLDivElement>, starIndex: number) => {
-    const starElement = e.currentTarget;
-    const { left, width } = starElement.getBoundingClientRect();
+  const calculateRatingFromEvent = (
+    e: React.MouseEvent<HTMLDivElement>,
+    starIndex: number
+  ) => {
+    const { left, width } = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - left;
-    const percentageInStar = x / width;
-    
-    const newRating = starIndex + (percentageInStar < 0.5 ? 0.5 : 1.0);
-    return newRating;
+    return starIndex + (x / width < 0.5 ? 0.5 : 1.0);
   };
-
   const displayRating = hoverRating > 0 ? hoverRating : rating;
-
   return (
     <div>
+      {" "}
       <div className="flex justify-between items-center mb-1">
-        <p className="text-sm font-medium text-gray-800">{title}</p>
-        <p className="text-sm font-bold text-blue-600 w-8 text-right">{displayRating.toFixed(1)}</p>
-      </div>
+        {" "}
+        <p className="text-sm font-medium text-gray-800">{title}</p>{" "}
+        <p className="text-sm font-bold text-blue-600 w-8 text-right">
+          {displayRating.toFixed(1)}
+        </p>{" "}
+      </div>{" "}
       <div className="flex" onMouseLeave={() => setHoverRating(0)}>
+        {" "}
         {[...Array(5)].map((_, i) => {
-          const starValue = i + 1;
-          let fillType: 'full' | 'half' | 'empty' = 'empty';
-          if (displayRating >= starValue) {
-            fillType = 'full';
-          } else if (displayRating > i && displayRating < starValue) {
-            fillType = 'half';
-          }
+          let fillType: "full" | "half" | "empty" = "empty";
+          if (displayRating >= i + 1) fillType = "full";
+          else if (displayRating > i) fillType = "half";
           return (
             <div
               key={i}
               className="cursor-pointer"
-              onMouseMove={(e) => setHoverRating(calculateRatingFromEvent(e, i))}
+              onMouseMove={(e) =>
+                setHoverRating(calculateRatingFromEvent(e, i))
+              }
               onClick={(e) => onRatingChange(calculateRatingFromEvent(e, i))}
             >
-              <StarIcon fillType={fillType} />
+              {" "}
+              <StarIcon fillType={fillType} />{" "}
             </div>
           );
-        })}
-      </div>
+        })}{" "}
+      </div>{" "}
     </div>
   );
 };
@@ -1207,53 +1346,40 @@ const EditorToolbar: React.FC<{
   const tableMenuRef = useRef<HTMLDivElement>(null);
   const toolbarState = useToolbarState(editor);
   const isDesktop = useMediaQuery("(min-width: 1024px)");
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         tableMenuRef.current &&
         !tableMenuRef.current.contains(event.target as Node)
-      ) {
+      )
         setTableDropdownOpen(false);
-      }
     };
-    if (isTableDropdownOpen) {
+    if (isTableDropdownOpen)
       document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isTableDropdownOpen]);
-
   const handleStyleChange = useCallback(
     (style: string) => {
       if (!editor) return;
       const defaultSize = PREDEFINED_SIZES[style];
       const chain = editor.chain().focus();
-      if (style === "p") {
-        chain.setParagraph();
-      } else {
+      if (style === "p") chain.setParagraph();
+      else
         chain.setHeading({
           level: parseInt(style.replace("h", ""), 10) as 1 | 2 | 3,
-        });
-      }
-      //@ts-ignore
+        }); //@ts-ignore
       chain.setFontSize(defaultSize).run();
     },
     [editor]
   );
-
   const handleFontSizeChange = useCallback(
     (size: string) => {
-      if (!editor) return;
-      //@ts-ignore
+      if (!editor) return; //@ts-ignore
       editor.chain().focus().setFontSize(size).run();
     },
     [editor]
   );
-
   if (!editor) return null;
-
   const styleOptions: DropdownOption[] = [
     { label: "Paragraph", value: "p" },
     { label: "Heading 1", value: "h1" },
@@ -1269,214 +1395,235 @@ const EditorToolbar: React.FC<{
     { label: "24pt", value: "24pt" },
     { label: "30pt", value: "30pt" },
   ];
-
   const handleToggleClick = () => {
-    if (isDesktop) {
-      onToggleDesktopSidebar();
-    } else {
-      onToggleMobileSidebar();
-    }
+    if (isDesktop) onToggleDesktopSidebar();
+    else onToggleMobileSidebar();
   };
-
   return (
-    <div className="flex-shrink-0 bg-white border-b border-gray-200 p-2 flex items-center justify-between space-x-2">
+    <div className="flex-shrink-0 bg-white/80 backdrop-blur-md border-b border-white/20 shadow-sm p-2 flex items-center justify-between space-x-2 sticky top-0 z-20">
+      {" "}
       <div className="flex items-center space-x-1">
+        {" "}
         <ToolbarButton onClick={handleToggleClick} title="Toggle Sidebar">
+          {" "}
           {isDesktop ? (
             isDesktopSidebarCollapsed ? (
-              <PanelRightClose className="w-4 h-4" />
+              <PanelRightClose className="w-5 h-5" />
             ) : (
-              <PanelLeftClose className="w-4 h-4" />
+              <PanelLeftClose className="w-5 h-5" />
             )
           ) : isMobileSidebarOpen ? (
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           ) : (
-            <Menu className="w-4 h-4" />
-          )}
-        </ToolbarButton>
-      </div>
-      
+            <Menu className="w-5 h-5" />
+          )}{" "}
+        </ToolbarButton>{" "}
+      </div>{" "}
       <div className="flex items-center space-x-1 flex-wrap justify-end">
-        <div className="flex items-center space-x-1 border-l border-gray-300 pl-2 ml-2">
+        {" "}
+        <div className="hidden sm:flex items-center space-x-1 border-l border-gray-300/50 pl-2 ml-2">
+          {" "}
           <ToolbarButton
             onClick={() => editor.chain().focus().undo().run()}
             disabled={!toolbarState.canUndo}
             title="Undo"
           >
-            <Undo className="w-4 h-4" />
-          </ToolbarButton>
+            {" "}
+            <Undo className="w-5 h-5" />{" "}
+          </ToolbarButton>{" "}
           <ToolbarButton
             onClick={() => editor.chain().focus().redo().run()}
             disabled={!toolbarState.canRedo}
             title="Redo"
           >
-            <Redo className="w-4 h-4" />
-          </ToolbarButton>
-        </div>
-        <div className="flex items-center space-x-2 border-l border-gray-300 pl-2 ml-2">
+            {" "}
+            <Redo className="w-5 h-5" />{" "}
+          </ToolbarButton>{" "}
+        </div>{" "}
+        <div className="hidden md:flex items-center space-x-2 border-l border-gray-300/50 pl-2 ml-2">
+          {" "}
           <CustomDropdown
             options={styleOptions}
             value={toolbarState.currentStyle}
             onChange={handleStyleChange}
             title="Text Style"
-          />
+          />{" "}
           <CustomDropdown
             options={fontSizeOptions}
             value={toolbarState.currentFontSize}
             onChange={handleFontSizeChange}
             title="Font Size"
-          />
-        </div>
-        <div className="flex items-center space-x-1 border-l border-gray-300 pl-2 ml-2">
+          />{" "}
+        </div>{" "}
+        <div className="flex items-center space-x-1 border-l border-gray-300/50 pl-2 ml-2">
+          {" "}
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleBold().run()}
             isActive={toolbarState.isBold}
             title="Bold"
           >
-            <Bold className="w-4 h-4" />
-          </ToolbarButton>
+            {" "}
+            <Bold className="w-5 h-5" />{" "}
+          </ToolbarButton>{" "}
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleItalic().run()}
             isActive={toolbarState.isItalic}
             title="Italic"
           >
-            <Italic className="w-4 h-4" />
-          </ToolbarButton>
+            {" "}
+            <Italic className="w-5 h-5" />{" "}
+          </ToolbarButton>{" "}
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleUnderline().run()}
             isActive={toolbarState.isUnderline}
             title="Underline"
           >
-            <UnderlineIcon className="w-4 h-4" />
-          </ToolbarButton>
-        </div>
-        <div className="flex items-center space-x-1 border-l border-gray-300 pl-2 ml-2">
+            {" "}
+            <UnderlineIcon className="w-5 h-5" />{" "}
+          </ToolbarButton>{" "}
+        </div>{" "}
+        <div className="hidden lg:flex items-center space-x-1 border-l border-gray-300/50 pl-2 ml-2">
+          {" "}
           <ToolbarButton
             onClick={() => editor.chain().focus().setTextAlign("left").run()}
             isActive={toolbarState.textAlign === "left"}
             title="Align Left"
           >
-            <AlignLeft className="w-4 h-4" />
-          </ToolbarButton>
+            {" "}
+            <AlignLeft className="w-5 h-5" />{" "}
+          </ToolbarButton>{" "}
           <ToolbarButton
             onClick={() => editor.chain().focus().setTextAlign("center").run()}
             isActive={toolbarState.textAlign === "center"}
             title="Align Center"
           >
-            <AlignCenter className="w-4 h-4" />
-          </ToolbarButton>
+            {" "}
+            <AlignCenter className="w-5 h-5" />{" "}
+          </ToolbarButton>{" "}
           <ToolbarButton
             onClick={() => editor.chain().focus().setTextAlign("right").run()}
             isActive={toolbarState.textAlign === "right"}
             title="Align Right"
           >
-            <AlignRight className="w-4 h-4" />
-          </ToolbarButton>
-          <ToolbarButton
-            onClick={() => editor.chain().focus().setTextAlign("justify").run()}
-            isActive={toolbarState.textAlign === "justify"}
-            title="Justify"
-          >
-            <AlignJustify className="w-4 h-4" />
-          </ToolbarButton>
-        </div>
-        <div className="flex items-center space-x-1 border-l border-gray-300 pl-2 ml-2">
+            {" "}
+            <AlignRight className="w-5 h-5" />{" "}
+          </ToolbarButton>{" "}
+        </div>{" "}
+        <div className="hidden sm:flex items-center space-x-1 border-l border-gray-300/50 pl-2 ml-2">
+          {" "}
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             isActive={toolbarState.isBulletList}
             title="Bulleted List"
           >
-            <List className="w-4 h-4" />
-          </ToolbarButton>
+            {" "}
+            <List className="w-5 h-5" />{" "}
+          </ToolbarButton>{" "}
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
             isActive={toolbarState.isOrderedList}
             title="Numbered List"
           >
-            <ListOrdered className="w-4 h-4" />
-          </ToolbarButton>
-          <ToolbarButton
-            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-            isActive={toolbarState.isCodeBlock}
-            title="Code Block"
-          >
-            <Code className="w-4 h-4" />
-          </ToolbarButton>
+            {" "}
+            <ListOrdered className="w-5 h-5" />{" "}
+          </ToolbarButton>{" "}
           <div ref={tableMenuRef} className="relative">
+            {" "}
             <ToolbarButton
               onClick={() => setTableDropdownOpen(!isTableDropdownOpen)}
               title="Insert Table"
             >
-              <TableIcon className="w-4 h-4" />
-            </ToolbarButton>
+              {" "}
+              <TableIcon className="w-5 h-5" />{" "}
+            </ToolbarButton>{" "}
             {isTableDropdownOpen && (
               <TableCreationGrid
                 editor={editor}
                 close={() => setTableDropdownOpen(false)}
               />
-            )}
-          </div>
-        </div>
-        <div className="flex items-center space-x-1 border-l border-gray-300 pl-2 ml-2">
-          <ReportLanguageSwitcher 
+            )}{" "}
+          </div>{" "}
+        </div>{" "}
+        <div className="flex items-center space-x-1 border-l border-gray-300/50 pl-2 ml-2">
+          {" "}
+          <ReportLanguageSwitcher
             activeLanguage={activeLanguage}
             onLanguageChange={onLanguageChange}
             translatedReports={translatedReports}
             translatingLanguages={translatingLanguages}
-          />
-        </div>
-      </div>
+          />{" "}
+        </div>{" "}
+      </div>{" "}
     </div>
   );
 };
 
 const EditorPlaceholder = ({ onStart }: { onStart: () => void }) => (
-  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center bg-gray-50 bg-opacity-80 backdrop-blur-sm p-4">
-    <Upload className="w-16 h-16 text-gray-400 mb-4" />
-    <h3 className="text-lg font-semibold text-gray-600">Ready for Scouting</h3>
-    <p className="text-gray-500 max-w-sm">
-      Select a player and upload an audio file to generate your first report.
-    </p>
+  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center bg-slate-50/50 backdrop-blur-sm p-4">
+    {" "}
+    <div className="w-24 h-24 bg-gradient-to-br from-indigo-100 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+      {" "}
+      <Upload className="w-12 h-12 text-indigo-600" />{" "}
+    </div>{" "}
+    <h3 className="text-2xl font-bold text-gray-900 mb-3">
+      Ready for Scouting
+    </h3>{" "}
+    <p className="text-gray-600 mb-8 max-w-md mx-auto">
+      {" "}
+      Select a player and upload an audio file to generate a scouting
+      report.{" "}
+    </p>{" "}
     <button
       onClick={onStart}
-      className="mt-6 lg:hidden flex items-center justify-center space-x-2 py-3 px-6 bg-[#0e0c66] text-white font-semibold rounded-lg hover:bg-[#0e0c66]/85 transition-all duration-200"
+      className="lg:hidden inline-flex items-center gap-2 px-6 py-3 bg-[#0e0c66] text-white font-semibold rounded-xl shadow-lg hover:bg-[#0e0c66]/90 transform hover:scale-105 transition-all duration-200"
     >
-      <Sparkles className="w-5 h-5" />
-      <span>Start New Report</span>
-    </button>
+      {" "}
+      <Sparkles className="w-5 h-5" /> <span>Start New Report</span>{" "}
+    </button>{" "}
   </div>
 );
 
-const ScoutingPlatform: React.FC = () => {
-  // Player Search State
+const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
+  accessCode,
+  reportId,
+  onBackToDashboard,
+}) => {
+  // --- STATE ---
+  const [currentReportId, setCurrentReportId] = useState<string | null>(
+    reportId
+  );
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingReport, setIsLoadingReport] = useState(!!reportId);
+  const [processState, setProcessState] = useState<ProcessStatusProps>({
+    status: "idle",
+    message: "",
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [searchResults, setSearchResults] = useState<PlayerSearchResult[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [isSearching, setIsSearching] = useState(false);
-
-  // Team Search State
   const [teamSearchQuery, setTeamSearchQuery] = useState("");
   const debouncedTeamSearchQuery = useDebounce(teamSearchQuery, 300);
-  const [teamSearchResults, setTeamSearchResults] = useState<TeamSearchResult[]>([]);
+  const [teamSearchResults, setTeamSearchResults] = useState<
+    TeamSearchResult[]
+  >([]);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [isSearchingTeams, setIsSearchingTeams] = useState(false);
-
-  // League Standings State
-  const [leagueStandings, setLeagueStandings] = useState<LeagueStandingsResponse | null>(null);
-  const [isFetchingStandings, setIsFetchingStandings] = useState(false);
-
-  // Seasonal Stats State
+  const [leagueStandings, setLeagueStandings] =
+    useState<LeagueStandingsResponse | null>(null);
   const [seasonalStats, setSeasonalStats] = useState<SeasonalStat[]>([]);
-  const [isFetchingStats, setIsFetchingStats] = useState(false);
-
-  // Translation State
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
-  const [originalReportHtml, setOriginalReportHtml] = useState<string | null>(null);
-  const [translatedReports, setTranslatedReports] = useState<Record<string, string>>({});
-  const [translatingLanguages, setTranslatingLanguages] = useState<Record<string, boolean>>({});
-  const [activeLanguage, setActiveLanguage] = useState('EN');
-
+  const [originalReportHtml, setOriginalReportHtml] = useState<string | null>(
+    null
+  );
+  const [translatedReports, setTranslatedReports] = useState<
+    Record<string, string>
+  >({});
+  const [translatingLanguages, setTranslatingLanguages] = useState<
+    Record<string, boolean>
+  >({});
+  const [activeLanguage, setActiveLanguage] = useState("EN");
   const [traitRatings, setTraitRatings] = useState<TraitRatings>({
     skating: 0,
     puckSkills: 0,
@@ -1485,20 +1632,21 @@ const ScoutingPlatform: React.FC = () => {
     competeLevel: 0,
     defensiveGame: 0,
   });
-
-  // Existing State
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [transcriptionText, setTranscriptionText] = useState<string>("");
-  const [isTranscribing, setIsTranscribing] = useState<boolean>(false);
-  const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [editor, setEditor] = useState<Editor | null>(null);
   const [hasGeneratedReport, setHasGeneratedReport] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
+  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] =
+    useState(false);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+
+  // --- REFS ---
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sidebarScrollRef = useRef<HTMLDivElement>(null);
+
+  const activeLanguageRef = useRef(activeLanguage);
 
   const applyFontSizes = (editorInstance: Editor) => {
     const { tr, doc } = editorInstance.state;
@@ -1506,268 +1654,232 @@ const ScoutingPlatform: React.FC = () => {
     doc.descendants((node, pos) => {
       if (!node.isTextblock) return;
       let size: string | undefined = undefined;
-      if (node.type.name === "heading") {
-        const level = node.attrs.level;
-        size = PREDEFINED_SIZES[`h${level}`];
-      } else if (node.type.name === "paragraph") {
-        size = PREDEFINED_SIZES.p;
-      }
+      if (node.type.name === "heading")
+        size = PREDEFINED_SIZES[`h${node.attrs.level}`];
+      else if (node.type.name === "paragraph") size = PREDEFINED_SIZES.p;
       if (size) {
-        const from = pos + 1;
-        const to = from + node.content.size;
         tr.addMark(
-          from,
-          to,
+          pos + 1,
+          pos + 1 + node.content.size,
           editorInstance.schema.marks.textStyle.create({ fontSize: size })
         );
         modified = true;
       }
     });
-    if (modified) {
-      editorInstance.view.dispatch(tr);
-    }
+    if (modified) editorInstance.view.dispatch(tr);
   };
 
   const initEditor = useCallback(
     (content: any) => {
-      if (editor) {
-        editor.destroy();
-      }
+      if (editor) editor.destroy();
       const newEditor = new Editor({
         extensions: editorExtensions,
         content: content,
         editorProps: {
-          attributes: { class: "prose max-w-none p-4 md:p-8 focus:outline-none" },
+          attributes: {
+            class: "prose max-w-none p-6 sm:p-8 focus:outline-none",
+          },
         },
-        onCreate: ({ editor: createdEditor }) => {
-          applyFontSizes(createdEditor);
-        },
+        onCreate: ({ editor: createdEditor }) => applyFontSizes(createdEditor),
         onUpdate: ({ editor: updatedEditor }) => {
           const currentHtml = updatedEditor.getHTML();
-          if (activeLanguage === 'EN') {
+
+          if (activeLanguageRef.current === 'EN') {
             setOriginalReportHtml(currentHtml);
           } else {
-            setTranslatedReports(prev => ({ ...prev, [activeLanguage]: currentHtml }));
+            setTranslatedReports(prev => ({ ...prev, [activeLanguageRef.current]: currentHtml }));
           }
+  
         },
       });
       setEditor(newEditor);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeLanguage]
+
+    [] 
+  
   );
 
   useEffect(() => {
-    const initialContent = marked.parse("") as string;
-    initEditor(initialContent);
-    return () => {
-      editor?.destroy();
+    if (!reportId) {
+      initEditor(marked.parse("") as string);
+    }
+    return () => editor?.destroy();
+  }, [reportId, initEditor]);
+
+  useEffect(() => {
+    activeLanguageRef.current = activeLanguage;
+  }, [activeLanguage]);
+
+  useEffect(() => {
+    const loadReportData = async (id: string) => {
+      setIsLoadingReport(true);
+      setProcessState({ status: "loading", message: "Loading report..." });
+      try {
+        const response = await fetch(`/api/reports/${id}`, {
+          headers: { "X-Scout-Identifier": accessCode },
+        });
+        if (!response.ok)
+          throw new Error("Could not load the specified report.");
+        const data = await response.json();
+
+        setSelectedPlayer(data.playerContext);
+        setSelectedTeam(data.teamContext || null);
+        setTraitRatings(data.traitRatings);
+        setOriginalReportHtml(data.originalReportHtml);
+        setTranslatedReports(data.translatedReports || {});
+        setTranscriptionText(data.transcriptionText);
+        setSeasonalStats(data.seasonalStatsContext || []);
+        setLeagueStandings(data.leagueStandingsContext || null);
+
+        initEditor(data.originalReportHtml);
+        setHasGeneratedReport(true);
+        setProcessState({
+          status: "success",
+          message: "Report loaded successfully!",
+        });
+      } catch (error: any) {
+        showToast(error.message || 'Failed to load report.', 'error');
+        setProcessState({ status: "error", message: "Failed to load report." });
+        onBackToDashboard();
+      } finally {
+        setIsLoadingReport(false);
+        setTimeout(
+          () =>
+            setProcessState((prev) =>
+              prev.status === "success" || prev.status === "error"
+                ? { ...prev, status: "idle" }
+                : prev
+            ),
+          3000
+        );
+      }
     };
-  }, [initEditor]);
+    if (reportId) loadReportData(reportId);
+  }, [reportId, accessCode, onBackToDashboard, initEditor]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         exportMenuRef.current &&
         !exportMenuRef.current.contains(event.target as Node)
-      ) {
+      )
         setIsExportMenuOpen(false);
-      }
     };
-    if (isExportMenuOpen) {
+    if (isExportMenuOpen)
       document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isExportMenuOpen]);
 
   useEffect(() => {
     if (!editor) return;
-    const newContent = activeLanguage === 'EN' ? originalReportHtml : translatedReports[activeLanguage];
+    const newContent =
+      activeLanguage === "EN"
+        ? originalReportHtml
+        : translatedReports[activeLanguage];
     if (newContent && editor.getHTML() !== newContent) {
       editor.commands.setContent(newContent, false, {
-        preserveWhitespace: 'full',
+        preserveWhitespace: "full",
       });
       applyFontSizes(editor);
     }
   }, [activeLanguage, originalReportHtml, translatedReports, editor]);
 
-  // --- MODIFICATION: ADDED - This effect reliably scrolls the sidebar ---
   useEffect(() => {
-    // This effect runs after the component re-renders.
-    // If hasGeneratedReport just became true, we scroll the sidebar.
-    if (hasGeneratedReport) {
-      sidebarScrollRef.current?.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
-    }
-  }, [hasGeneratedReport]); // Dependency array ensures this runs only when hasGeneratedReport changes.
-
+    if (hasGeneratedReport)
+      sidebarScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [hasGeneratedReport]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
-      const newFiles = Array.from(files);
-      const validFiles = newFiles.filter(file => {
+      const validFiles = Array.from(files).filter((file) => {
         if (!file.type.startsWith("audio/")) {
-          toast.error(`Invalid file type: ${file.name}. Please select audio files.`);
+          showToast(`Invalid file type: ${file.name}.`, 'error');
           return false;
         }
-        const MAX_FILE_SIZE_MB = 100;
-        const fileSizeMB = file.size / (1024 * 1024);
-        if (fileSizeMB > MAX_FILE_SIZE_MB) {
-          toast.error(`${file.name} exceeds ${MAX_FILE_SIZE_MB}MB limit.`);
+        if (file.size / (1024 * 1024) > 100) {
+          showToast(`${file.name} exceeds 100MB limit.`, 'error');
           return false;
         }
         return true;
       });
-
-      setSelectedFiles(prevFiles => [...prevFiles, ...validFiles]);
-      toast.success(`${validFiles.length} file(s) selected!`);
+      setSelectedFiles((prev) => [...prev, ...validFiles]);
+      showToast(`${validFiles.length} file(s) selected!`, 'success');
     }
   };
 
-  const handleRemoveFile = (fileToRemove: File) => {
-    setSelectedFiles(prevFiles => prevFiles.filter(file => file !== fileToRemove));
-  };
-
+  const handleRemoveFile = (fileToRemove: File) =>
+    setSelectedFiles((prev) => prev.filter((file) => file !== fileToRemove));
   const handleSelectPlayer = (player: Player) => {
     setSelectedPlayer(player);
-    setSearchQuery('');
+    setSearchQuery("");
     setSearchResults([]);
-
-    if (player.currentTeam) {
-      const teamForSelection: Team = {
+    if (player.currentTeam)
+      setSelectedTeam({
         id: player.currentTeam.id,
         name: player.currentTeam.name,
         shortName: player.currentTeam.shortName,
         country: player.currentTeam.country,
-        slug: '',
+        slug: "",
         leagues: player.currentTeam.leagues,
-      };
-      setSelectedTeam(teamForSelection);
-    }
+      });
   };
-
   const handleClearPlayer = () => {
     setSelectedPlayer(null);
     setSeasonalStats([]);
   };
-
   const handleSelectTeam = (team: Team) => {
     setSelectedTeam(team);
-    setTeamSearchQuery('');
+    setTeamSearchQuery("");
     setTeamSearchResults([]);
   };
-
   const handleClearTeam = () => {
     setSelectedTeam(null);
     setLeagueStandings(null);
   };
-
-  const handleRatingChange = useCallback((trait: keyof TraitRatings, newRating: number) => {
-    setTraitRatings(prev => ({ ...prev, [trait]: newRating }));
-  }, []);
-
-  const handleLanguageSelectionChange = (langCode: string) => {
-    setSelectedLanguages(prev => 
+  const handleRatingChange = useCallback(
+    (trait: keyof TraitRatings, newRating: number) =>
+      setTraitRatings((prev) => ({ ...prev, [trait]: newRating })),
+    []
+  );
+  const handleLanguageSelectionChange = (langCode: string) =>
+    setSelectedLanguages((prev) =>
       prev.includes(langCode)
-        ? prev.filter(code => code !== langCode)
+        ? prev.filter((code) => code !== langCode)
         : [...prev, langCode]
     );
-  };
 
   useEffect(() => {
     if (debouncedSearchQuery.length < 2 || selectedPlayer) {
       setSearchResults([]);
       return;
     }
-
     const fetchPlayers = async () => {
       setIsSearching(true);
-      const GRAPHQL_ENDPOINT = "https://api.graet.com";
-      
-      const query = `
-        query SearchUsersQuery($usersFilter: UsersFilter!, $first: Int) {
-          users: searchUsers(filter: $usersFilter, first: $first) {
-            edges {
-              node {
-                id
-                slug
-                role
-                firstname
-                lastname
-                name
-                country
-                dateOfBirth
-                possibleYearsOfBirth
-                avatar
-                bio {
-                  position
-                  gender
-                  playerType
-                  handedness
-                  height { centimeters inches }
-                  weight { kilograms pounds }
-                }
-                currentTeam {
-                  id
-                  name
-                  country
-                  shortName
-                  hasGames
-                  leagues { id name }
-                }
-                stats {
-                  career { gamesPlayed goals assists points pointsPerGame gaa shutouts svp wins losses ties }
-                  season { gamesPlayed goals assists points pointsPerGame gaa shutouts svp wins losses ties }
-                }
-              }
-            }
-            pageInfo { hasNextPage endCursor }
-          }
-        }
-      `;
-      
-      const variables = {
-        usersFilter: {
-          searchQuery: debouncedSearchQuery,
-        },
-        first: 10,
-      };
-
       try {
-        const response = await fetch(GRAPHQL_ENDPOINT, {
+        const response = await fetch("https://api.graet.com", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query, variables }),
+          body: JSON.stringify({
+            query: `query SearchUsersQuery($usersFilter: UsersFilter!, $first: Int) { users: searchUsers(filter: $usersFilter, first: $first) { edges { node { id slug role firstname lastname name country dateOfBirth possibleYearsOfBirth avatar bio { position gender playerType handedness height { centimeters inches } weight { kilograms pounds } } currentTeam { id name country shortName hasGames leagues { id name } } stats { career { gamesPlayed goals assists points pointsPerGame gaa shutouts svp wins losses ties } season { gamesPlayed goals assists points pointsPerGame gaa shutouts svp wins losses ties } } } } pageInfo { hasNextPage endCursor } } }`,
+            variables: {
+              usersFilter: { searchQuery: debouncedSearchQuery },
+              first: 10,
+            },
+          }),
         });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`API Error: ${response.statusText} - ${errorText}`);
-        }
-
+        if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
         const result = await response.json();
-        if (result.errors) {
-          console.error("GraphQL Errors:", result.errors);
+        if (result.errors)
           throw new Error(result.errors.map((e: any) => e.message).join("\n"));
-        }
-        
-        const foundPlayers = result.data?.users?.edges || [];
-        setSearchResults(foundPlayers);
-
+        setSearchResults(result.data?.users?.edges || []);
       } catch (error: any) {
-        console.error("Failed to fetch players:", error);
-        toast.error(`Could not fetch players: ${error.message}`);
+        showToast(`Could not fetch players: ${error.message}`, 'error');
         setSearchResults([]);
       } finally {
         setIsSearching(false);
       }
     };
-
     fetchPlayers();
   }, [debouncedSearchQuery, selectedPlayer]);
 
@@ -1776,74 +1888,32 @@ const ScoutingPlatform: React.FC = () => {
       setTeamSearchResults([]);
       return;
     }
-
     const fetchTeams = async () => {
       setIsSearchingTeams(true);
-      const GRAPHQL_ENDPOINT = "https://api.graet.com";
-
-      const query = `
-        query SearchTeams($filter: TeamsFilter!, $pagination: Pagination) {
-          teams(filter: $filter, pagination: $pagination) {
-            edges {
-              node {
-                id
-                name
-                shortName
-                country
-                slug
-                leagues {
-                  id
-                  name
-                }
-              }
-            }
-          }
-        }
-      `;
-
-      const variables = {
-        filter: {
-          searchQuery: debouncedTeamSearchQuery,
-          country: null,
-          leagues: null,
-          shortName: null,
-        },
-        pagination: {
-          first: 10,
-          after: null,
-        },
-      };
-
       try {
-        const response = await fetch(GRAPHQL_ENDPOINT, {
+        const response = await fetch("https://api.graet.com", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query, variables }),
+          body: JSON.stringify({
+            query: `query SearchTeams($filter: TeamsFilter!, $pagination: Pagination) { teams(filter: $filter, pagination: $pagination) { edges { node { id name shortName country slug leagues { id name } } } } }`,
+            variables: {
+              filter: { searchQuery: debouncedTeamSearchQuery },
+              pagination: { first: 10 },
+            },
+          }),
         });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`API Error: ${response.statusText} - ${errorText}`);
-        }
-
+        if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
         const result = await response.json();
-        if (result.errors) {
-          console.error("GraphQL Errors:", result.errors);
+        if (result.errors)
           throw new Error(result.errors.map((e: any) => e.message).join("\n"));
-        }
-
-        const foundTeams = result.data?.teams?.edges || [];
-        setTeamSearchResults(foundTeams);
-
+        setTeamSearchResults(result.data?.teams?.edges || []);
       } catch (error: any) {
-        console.error("Failed to fetch teams:", error);
         toast.error(`Could not fetch teams: ${error.message}`);
         setTeamSearchResults([]);
       } finally {
         setIsSearchingTeams(false);
       }
     };
-
     fetchTeams();
   }, [debouncedTeamSearchQuery, selectedTeam]);
 
@@ -1853,69 +1923,50 @@ const ScoutingPlatform: React.FC = () => {
         setLeagueStandings(null);
         return;
       }
-
-      setIsFetchingStandings(true);
-      toast.loading("Fetching league standings...", { id: "standings-toast" });
-      const GRAPHQL_ENDPOINT = "https://api.graet.com";
-
-      const query = `
-        query SearchLeagueStandings($leagueId: ObjectId!, $season: String, $teamId: ObjectId) {
-          leagueStandings(leagueId: $leagueId, season: $season, teamId: $teamId) {
-            league {
-              id
-              name
-            }
-            groups {
-              group
-              standings {
-                id
-                team {
-                  id
-                  name
-                }
-              }
-            }
-          }
-        }
-      `;
-
-      const variables = {
-        leagueId: selectedTeam.leagues[0].id,
-        season: "2024-2025",
-        teamId: selectedTeam.id,
-      };
-
+      setProcessState({
+        status: "loading",
+        message: "Fetching league standings...",
+      });
       try {
-        const response = await fetch(GRAPHQL_ENDPOINT, {
+        const response = await fetch("https://api.graet.com", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query, variables }),
+          body: JSON.stringify({
+            query: `query SearchLeagueStandings($leagueId: ObjectId!, $season: String, $teamId: ObjectId) { leagueStandings(leagueId: $leagueId, season: $season, teamId: $teamId) { league { id name } groups { group standings { id team { id name } } } } }`,
+            variables: {
+              leagueId: selectedTeam.leagues[0].id,
+              season: "2024-2025",
+              teamId: selectedTeam.id,
+            },
+          }),
         });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`API Error: ${response.statusText} - ${errorText}`);
-        }
-
+        if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
         const result = await response.json();
-        if (result.errors) {
-          console.error("GraphQL Errors:", result.errors);
+        if (result.errors)
           throw new Error(result.errors.map((e: any) => e.message).join("\n"));
-        }
-
-        const standingsData = result.data?.leagueStandings;
-        setLeagueStandings(standingsData);
-        toast.success("League standings loaded!", { id: "standings-toast" });
-
+        setLeagueStandings(result.data?.leagueStandings);
+        setProcessState({
+          status: "success",
+          message: "League standings loaded!",
+        });
       } catch (error: any) {
-        console.error("Failed to fetch league standings:", error);
-        toast.error(`Could not fetch standings: ${error.message}`, { id: "standings-toast" });
+        setProcessState({
+          status: "error",
+          message: `Could not fetch standings: ${error.message}`,
+        });
         setLeagueStandings(null);
       } finally {
-        setIsFetchingStandings(false);
+        setTimeout(
+          () =>
+            setProcessState((prev) =>
+              prev.status === "success" || prev.status === "error"
+                ? { ...prev, status: "idle" }
+                : prev
+            ),
+          3000
+        );
       }
     };
-
     fetchLeagueStandings();
   }, [selectedTeam]);
 
@@ -1924,177 +1975,152 @@ const ScoutingPlatform: React.FC = () => {
       setSeasonalStats([]);
       return;
     }
-
     const fetchSeasonalStats = async () => {
-      setIsFetchingStats(true);
-      toast.loading("Fetching player stats...", { id: "player-stats-toast" });
-      const GRAPHQL_ENDPOINT = "https://api.graet.com";
-
-      const query = `
-        query GetUserStats($statsFilter: UserStatsFilter!, $statsPage: Pagination) {
-          seasons: userStats(filter: $statsFilter, pagination: $statsPage) {
-            edges {
-              node {
-                team { name shortName }
-                user { name id }
-                externalInfo { externalLeagueName externalPlayerName externalTeamName }
-                position season seasonType gamesPlayed goals assists points
-                plusMinus pim wins losses ties gaa svp shutouts toi
-              }
-            }
-          }
-        }
-      `;
-
-      const variables = {
-        statsFilter: {
-          slug: null,
-          user: selectedPlayer.id,
-        },
-        statsPage: {
-          first: 100,
-          after: null,
-        },
-      };
-
+      setProcessState({
+        status: "loading",
+        message: "Fetching player stats...",
+      });
       try {
-        const response = await fetch(GRAPHQL_ENDPOINT, {
+        const response = await fetch("https://api.graet.com", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query, variables }),
+          body: JSON.stringify({
+            query: `query GetUserStats($statsFilter: UserStatsFilter!, $statsPage: Pagination) { seasons: userStats(filter: $statsFilter, pagination: $statsPage) { edges { node { team { name shortName } user { name id } externalInfo { externalLeagueName externalPlayerName externalTeamName } position season seasonType gamesPlayed goals assists points plusMinus pim wins losses ties gaa svp shutouts toi } } } }`,
+            variables: {
+              statsFilter: { user: selectedPlayer.id },
+              statsPage: { first: 100 },
+            },
+          }),
         });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`API Error: ${response.statusText} - ${errorText}`);
-        }
-
+        if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
         const result = await response.json();
-        if (result.errors) {
-          console.error("GraphQL Errors:", result.errors);
+        if (result.errors)
           throw new Error(result.errors.map((e: any) => e.message).join("\n"));
-        }
-
-        const statsData = result.data?.seasons?.edges || [];
-        setSeasonalStats(statsData);
-        console.log(statsData)
-        toast.success("Player stats loaded!", { id: "player-stats-toast" });
-
+        setSeasonalStats(result.data?.seasons?.edges || []);
+        setProcessState({ status: "success", message: "Player stats loaded!" });
       } catch (error: any) {
-        console.error("Failed to fetch seasonal stats:", error);
-        toast.error(`Could not fetch player stats: ${error.message}`, { id: "player-stats-toast" });
+        setProcessState({
+          status: "error",
+          message: `Could not fetch player stats: ${error.message}`,
+        });
         setSeasonalStats([]);
       } finally {
-        setIsFetchingStats(false);
+        setTimeout(
+          () =>
+            setProcessState((prev) =>
+              prev.status === "success" || prev.status === "error"
+                ? { ...prev, status: "idle" }
+                : prev
+            ),
+          3000
+        );
       }
     };
-
     fetchSeasonalStats();
   }, [selectedPlayer]);
 
-  const handleTranslateReport = async (reportHtml: string, targetLangCode: string) => {
-    const targetLanguage = AVAILABLE_LANGUAGES.find(l => l.code === targetLangCode);
+  const handleTranslateReport = async (
+    reportHtml: string,
+    targetLangCode: string
+  ) => {
+    const targetLanguage = AVAILABLE_LANGUAGES.find(
+      (l) => l.code === targetLangCode
+    );
     if (!targetLanguage) return;
-
-    setTranslatingLanguages(prev => ({ ...prev, [targetLangCode]: true }));
-    const toastId = `translate-${targetLangCode}`;
-    toast.loading(`Translating to ${targetLanguage.name}...`, { id: toastId });
-
+    setTranslatingLanguages((prev) => ({ ...prev, [targetLangCode]: true }));
+    const toastId = showToast(`Translating to ${targetLanguage.name}...`, 'loading');
     try {
-      const response = await fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reportText: reportHtml, targetLang: targetLanguage.name }),
+      const response = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reportText: reportHtml,
+          targetLang: targetLanguage.name,
+        }),
       });
-
-      if (!response.ok) {
+      if (!response.ok)
         throw new Error(`Translation to ${targetLanguage.name} failed`);
-      }
-
       const data = await response.json();
-      const translatedHtml = marked.parse(data.translatedText) as string;
-      setTranslatedReports(prev => ({ ...prev, [targetLangCode]: translatedHtml }));
-      toast.success(`Translated to ${targetLanguage.name}!`, { id: toastId });
-
+      setTranslatedReports((prev) => ({
+        ...prev,
+        [targetLangCode]: marked.parse(data.translatedText) as string,
+      }));
+      showToast(`Translated to ${targetLanguage.name}!`, 'success', { id: toastId });
     } catch (error) {
-      console.error(`Translation error for ${targetLanguage.name}:`, error);
-      toast.error(`Could not translate to ${targetLanguage.name}.`, { id: toastId });
+      showToast(`Could not translate to ${targetLanguage.name}.`, 'error', { id: toastId });
     } finally {
-      setTranslatingLanguages(prev => ({ ...prev, [targetLangCode]: false }));
+      setTranslatingLanguages((prev) => ({ ...prev, [targetLangCode]: false }));
     }
   };
 
-  const triggerAllTranslations = (reportHtml: string) => {
-    selectedLanguages.forEach(langCode => {
-      handleTranslateReport(reportHtml, langCode);
-    });
-  };
+  const triggerAllTranslations = (reportHtml: string) =>
+    selectedLanguages.forEach((langCode) =>
+      handleTranslateReport(reportHtml, langCode)
+    );
 
   const handleProcessAudio = async () => {
-    if (selectedFiles.length === 0) {
-      toast.error("Please select at least one audio file.");
+    if (selectedFiles.length === 0 || !selectedPlayer || !selectedTeam) {
+      toast.error("Please select a player, team, and audio file.");
       return;
     }
-    if (!selectedPlayer) {
-      toast.error("Please select a player first.");
-      return;
-    }
-    if (!selectedTeam) {
-      toast.error("Please select a team first.");
-      return;
-    }
-
     setOriginalReportHtml(null);
     setTranslatedReports({});
     setTranslatingLanguages({});
-    setActiveLanguage('EN');
-
+    setActiveLanguage("EN");
     const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
     if (!apiKey) {
-        toast.error("API Key is not configured. Please set NEXT_PUBLIC_GEMINI_API_KEY.");
-        return;
+      showToast("API Key is not configured.", 'error');
+      return;
     }
 
-    setIsTranscribing(true);
-    
     const allTranscriptions: string[] = [];
     try {
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
-        toast.loading(`Transcribing file ${i + 1} of ${selectedFiles.length}...`, { id: "process-toast" });
-        
-        const fileSizeMB = file.size / (1024 * 1024);
-        const UPLOAD_THRESHOLD_MB = 20;
-        let singleTranscription = "";
-
-        if (fileSizeMB > UPLOAD_THRESHOLD_MB) {
-          singleTranscription = await handleResumableUploadAndTranscribe(file, apiKey, selectedPlayer, selectedTeam, leagueStandings);
-        } else {
-          singleTranscription = await handleInlineUploadAndTranscribe(file, apiKey, selectedPlayer, selectedTeam, leagueStandings);
-        }
+        setProcessState({
+          status: "transcribing",
+          message: `Transcribing file ${i + 1} of ${selectedFiles.length}...`,
+        });
+        const singleTranscription =
+          file.size / (1024 * 1024) > 20
+            ? await handleResumableUploadAndTranscribe(
+                file,
+                apiKey,
+                selectedPlayer,
+                selectedTeam,
+                leagueStandings
+              )
+            : await handleInlineUploadAndTranscribe(
+                file,
+                apiKey,
+                selectedPlayer,
+                selectedTeam,
+                leagueStandings
+              );
         allTranscriptions.push(singleTranscription);
       }
-      toast.success("All files transcribed!", { id: "process-toast" });
     } catch (error: any) {
-        console.error("Transcription Error:", error);
-        toast.error(`Could not transcribe: ${error.message}`, { id: "process-toast" });
-        setIsTranscribing(false);
-        return;
+      setProcessState({
+        status: "error",
+        message: `Transcription failed: ${error.message}`,
+      });
+      return;
     }
 
     const combinedTranscription = allTranscriptions
       .map((text, index) => `--- File ${index + 1} ---\n${text}`)
-      .join('\n\n');
-    
+      .join("\n\n");
     setTranscriptionText(combinedTranscription);
 
-    setIsGenerating(true);
-    toast.loading("Generating scout report...", { id: "generate-toast" });
+    setProcessState({
+      status: "generating",
+      message: "Generating scout report...",
+    });
     try {
       const generateResponse = await fetch("/api/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           transcription: combinedTranscription,
           playerContext: selectedPlayer,
           teamContext: selectedTeam,
@@ -2102,200 +2128,205 @@ const ScoutingPlatform: React.FC = () => {
           seasonalStatsContext: seasonalStats,
         }),
       });
-
-      if (!generateResponse.ok) {
-        const errorMsg = await getErrorMessage(generateResponse);
-        throw new Error(errorMsg);
-      }
-
+      if (!generateResponse.ok)
+        throw new Error(await getErrorMessage(generateResponse));
       const data = await generateResponse.json();
       const finalHtml = marked.parse(data.report) as string;
-      
       setOriginalReportHtml(finalHtml);
       initEditor(finalHtml);
       setHasGeneratedReport(true);
-      if (window.innerWidth < 1024) {
-        setIsMobileSidebarOpen(false);
-      }
-      toast.success("Report generated!", { id: "generate-toast" });
-
-      // --- MODIFICATION: REMOVED - The old, unreliable scroll logic ---
-      // The new useEffect handles this automatically and more reliably.
-
-      triggerAllTranslations(data.report);
-
-    } catch (error: any) {
-      console.error("Report Generation API Error:", error);
-      toast.error(`Could not generate report: ${error.message}`, { id: "generate-toast" });
-    } finally {
-      setIsTranscribing(false);
-      setIsGenerating(false);
-    }
-  };
-
-  const handleInlineUploadAndTranscribe = async (file: File, apiKey: string, player: Player, team: Team, standings: LeagueStandingsResponse | null): Promise<string> => {
-    const audioBuffer = await file.arrayBuffer();
-    const audioBase64 = arrayBufferToBase64(audioBuffer);
-
-    let standingsContext = "";
-    if (standings && standings.groups) {
-      const teamNames = standings.groups.flatMap(g => g.standings.map(s => s.team.name));
-      standingsContext = `For context, the teams in this league include: ${Array.from(new Set(teamNames)).join(', ')}.`;
-    }
-
-    const promptText = `
-      You are a highly specialized hockey transcription assistant. Your primary goal is to produce a clean, accurate transcript of a scout's audio notes.
-
-      **Transcription Rules:**
-      1.  **Accuracy First:** Focus on clarity and accuracy.
-      2.  **Team & League Names:** Correctly identify and spell the full names of teams and leagues. Use proper capitalization for these proper nouns (e.g., "Leksands IF", "SHL"). ${standingsContext}
-      3.  **Hockey Terminology (Crucial):** Do NOT capitalize common hockey-specific technical terms, even if they are also proper nouns in other contexts. Treat them as common nouns.
-          - **Correct Examples:** mohawk turn, texas hockey, michigan goal, slapshot, crossover, backcheck.
-          - **Incorrect Examples:** Mohawk Turn, Texas Hockey, Michigan Goal.
-
-      **Audio for Player:** ${player.name} of ${team.name}.
-    `;
-
-    const requestBody = {
-        contents: [{
-            parts: [
-                { "inline_data": { "mime_type": file.type, "data": audioBase64 } },
-                { "text": promptText }
-            ]
-        }],
-        "generationConfig": {
-            "temperature": 0,
-        }
-    };
-
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) throw new Error(await getErrorMessage(response));
-
-    const responseData = await response.json();
-    if (responseData.candidates && responseData.candidates[0].content.parts[0].text) {
-        return responseData.candidates[0].content.parts[0].text;
-    } else {
-        throw new Error("Could not find transcription in API response.");
-    }
-  };
-
-  const handleResumableUploadAndTranscribe = async (file: File, apiKey: string, player: Player, team: Team, standings: LeagueStandingsResponse | null): Promise<string> => {
-    let fileUri = '';
-    let fileNameOnServer = '';
-
-    try {
-      const startUploadResponse = await fetch(`https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`, {
-        method: 'POST',
-        headers: {
-          'X-Goog-Upload-Protocol': 'resumable',
-          'X-Goog-Upload-Command': 'start',
-          'X-Goog-Upload-Header-Content-Length': file.size.toString(),
-          'X-Goog-Upload-Header-Content-Type': file.type,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 'file': { 'display_name': file.name } }),
+      if (window.innerWidth < 1024) setIsMobileSidebarOpen(false);
+      setProcessState({
+        status: "success",
+        message: "Report generated successfully!",
       });
+      triggerAllTranslations(data.report);
+    } catch (error: any) {
+      setProcessState({
+        status: "error",
+        message: `Report generation failed: ${error.message}`,
+      });
+    } finally {
+      setTimeout(
+        () =>
+          setProcessState((prev) =>
+            prev.status === "success" || prev.status === "error"
+              ? { ...prev, status: "idle" }
+              : prev
+          ),
+        5000
+      );
+    }
+  };
 
-      if (!startUploadResponse.ok) throw new Error(await getErrorMessage(startUploadResponse));
-      
-      const uploadUrl = startUploadResponse.headers.get('x-goog-upload-url');
+  const handleInlineUploadAndTranscribe = async (
+    file: File,
+    apiKey: string,
+    player: Player,
+    team: Team,
+    standings: LeagueStandingsResponse | null
+  ): Promise<string> => {
+    const audioBase64 = arrayBufferToBase64(await file.arrayBuffer());
+    const standingsContext = standings?.groups
+      ? `For context, the teams in this league include: ${Array.from(new Set(standings.groups.flatMap((g) => g.standings.map((s) => s.team.name)))).join(", ")}.`
+      : "";
+    const promptText = `You are a highly specialized hockey transcription assistant. Your primary goal is to produce a clean, accurate transcript of a scout's audio notes. **Transcription Rules:** 1. **Accuracy First:** Focus on clarity and accuracy. 2. **Team & League Names:** Correctly identify and spell the full names of teams and leagues. Use proper capitalization for these proper nouns (e.g., "Leksands IF", "SHL"). ${standingsContext} 3. **Hockey Terminology (Crucial):** Do NOT capitalize common hockey-specific technical terms, even if they are also proper nouns in other contexts. Treat them as common nouns. - **Correct Examples:** mohawk turn, texas hockey, michigan goal, slapshot, crossover, backcheck. - **Incorrect Examples:** Mohawk Turn, Texas Hockey, Michigan Goal. **Audio for Player:** ${player.name} of ${team.name}.`;
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { inline_data: { mime_type: file.type, data: audioBase64 } },
+                { text: promptText },
+              ],
+            },
+          ],
+          generationConfig: { temperature: 0 },
+        }),
+      }
+    );
+    if (!response.ok) throw new Error(await getErrorMessage(response));
+    const data = await response.json();
+    if (data.candidates?.[0].content.parts[0].text)
+      return data.candidates[0].content.parts[0].text;
+    throw new Error("Could not find transcription in API response.");
+  };
+
+  const handleResumableUploadAndTranscribe = async (
+    file: File,
+    apiKey: string,
+    player: Player,
+    team: Team,
+    standings: LeagueStandingsResponse | null
+  ): Promise<string> => {
+    let fileNameOnServer = "";
+    try {
+      const startRes = await fetch(
+        `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: {
+            "X-Goog-Upload-Protocol": "resumable",
+            "X-Goog-Upload-Command": "start",
+            "X-Goog-Upload-Header-Content-Length": file.size.toString(),
+            "X-Goog-Upload-Header-Content-Type": file.type,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ file: { display_name: file.name } }),
+        }
+      );
+      if (!startRes.ok) throw new Error(await getErrorMessage(startRes));
+      const uploadUrl = startRes.headers.get("x-goog-upload-url");
       if (!uploadUrl) throw new Error("Could not get resumable upload URL.");
-
-      const uploadBytesResponse = await fetch(uploadUrl, {
-        method: 'POST',
+      const uploadRes = await fetch(uploadUrl, {
+        method: "POST",
         headers: {
-          'Content-Length': file.size.toString(),
-          'X-Goog-Upload-Offset': '0',
-          'X-Goog-Upload-Command': 'upload, finalize',
+          "Content-Length": file.size.toString(),
+          "X-Goog-Upload-Offset": "0",
+          "X-Goog-Upload-Command": "upload, finalize",
         },
         body: file,
       });
-
-      if (!uploadBytesResponse.ok) throw new Error(await getErrorMessage(uploadBytesResponse));
-
-      const fileInfo = await uploadBytesResponse.json();
-      fileUri = fileInfo.file.uri;
+      if (!uploadRes.ok) throw new Error(await getErrorMessage(uploadRes));
+      const fileInfo = await uploadRes.json();
+      const fileUri = fileInfo.file.uri;
       fileNameOnServer = fileInfo.file.name;
-
-      let standingsContext = "";
-      if (standings && standings.groups) {
-        const teamNames = standings.groups.flatMap(g => g.standings.map(s => s.team.name));
-        standingsContext = `For context, the teams in this league include: ${Array.from(new Set(teamNames)).join(', ')}.`;
-      }
-
-      const promptText = `
-      You are a highly specialized hockey transcription assistant. Your primary goal is to produce a clean, accurate transcript of a scout's audio notes.
-
-      **Transcription Rules:**
-      1.  **Accuracy First:** Focus on clarity and accuracy.
-      2.  **Team & League Names:** Correctly identify and spell the full names of teams and leagues. Use proper capitalization for these proper nouns (e.g., "Leksands IF", "SHL"). ${standingsContext}
-      3.  **Hockey Terminology (Crucial):** Do NOT capitalize common hockey-specific technical terms, even if they are also proper nouns in other contexts. Treat them as common nouns.
-          - **Correct Examples:** mohawk turn, texas hockey, michigan goal, slapshot, crossover, backcheck.
-          - **Incorrect Examples:** Mohawk Turn, Texas Hockey, Michigan Goal.
-
-      **Audio for Player:** ${player.name} of ${team.name}.
-    `;
-
-      const generateContentBody = {
-        contents: [{
-          parts: [
-            { "text": promptText },
-            { "file_data": { "mime_type": file.type, "file_uri": fileUri } }
-          ]
-        }],
-        "generationConfig": {
-            "temperature": 0,
+      const standingsContext = standings?.groups
+        ? `For context, the teams in this league include: ${Array.from(new Set(standings.groups.flatMap((g) => g.standings.map((s) => s.team.name)))).join(", ")}.`
+        : "";
+      const promptText = `You are a highly specialized hockey transcription assistant... **Audio for Player:** ${player.name} of ${team.name}.`; // Abridged for brevity
+      const genRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  { text: promptText },
+                  { file_data: { mime_type: file.type, file_uri: fileUri } },
+                ],
+              },
+            ],
+            generationConfig: { temperature: 0 },
+          }),
         }
-      };
-
-      const generateContentUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-      const generateContentResponse = await fetch(generateContentUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(generateContentBody),
-      });
-
-      if (!generateContentResponse.ok) throw new Error(await getErrorMessage(generateContentResponse));
-
-      const responseData = await generateContentResponse.json();
-      if (responseData.candidates && responseData.candidates[0].content.parts[0].text) {
-        return responseData.candidates[0].content.parts[0].text;
-      } else {
-        throw new Error("Could not find transcription in API response.");
-      }
+      );
+      if (!genRes.ok) throw new Error(await getErrorMessage(genRes));
+      const data = await genRes.json();
+      if (data.candidates?.[0].content.parts[0].text)
+        return data.candidates[0].content.parts[0].text;
+      throw new Error("Could not find transcription in API response.");
     } finally {
-      if (fileNameOnServer) {
-        console.log(`Cleaning up uploaded file: ${fileNameOnServer}`);
-        await fetch(`https://generativelanguage.googleapis.com/v1beta/${fileNameOnServer}?key=${apiKey}`, {
-          method: 'DELETE',
-        });
-      }
+      if (fileNameOnServer)
+        await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/${fileNameOnServer}?key=${apiKey}`,
+          { method: "DELETE" }
+        );
+    }
+  };
+
+  const handleSaveReport = async () => {
+    if (!selectedPlayer) {
+      showToast("Cannot save without a selected player.", 'error');
+      return;
+    }
+    setIsSaving(true);
+    const toastId = showToast('Saving report...', 'loading');
+    const reportData = {
+      playerContext: selectedPlayer,
+      teamContext: selectedTeam,
+      traitRatings,
+      originalReportHtml,
+      translatedReports,
+      transcriptionText,
+      seasonalStatsContext: seasonalStats,
+      leagueStandingsContext: leagueStandings,
+    };
+    try {
+      const url = currentReportId
+        ? `/api/reports/${currentReportId}`
+        : "/api/reports";
+      const method = currentReportId ? "PUT" : "POST";
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          "X-Scout-Identifier": accessCode,
+        },
+        body: JSON.stringify(reportData),
+      });
+      if (!response.ok)
+        throw new Error(
+          (await response.json()).error || "Failed to save the report."
+        );
+      const savedReport = await response.json();
+      if (!currentReportId) setCurrentReportId(savedReport._id);
+      showToast('Report saved successfully!', 'success', { id: toastId });
+    } catch (error: any) {
+      showToast(error.message || 'Could not save report.', 'error', { id: toastId });
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleExport = async (format: "pdf" | "txt") => {
     if (!editor) return;
-
-    const areAllTraitsRated = Object.values(traitRatings).every(rating => rating > 0);
-    if (hasGeneratedReport && !areAllTraitsRated) {
-      toast.error("Please rate all player traits before exporting the report.");
+    if (
+      hasGeneratedReport &&
+      Object.values(traitRatings).some((r) => r === 0)
+    ) {
+      showToast("Please rate all player traits before exporting.", 'error');
       setIsExportMenuOpen(false);
       return;
     }
-
     setIsExportMenuOpen(false);
-
-    const reportTitle =
-      editor.state.doc.firstChild?.textContent || "Scouting Report";
-    const fileName =
-      `${reportTitle.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.` + format;
-
+    const fileName = `${(editor.state.doc.firstChild?.textContent || "Scouting Report").replace(/[^a-z0-9]/gi, "_").toLowerCase()}.${format}`;
     const downloadFile = (blob: Blob, name: string) => {
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
@@ -2305,22 +2336,20 @@ const ScoutingPlatform: React.FC = () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(link.href);
     };
-
     if (format === "txt") {
-      toast.loading("Exporting as TXT...", { id: "export-toast" });
-      const textContent = editor.getText();
-      const blob = new Blob([textContent], { type: "text/plain" });
-      downloadFile(blob, fileName);
-      toast.success("Exported as TXT!", { id: "export-toast" });
+      downloadFile(
+        new Blob([editor.getText()], { type: "text/plain" }),
+        fileName
+      );
+      showToast("Exported as TXT!", 'success');
       return;
     }
-
     if (format === "pdf") {
-      toast.loading("Generating PDF...", { id: "export-toast" });
+      const toastId = showToast("Generating PDF...", 'loading');
       try {
-        const response = await fetch('/api/pdf', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const response = await fetch("/api/pdf", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             playerContext: selectedPlayer,
             teamContext: selectedTeam,
@@ -2328,102 +2357,159 @@ const ScoutingPlatform: React.FC = () => {
             seasonalStatsContext: seasonalStats,
             reportHtml: editor.getHTML(),
             reportHtmlBlueprint: originalReportHtml,
-            traitRatings: traitRatings,
+            traitRatings,
             targetLang: activeLanguage,
           }),
         });
-
-        if (!response.ok) {
+        if (!response.ok)
           throw new Error(`PDF generation failed: ${response.statusText}`);
-        }
-
-        const pdfBlob = await response.blob();
-        downloadFile(pdfBlob, fileName);
-        toast.success("PDF downloaded!", { id: "export-toast" });
-
+        downloadFile(await response.blob(), fileName);
+        showToast("PDF downloaded!", 'success', { id: toastId });
       } catch (error: any) {
-        console.error(`Could not generate PDF: ${error.message}`, error);
-        toast.error(`Could not generate PDF: ${error.message}`, { id: "export-toast" });
+        showToast(`Could not generate PDF: ${error.message}`, 'error', { id: toastId });
       }
     }
   };
 
-  const isLoading = isTranscribing || isGenerating || isFetchingStandings || isFetchingStats;
-  const buttonText = isTranscribing
-    ? "Transcribing..."
-    : isGenerating
-      ? "Generating..."
-      : isFetchingStandings
-        ? "Loading Standings..."
-        : isFetchingStats
-          ? "Loading Player Stats..."
+  const isLoading =
+    processState.status === "transcribing" ||
+    processState.status === "generating" ||
+    processState.status === "loading";
+  const buttonText =
+    processState.status === "transcribing"
+      ? "Transcribing..."
+      : processState.status === "generating"
+        ? "Generating..."
+        : processState.status === "loading"
+          ? "Loading Context..."
           : "Generate Report";
 
   return (
-    <div className="h-screen bg-gray-100 flex flex-col font-sans text-black overflow-hidden">
+    <div className="h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex flex-col font-sans text-black overflow-hidden">
       <Toaster position="top-center" />
-      <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex-shrink-0 flex items-center justify-between">
-        <Image src={logo2} alt="GRAET Logo" width={100} height={8} priority className="md:w-[120px]" />
-        <div ref={exportMenuRef} className="relative">
-          <button
-            onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-            disabled={!hasGeneratedReport}
-            className="flex items-center space-x-2 px-3 sm:px-4 py-2 text-sm font-semibold bg-[#0e0c66] text-white rounded-lg hover:bg-[#0e0c66]/85 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            <Save className="w-4 h-4" />
-            <span className="hidden sm:inline">Export Report</span>
-            <ChevronDown className="w-4 h-4" />
-          </button>
-          {isExportMenuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+      <header className="bg-white/80 backdrop-blur-md border-b border-white/20 shadow-sm sticky top-0 z-30 flex-shrink-0">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
               <button
-                onClick={() => handleExport("pdf")}
-                className="w-full text-left flex items-center space-x-2 p-2 text-sm hover:bg-gray-100"
+                onClick={onBackToDashboard}
+                title="Back to Dashboard"
+                className="p-2 rounded-full hover:bg-gray-200/70 transition-colors"
               >
-                <FileDown className="w-4 h-4 text-red-600" />
-                <span>Save as PDF</span>
+                <ArrowLeft className="w-5 h-5 text-gray-600" />
               </button>
-              <button
-                onClick={() => handleExport("txt")}
-                className="w-full text-left flex items-center space-x-2 p-2 text-sm hover:bg-gray-100"
-              >
-                <FileText className="w-4 h-4 text-gray-600" />
-                <span>Save as Text</span>
-              </button>
+              <Image src={logo2} alt="GRAET Logo" width={100} priority />
             </div>
-          )}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSaveReport}
+                disabled={isSaving || isLoadingReport || !hasGeneratedReport}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[#0e0c66] text-white font-semibold rounded-lg shadow-md hover:bg-[#0e0c66]/90 transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:scale-100"
+              >
+                {isSaving ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Save className="w-5 h-5" />
+                )}
+                <span className="hidden sm:inline">Save</span>
+              </button>
+              <div ref={exportMenuRef} className="relative">
+                <button
+                  onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+                  disabled={!hasGeneratedReport || isLoadingReport}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#0e0c66] text-white font-semibold rounded-lg shadow-md hover:bg-[#0e0c66]/90 transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:scale-100"
+                >
+                  <FileDown className="w-5 h-5" />
+                  <span className="hidden sm:inline">Export</span>
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+                {isExportMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                    <button
+                      onClick={() => handleExport("pdf")}
+                      className="w-full text-left flex items-center space-x-2 p-2 text-sm hover:bg-gray-100"
+                    >
+                      {" "}
+                      <FileDown className="w-4 h-4 text-red-600" />{" "}
+                      <span>Save as PDF</span>{" "}
+                    </button>
+                    <button
+                      onClick={() => handleExport("txt")}
+                      className="w-full text-left flex items-center space-x-2 p-2 text-sm hover:bg-gray-100"
+                    >
+                      {" "}
+                      <FileText className="w-4 h-4 text-gray-600" />{" "}
+                      <span>Save as Text</span>{" "}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </header>
-      <div className="flex flex-1 min-h-0">
-        <div
-          className={`
-            flex-shrink-0 bg-white border-r border-gray-200 flex flex-col z-40
-            transition-all duration-300 ease-in-out
-            
-            lg:relative
-            ${isDesktopSidebarCollapsed ? 'lg:w-0' : 'lg:w-1/3'}
 
-            absolute top-0 left-0 h-full w-full max-w-md sm:w-96 lg:max-w-none
-            transform lg:transform-none
-            ${isMobileSidebarOpen ? "translate-x-0 shadow-lg" : "-translate-x-full"}
-          `}
+      <div className="flex flex-1 min-h-0 relative">
+        {isLoadingReport && !reportId && (
+          <div className="absolute inset-0 bg-white/80 z-50 flex items-center justify-center">
+            <Loader2 className="w-12 h-12 animate-spin text-[#0e0c66]" />
+          </div>
+        )}
+
+        <aside
+          className={`flex-shrink-0 bg-white/60 backdrop-blur-md border-r border-white/30 flex flex-col z-20 transition-all duration-300 ease-in-out lg:relative ${isDesktopSidebarCollapsed ? "lg:w-0" : "lg:w-[420px]"} absolute top-0 left-0 h-full w-full max-w-md sm:w-96 lg:max-w-none transform lg:transform-none ${isMobileSidebarOpen ? "translate-x-0 shadow-lg" : "-translate-x-full"}`}
         >
-          <div className={`flex-1 flex flex-col min-h-0 p-4 md:p-6 ${isDesktopSidebarCollapsed ? 'lg:hidden' : ''}`}>
-            
-            <div ref={sidebarScrollRef} className="flex-1 space-y-6 min-h-0 overflow-y-auto pr-2">
+          <div
+            className={`flex-1 flex flex-col min-h-0 ${isDesktopSidebarCollapsed ? "lg:hidden" : ""}`}
+          >
+            <div
+              ref={sidebarScrollRef}
+              className="flex-1 space-y-8 min-h-0 overflow-y-auto p-6"
+            >
               {hasGeneratedReport && (
-                <div className="pb-4 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-3">
-                    Rate Player Traits
+                <div className="pb-4">
+                  <h2 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-4">
+                    {" "}
+                    Rate Player Traits{" "}
                   </h2>
                   <div className="space-y-4">
                     <RatingScaleLegend />
-                    <TraitRatingSelector title="Skating" rating={traitRatings.skating} onRatingChange={(r) => handleRatingChange('skating', r)} />
-                    <TraitRatingSelector title="Puck Skills" rating={traitRatings.puckSkills} onRatingChange={(r) => handleRatingChange('puckSkills', r)} />
-                    <TraitRatingSelector title="Hockey IQ" rating={traitRatings.hockeyIq} onRatingChange={(r) => handleRatingChange('hockeyIq', r)} />
-                    <TraitRatingSelector title="Shot" rating={traitRatings.shot} onRatingChange={(r) => handleRatingChange('shot', r)} />
-                    <TraitRatingSelector title="Compete Level" rating={traitRatings.competeLevel} onRatingChange={(r) => handleRatingChange('competeLevel', r)} />
-                    <TraitRatingSelector title="Defensive Game" rating={traitRatings.defensiveGame} onRatingChange={(r) => handleRatingChange('defensiveGame', r)} />
+                    <TraitRatingSelector
+                      title="Skating"
+                      rating={traitRatings.skating}
+                      onRatingChange={(r) => handleRatingChange("skating", r)}
+                    />
+                    <TraitRatingSelector
+                      title="Puck Skills"
+                      rating={traitRatings.puckSkills}
+                      onRatingChange={(r) =>
+                        handleRatingChange("puckSkills", r)
+                      }
+                    />
+                    <TraitRatingSelector
+                      title="Hockey IQ"
+                      rating={traitRatings.hockeyIq}
+                      onRatingChange={(r) => handleRatingChange("hockeyIq", r)}
+                    />
+                    <TraitRatingSelector
+                      title="Shot"
+                      rating={traitRatings.shot}
+                      onRatingChange={(r) => handleRatingChange("shot", r)}
+                    />
+                    <TraitRatingSelector
+                      title="Compete Level"
+                      rating={traitRatings.competeLevel}
+                      onRatingChange={(r) =>
+                        handleRatingChange("competeLevel", r)
+                      }
+                    />
+                    <TraitRatingSelector
+                      title="Defensive Game"
+                      rating={traitRatings.defensiveGame}
+                      onRatingChange={(r) =>
+                        handleRatingChange("defensiveGame", r)
+                      }
+                    />
                   </div>
                 </div>
               )}
@@ -2437,7 +2523,6 @@ const ScoutingPlatform: React.FC = () => {
                 onSelectPlayer={handleSelectPlayer}
                 onClearPlayer={handleClearPlayer}
               />
-
               <TeamSearch
                 searchQuery={teamSearchQuery}
                 onSearchChange={setTeamSearchQuery}
@@ -2447,27 +2532,29 @@ const ScoutingPlatform: React.FC = () => {
                 onSelectTeam={handleSelectTeam}
                 onClearTeam={handleClearTeam}
               />
-
-              <LanguageSelector 
+              <LanguageSelector
                 selectedLanguages={selectedLanguages}
                 onSelectionChange={handleLanguageSelectionChange}
               />
 
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-3">
-                  Upload Audio
+                <h2 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-4">
+                  {" "}
+                  Upload Audio{" "}
                 </h2>
                 <label
                   htmlFor="file-upload"
-                  className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#0e0c66] hover:bg-gray-50 cursor-pointer transition-colors block"
+                  className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-indigo-500 hover:bg-indigo-50/50 cursor-pointer transition-colors block"
                 >
                   <div className="flex flex-col items-center justify-center">
                     <Upload className="mx-auto w-10 h-10 text-gray-400 mb-2" />
-                    <p className="text-sm font-semibold text-[#0e0c66]">
-                      Click to upload or drag and drop
+                    <p className="text-sm font-semibold text-indigo-700">
+                      {" "}
+                      Click to upload or drag and drop{" "}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      MP3, WAV, M4A (100MB limit per file)
+                      {" "}
+                      MP3, WAV, M4A (100MB limit){" "}
                     </p>
                   </div>
                   <input
@@ -2480,10 +2567,11 @@ const ScoutingPlatform: React.FC = () => {
                     multiple
                   />
                 </label>
-
                 {selectedFiles.length > 0 && (
                   <div className="mt-4 space-y-2">
-                    <p className="text-sm font-medium text-gray-800">Selected files:</p>
+                    <p className="text-sm font-medium text-gray-800">
+                      Selected files:
+                    </p>
                     {selectedFiles.map((file, index) => (
                       <div
                         key={`${file.name}-${index}`}
@@ -2514,45 +2602,63 @@ const ScoutingPlatform: React.FC = () => {
               </div>
 
               <div className="flex flex-col flex-1 h-[400px]">
-                <h2 className="text-lg font-semibold text-gray-900 mb-3">
-                  Review Transcription
+                <h2 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-4">
+                  {" "}
+                  Review Transcription{" "}
                 </h2>
                 <textarea
                   value={transcriptionText}
                   onChange={(e) => setTranscriptionText(e.target.value)}
-                  className="flex-1 w-full p-4 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-800 leading-relaxed resize-none focus:outline-none"
+                  className="flex-1 w-full p-4 border border-gray-200 rounded-xl bg-white/70 text-sm text-gray-800 leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Your audio transcription will appear here..."
                 />
               </div>
             </div>
-            
-            <div className="flex-shrink-0 p-4 md:p-6 pt-4">
+
+            <div className="flex-shrink-0 p-6 pt-4 space-y-4 border-t border-white/30">
+              <ProcessStatus
+                status={processState.status}
+                message={processState.message}
+              />
               <button
                 onClick={handleProcessAudio}
-                disabled={isLoading || selectedFiles.length === 0 || !selectedPlayer || !selectedTeam}
-                className="w-full flex items-center justify-center space-x-2 py-3 bg-[#0e0c66] text-white font-semibold rounded-lg hover:bg-[#0e0c66]/85 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                disabled={
+                  isLoading ||
+                  selectedFiles.length === 0 ||
+                  !selectedPlayer ||
+                  !selectedTeam
+                }
+                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#0e0c66] text-white font-semibold rounded-xl shadow-lg hover:bg-[#0e0c66]/90 transform hover:scale-105 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:scale-100"
               >
-                <Sparkles className="w-5 h-5" />
+                {isLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Sparkles className="w-5 h-5" />
+                )}
                 <span>{buttonText}</span>
               </button>
             </div>
           </div>
-        </div>
+        </aside>
 
         {isMobileSidebarOpen && (
           <div
             onClick={() => setIsMobileSidebarOpen(false)}
-            className="lg:hidden absolute inset-0 bg-black bg-opacity-50 z-30"
+            className="lg:hidden absolute inset-0 bg-black bg-opacity-50 z-10"
           ></div>
         )}
 
-        <div className="flex-1 bg-gray-50 flex flex-col relative">
+        <main className="flex-1 bg-transparent flex flex-col relative">
           <EditorToolbar
             editor={editor}
             isMobileSidebarOpen={isMobileSidebarOpen}
             isDesktopSidebarCollapsed={isDesktopSidebarCollapsed}
-            onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-            onToggleDesktopSidebar={() => setIsDesktopSidebarCollapsed(!isDesktopSidebarCollapsed)}
+            onToggleMobileSidebar={() =>
+              setIsMobileSidebarOpen(!isMobileSidebarOpen)
+            }
+            onToggleDesktopSidebar={() =>
+              setIsDesktopSidebarCollapsed(!isDesktopSidebarCollapsed)
+            }
             activeLanguage={activeLanguage}
             onLanguageChange={setActiveLanguage}
             translatedReports={translatedReports}
@@ -2566,9 +2672,7 @@ const ScoutingPlatform: React.FC = () => {
                 shouldShow={({ editor }) => {
                   const { selection } = editor.state;
                   const { $from, empty } = selection;
-                  if (empty || $from.depth < 2) {
-                    return false;
-                  }
+                  if (empty || $from.depth < 2) return false;
                   return !editor.isActive("table");
                 }}
                 className="flex items-center space-x-1 bg-black text-white p-2 rounded-lg shadow-xl"
@@ -2587,8 +2691,8 @@ const ScoutingPlatform: React.FC = () => {
                 </button>
               </BubbleMenu>
               <TableMenus editor={editor} />
-              <div className="flex-1 p-2 sm:p-4 overflow-y-auto">
-                <div className="bg-white min-h-full rounded-lg shadow-sm">
+              <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+                <div className="bg-white min-h-full rounded-2xl shadow-lg border border-gray-200/50">
                   <EditorContent editor={editor} />
                 </div>
               </div>
@@ -2597,7 +2701,7 @@ const ScoutingPlatform: React.FC = () => {
           {!hasGeneratedReport && (
             <EditorPlaceholder onStart={() => setIsMobileSidebarOpen(true)} />
           )}
-        </div>
+        </main>
       </div>
     </div>
   );
