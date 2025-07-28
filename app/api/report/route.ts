@@ -32,14 +32,13 @@ const formatPlayStyle = (rawPlayStyle: string | null | undefined): string => {
   if (!rawPlayStyle) return 'N/A';
   
   return rawPlayStyle
-    .split('_') // Splits "POWER_FORWARD" into ["POWER", "FORWARD"]
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()) // Converts each word to "Title Case" -> ["Power", "Forward"]
-    .join(' '); // Joins them with a space -> "Power Forward"
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
 };
 
 const formatHandedness = (rawHandedness: string | null | undefined): string => {
   if (!rawHandedness) return 'N/A';
-  // Capitalize the first letter, e.g., "LEFT" -> "Left"
   return rawHandedness.charAt(0).toUpperCase() + rawHandedness.slice(1).toLowerCase();
 };
 
@@ -47,9 +46,7 @@ const formatHeight = (heightObj: { centimeters: number; inches: number } | null 
   if (!heightObj || !heightObj.centimeters) return 'N/A';
 
   const totalInches = heightObj.centimeters / 2.54;
-  
   const feet = Math.floor(totalInches / 12);
-
   const inches = Math.round(totalInches % 12);
 
   return `${feet}' ${inches}" (${heightObj.centimeters} cm)`;
@@ -64,7 +61,6 @@ const formatDateOfBirth = (isoString: string | null | undefined): string => {
   if (!isoString) return 'Unknown';
   try {
     const date = new Date(isoString);
-    // Adding timeZone: 'UTC' prevents the date from shifting by a day due to server timezone
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -72,23 +68,33 @@ const formatDateOfBirth = (isoString: string | null | undefined): string => {
       timeZone: 'UTC',
     });
   } catch (error) {
-    return 'Unknown'; // Return default if the date string is invalid
+    return 'Unknown';
+  }
+};
+
+const formatGameDate = (isoString: string | null | undefined): string => {
+  if (!isoString) return 'N/A';
+  try {
+    const date = new Date(isoString);
+    return date.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+      timeZone: 'UTC',
+    }).toUpperCase();
+  } catch (error) {
+    return 'N/A';
   }
 };
 
 export async function POST(request: Request) {
   try {
     
-    const { transcription, playerContext, teamContext, standingsContext, seasonalStatsContext } = await request.json();
+    const { transcription, playerContext, teamContext, standingsContext, seasonalStatsContext, gameContext } = await request.json();
    
-    // console.log("Received Player Context:", playerContext);
-    // console.log("Received Team Context:", teamContext);
-    // console.log("Received Standings Context:", standingsContext);
-    // console.log("Received Seasonal Stats:, ", seasonalStatsContext)
-
-    if (!transcription || !playerContext || !teamContext) {
+    if (!transcription || !playerContext || !gameContext) {
       return NextResponse.json(
-        { error: "Transcription, player context, and team context are required." },
+        { error: "Transcription, player context, and game context are required." },
         { status: 400 }
       );
     }
@@ -100,35 +106,40 @@ export async function POST(request: Request) {
     const shoots = formatHandedness(playerContext.bio?.handedness);
     const height = formatHeight(playerContext.bio?.height);
     const weight = formatWeight(playerContext.bio?.weight);
+    
     const teamName = teamContext.name ?? 'N/A';
-    const leagueName = teamContext.leagues?.[0]?.name ?? 'N/A';
+    const gameDate = formatGameDate(gameContext?.gameDate);
 
-    // Create a string representation of the standings for the AI's context
     let standingsInfo = "No league standings data available.";
     if (standingsContext && standingsContext.groups) {
         standingsInfo = JSON.stringify(standingsContext, null, 2);
     }
     
-
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({
+    const model = genAI.getGenerativeModel({ 
       model: "gemini-2.5-flash-preview-05-20",
       generationConfig: {
         temperature: 0.1
       }
     });
 
-    // console.log("position, ", position)
-    // console.log("playstyle, ", playStyle)
-    // console.log("height, ", height)
-    // console.log("weight, ", weight)
-
     const prompt = `
-      You are an expert hockey scout assistant. Your task is to take a scout's raw, transcribed observations and transform them into a polished, professional, and highly articulate scouting report.
-      Your final output should read as if it were written by a seasoned sports journalist, not just a transcription of notes. Do not wirte too much text for a section though - just nice moderate sized paragraphs
-      Make sure to have the Insufficient information from the video parts - if there is not enough information from the Transcript - only exception is for **Leadership**
+      You are a world-class Developmental Hockey Scout with the mindset of a Performance Psychologist. Your primary mission is to analyze a scout's raw transcription and transform it into a professional, strength-based, and growth-oriented development report.
 
       ---
+      **THE PSYCHOLOGIST'S MINDSET: YOUR GUIDING PHILOSOPHY**
+
+      1.  **Tone is Paramount:** The tone must ALWAYS be supportive, constructive, and encouraging. You are building the player up, not tearing them down. Your language should inspire confidence and provide a clear path forward.
+
+      2.  **Strength-Based Framing:** Every player has foundational strengths. Always begin your analysis in any section by identifying what the player does well or is "solid at." Even if the player is struggling, find the positive foundation to build upon first.
+
+      3.  **Growth-Oriented Language (CRUCIAL):** You must reframe all negative observations into opportunities for growth.
+          -   **NEVER USE:** "weakness," "struggle," "problem," "lacks," "fails to," "poor," "bad."
+          -   **INSTEAD, USE:** "opportunity for development," "area for refinement," "next step for growth," "potential to enhance," "can focus on improving," "developing skill."
+
+      4.  **Maintain Happiness and Motivation:** The final report should leave the reader (the scout, coach, or even the player) feeling empowered and clear on what to do next, not discouraged. The goal is to maintain the user's happiness and motivation by providing valuable, actionable, and positive insights.
+      ---
+
       **CONTEXTUAL DATA (FOR YOUR REFERENCE):**
       Here is the structured data you have about the player, their team, and the league. Use this to inform your analysis and ensure consistency.
 
@@ -138,19 +149,16 @@ export async function POST(request: Request) {
       **Players Seasonal History Stats**
       ${JSON.stringify(seasonalStatsContext, null, 2)}
 
-      **Team Data:**
+      **Team Data (Player's Primary Team):**
       ${JSON.stringify(teamContext, null, 2)}
+
+      **Scouted Game Data (Use this for the report header):**
+      ${JSON.stringify(gameContext, null, 2)}
 
       **League Standings Data:**
       ${standingsInfo}
       ---
 
-      **Primary Goal:** Your primary goal is to elevate the scout's raw observations into a professional narrative. While you must remain faithful to the *meaning and substance* of the transcription, you are explicitly instructed to enhance the language.
-
-      **Your Guiding Philosophy:**
-      The provided template is a high-quality example, not a rigid cage. Your primary goal is to accurately reflect the scout's observations. Use your expert knowledge to adapt, add, or omit sections and use the best format (text, lists, or tables) to create the most logical and valuable report for the specific player discussed.
-
-      ---
       **CORE REPORT TEMPLATE:**
 
       <h1 style="text-align: center;">GRAET SCOUTING REPORT</h1>
@@ -159,20 +167,20 @@ export async function POST(request: Request) {
       \n
 
       **Player:** ${playerName}\n
-      **Date of Birth:** [${dateOfBirth}, or "Unknown"]\n
-      **Position:** [${position}, use this exact position, ignore transcript]\n
-      **Play Style:** [use this playstyle ${playStyle}]\n
-      **Shoots:** [${shoots}, or  "N/A"]\n
-      **Height:** [${height}, or  "N/A"]\n
-      **Weight:** [${weight}, or  "N/A"]\n
+      **Date of Birth:** ${dateOfBirth}\n
+      **Position:** ${position}\n
+      **Play Style:** ${playStyle}\n
+      **Shoots:** ${shoots}\n
+      **Height:** ${height}\n
+      **Weight:** ${weight}\n
       ---
       ###
-      **Game:** [Game Details - team vs team name, or "N/A"]\n
-      **Game Score** [Game Score - Team: score, or "N/A"]\n
-      **Game Date:** [Game Date, or "N/A"]\n
-      **Team:** [${teamName}, or "N/A"]\n
-      **League:** [League name, or "N/A"]\n
-      **Report Date:** [Today's Date which is ${formattedDate} ]\n
+      **Game:** ${gameContext?.teamA?.name ?? 'N/A'} vs. ${gameContext?.teamB?.name ?? 'N/A'}\n
+      **Game Score:** ${gameContext?.teamA?.name ?? 'Team A'}: ${gameContext?.teamAScore || 'N/A'}, ${gameContext?.teamB?.name ?? 'Team B'}: ${gameContext?.teamBScore || 'N/A'}\n
+      **Game Date:** ${gameDate}\n
+      **Team:** ${gameContext?.teamA?.name ?? 'N/A'}\n
+      **League:** ${gameContext?.league?.name ?? 'N/A'}\n
+      **Report Date:** ${formattedDate}\n
       ---
 
       ### SEASONAL STATS
@@ -182,42 +190,42 @@ export async function POST(request: Request) {
       **Speed:** [Analysis of top speed and acceleration.]\n
       **Edgework and Agility:** [Analysis of movement in tight spaces.]\n
       **Stride Efficiency:** [Analysis of glide and dynamic movements.]\n
-      **Notes:** [Overall summary of skating abilities and areas for improvement.]\n
+      **Notes:** [Overall summary of skating abilities and key development opportunities.]\n
 
       ### PUCK SKILLS
       **Stickhandling:**[Analysis of puck control.]\n
       **Passing:**[Analysis of vision and execution.]\n
       **Puck Protection:** [Analysis of using body to shield the puck.]\n
-      **Notes:** [Overall summary of puck skills and decision-making.]\n
+      **Notes:** [Overall summary of puck skills and decision-making, framed for growth.]\n
 
       ### HOCKEY IQ
       **Offensive Awareness:** [Analysis of positioning and proactivity in the offensive zone.]\n
       **Defensive Awareness:** [Analysis of positioning and engagement in the defensive zone.]\n
       **Decision Making:** [Analysis of playmaking choices and initiative.]\n
-      **Notes:** [Overall summary of game understanding and play-driving ability.]\n
+      **Notes:** [Overall summary of game understanding and areas to enhance anticipation.]\n
 
       ### SHOT
       **Wrist Shot:** [Analysis of accuracy and power.]\n
       **Slap Shot:** [Analysis of technique and usage.]\n
       **One-Timer:** [Analysis of mechanics and execution speed.]\n
-      **Notes:** [Overall summary of shooting mentality and effectiveness.]\n
+      **Notes:** [Overall summary of shooting mentality and opportunities to increase effectiveness.]\n
 
       ### COMPETE LEVEL
       **Work Ethic:** [Analysis of engagement in all zones.]\n
       **Physicality:** [Analysis of consistency and effectiveness of physical play.]\n
       **Leadership:** [Analysis of on-ice leadership qualities.]\n
-      **Notes:** [Overall summary of competitiveness and impact in crucial moments.]\n
+      **Notes:** [Overall summary of competitiveness and potential to impact crucial moments.]\n
 
       ### DEFENSIVE GAME
       **Gap Control:** [Analysis of positioning relative to attackers.]\n
       **Stick Positioning:** [Analysis of ability to disrupt plays with the stick.]\n
       **Defensive Zone Reads:** [Analysis of anticipation and scanning.]\n
-      **Notes:** [Overall summary of defensive responsibility and assertiveness.]\n
+      **Notes:** [Overall summary of defensive responsibility and areas for refinement.]\n
 
       ---
 
       ### OVERALL SUMMARY
-      [A concise paragraph summarizing the player's key strengths, weaknesses, and overall profile.]
+      [A concise paragraph summarizing the player's foundational strengths, key areas for development, and overall profile.]
 
       ### PROJECTION
       **Best-Case Scenario:** [Plausible high-end projection.]\n
@@ -251,7 +259,7 @@ export async function POST(request: Request) {
       
       6.  **Strict Content Scoping (Crucial):** You MUST only populate a sub-category (e.g., "**Slap Shot:**") with information that is explicitly about that specific topic in the transcription.
           - **DO NOT** move information between categories. For example, if the scout only discusses a "snap shot," that information belongs under a "Notes" section or a new "Snap Shot" sub-category. It does NOT belong under "**Slap Shot:**".
-          - If the transcription does not contain information for a specific sub-category, you MUST follow the "Handling Missing Information" rule (Principle #8). Do not invent or infer content to fill the space.
+          - If the transcription does not contain information for a specific sub-category, you MUST follow the "Handling Missing Information" rule (Principle #9). Do not invent or infer content to fill the space.
 
       7.  **Intelligent Section Management:**
           - **Omit Irrelevance:** You have the autonomy to completely omit any sub-category or even a main "###" section if it is irrelevant to the player's position or not substantively discussed in the transcription. Never write "N/A"; simply leave it out.
@@ -262,9 +270,9 @@ export async function POST(request: Request) {
           - **Use Tables for Structured Data:** If the transcription includes quantifiable stats (e.g., goals, assists, time on ice) or clear comparative points, you are strongly encouraged to present this information in a Markdown table for clarity.
 
       9.  **Handling Missing Information:**
-          - If a core, essential skill for a position is completely missing from the transcription, it is appropriate to add a "Notes" sub-category under the relevant section stating: *"This aspect was not assessed in the current observation."*
-          - if you cannot find any information in the transcript for a certain part in the report for example: **Stickhandling** - state "Insufficient information from the video to assess Stickhandling" - only nothing else after for the part
-          - If the entire transcription is too brief or vague to form a meaningful report, your entire response MUST be the single line: "Insufficient information to generate a report."
+          - If a core, essential skill for a position is completely missing from the transcription, it is appropriate to add a "Notes" sub-category under the relevant section stating: *"This skill wasn’t observed in this game; an opportunity to assess and develop [Skill] in future practices."*
+          - if you cannot find any information in the transcript for a certain part in the report for example: **Stickhandling** - state "This game provided limited opportunities to evaluate Stickhandling; consider focusing on this skill in upcoming practices." - only nothing else after for the part
+          - If the entire transcription is too brief or vague to form a meaningful report, your entire response MUST be the single line: "Not enough information to create a development‑focused report at this time"
           - Try your best to use your own knowledge about the leagues and the teams that play within them to correctly spell the names of the teams and leagues in the report - so do not default to N/A until you try your best to estimate the league
           - Only include the **Leadership:** subsection in ### Compete Level if it is mentioned in the Transcript - otherwise omit it from the report entirely
           - If no league is found in the team context - try to use the information found in the seasonal stats to get the league of the team

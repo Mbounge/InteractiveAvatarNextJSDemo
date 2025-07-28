@@ -79,8 +79,8 @@ const getLocaleForLang = (lang: string) => {
 // --- TYPE DEFINITIONS ---
 
 type GameDetails = {
-  homeTeam: { name: string; score: number | null };
-  awayTeam: { name: string; score: number | null };
+  teamA: { name: string; score: number | null };
+  teamB: { name: string; score: number | null };
   gameDate: string | null;
   league: string | null;
 };
@@ -919,8 +919,6 @@ const splitReportByHeadings = (
   const blueprintHrSplit = blueprintRoot.innerHTML.split(/<hr\s*\/?>/i);
   const contentHrSplit = contentRoot.innerHTML.split(/<hr\s*\/?>/i);
 
-  sections.gameInfo = contentHrSplit.length > 1 ? contentHrSplit[1] : null;
-
   const blueprintMainContent =
     blueprintHrSplit.length > 2
       ? blueprintHrSplit.slice(2).join("<hr />")
@@ -999,34 +997,23 @@ const parseTraitHtml = (html: string | null) => {
   if (!html) return { subSections: [] };
 
   const subSections: { title: string | null; content: string }[] = [];
-  // The regex splits the string into sections, keeping the <strong> tag as a delimiter.
   const parts = html
     .split(/(?=<strong>.+?:<\/strong>)/g)
     .filter((part) => part.trim() !== "");
 
   for (const part of parts) {
-    // For each section, we parse it to easily manipulate its structure.
     const partRoot = parse(part);
     const titleNode = partRoot.querySelector("strong");
 
     if (titleNode) {
-      // --- CASE 1: This part has a title (e.g., "Gap Control: <p>...</p>") ---
-
-      // Extract the title text.
       const title = decodeHtmlEntities(
         titleNode.innerText.replace(":", "").trim()
       );
-
-      // CRITICAL FIX: Remove the <strong> tag itself from the content.
-      // This prevents "Gap Control:" from appearing twice.
       titleNode.remove();
-
-      // The rest of the HTML in the part is the content.
       const content = partRoot.innerHTML.trim();
       subSections.push({ title, content });
     } else {
       const content = part.trim();
-
       if (content.startsWith("<p>") && content.endsWith("</p>")) {
         subSections.push({ title: null, content: content });
       } else {
@@ -1080,15 +1067,12 @@ const BackgroundGradient2 = () => (
 
 const getTeamInitials = (name: string | null | undefined): string => {
   if (!name) return "";
-
-  // Split by space or hyphen, filter out empty parts
   const parts = name.split(/[\s-]+/).filter(Boolean);
-
   return parts
-    .map((part) => part[0]) // Get the first letter of each part
+    .map((part) => part[0])
     .join("")
     .toUpperCase()
-    .slice(0, 3); // Limit to a max of 3 initials
+    .slice(0, 3);
 };
 
 const TeamLogoPlaceholder = ({
@@ -1109,7 +1093,6 @@ const Star = ({ state }: { state: "filled" | "half" | "empty" }) => {
   const starPath =
     "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27z";
   const starColor = "#2B21C1";
-  // Using a random ID is safe here as the PDF is rendered once from scratch.
   const clipId = `clip-${Math.random().toString(36).substring(7)}`;
 
   if (state === "empty") {
@@ -1128,18 +1111,14 @@ const Star = ({ state }: { state: "filled" | "half" | "empty" }) => {
     );
   }
 
-  // This renders the half-filled star
   return (
     <Svg viewBox="0 0 24 24" style={styles.starSvg}>
       <Defs>
         <ClipPath id={clipId}>
-          {/* This rectangle clips the fill to the left half of the star */}
           <Rect x="0" y="0" width="12" height="24" />
         </ClipPath>
       </Defs>
-      {/* First, draw the empty star as a background */}
       <Path d={starPath} stroke={starColor} strokeWidth={1.5} />
-      {/* Then, draw the filled star on top, but apply the clip path */}
       <Path d={starPath} fill={starColor} clipPath={`url(#${clipId})`} />
     </Svg>
   );
@@ -1150,15 +1129,11 @@ const StarRating = ({ rating, max = 5 }: { rating: number; max?: number }) => {
     <View style={styles.starsContainer}>
       {Array.from({ length: max }).map((_, i) => {
         let state: "filled" | "half" | "empty" = "empty";
-
         if (rating >= i + 1) {
-          // If the rating is 3.5, this will be true for i=0, 1, 2 (rating >= 1, 2, 3)
           state = "filled";
         } else if (rating >= i + 0.5) {
-          // If the rating is 3.5, this will be true for i=3 (rating >= 3.5)
           state = "half";
         }
-
         return <Star key={i} state={state} />;
       })}
     </View>
@@ -1451,15 +1426,11 @@ function isStyleKey(key: string): key is StyleKey {
   return (supportedStyleTags as readonly string[]).includes(key);
 }
 
-// 2. UPDATE THE COMPONENT PROPS
 interface HtmlRendererProps {
   html: string;
-  // Add a flag to handle the special case for the stats table.
   isStatsTable?: boolean;
-  // Add a prop for base styles (like font family) to be inherited.
   baseStyle?: Style;
   styleOverrides?: Partial<Record<StyleKey, Style>>;
-  // Props needed only for StatsTable
   teamLogosMap?: Map<string, string>;
   t?: any;
 }
@@ -1508,7 +1479,6 @@ const HtmlRenderer = ({
     }
 
     if (node.nodeType === 1) {
-      // Element node
       const element = node as HTMLElement;
       const tagName = element.tagName.toLowerCase();
 
@@ -1560,7 +1530,6 @@ const HtmlRenderer = ({
     return null;
   };
 
-  // --- FIX 2: Start the recursion with the baseStyle prop ---
   return (
     <>{root.childNodes.map((node, i) => renderNode(node, i, baseStyle))}</>
   );
@@ -1585,11 +1554,8 @@ const OverallSummaryPage = ({
     <Page size="A4" style={styles.page} wrap>
       <BackgroundGradient />
       <View style={styles.summaryPageContainer}>
-        {/* Render the large, main title */}
         <Text style={styles.summaryPageTitle}>{title}</Text>
-
         <View style={styles.summaryContentWrapper}>
-          {/* Render the HTML content with the LARGER paragraph style */}
           <HtmlRenderer html={html} t={t} styleOverrides={{ p: styles.p }} />
         </View>
       </View>
@@ -1632,7 +1598,6 @@ const StructuredSummaryPage = ({
 }) => {
   if (!html) return null;
 
-  // This uses the same parsing logic as TraitPage to find sub-headings
   const { subSections } = parseTraitHtml(html);
 
   return (
@@ -1666,7 +1631,6 @@ const StructuredSummaryPage = ({
           <Text style={styles.traitPageTitle}>{title}</Text>
         </View>
 
-        {/* Renders sub-sections with styled titles, just like TraitPage */}
         {subSections.map((section, index) => (
           <View key={index} style={styles.subSectionContainer}>
             {section.title && (
@@ -1841,24 +1805,24 @@ const ScoutedGamePage = ({
   gameDetails,
   footerLogoBuffer2,
   gameQrCodeDataUrl,
-  homeTeamLogo,
-  awayTeamLogo,
+  teamALogo,
+  teamBLogo,
   leagueLogo,
   t,
 }: {
   gameDetails: GameDetails | null;
   footerLogoBuffer2: Buffer | null;
   gameQrCodeDataUrl: string | null;
-  homeTeamLogo: string | null;
-  awayTeamLogo: string | null;
+  teamALogo: string | null;
+  teamBLogo: string | null;
   leagueLogo: string | null;
   t: any;
 }) => {
   if (!gameDetails) return null;
 
-  const { homeTeam, awayTeam, gameDate, league } = gameDetails;
-  const homeScore = homeTeam.score ?? "-";
-  const awayScore = awayTeam.score ?? "-";
+  const { teamA, teamB, gameDate, league } = gameDetails;
+  const teamAScore = teamA.score ?? "-";
+  const teamBScore = teamB.score ?? "-";
 
   return (
     <Page size="A4" style={styles.page}>
@@ -1879,60 +1843,40 @@ const ScoutedGamePage = ({
 
             <View style={styles.gameBody}>
               <View style={styles.teamBlock}>
-                {homeTeamLogo ? (
-                  <Image style={styles.teamLogo} src={homeTeamLogo} />
+                {teamALogo ? (
+                  <Image style={styles.teamLogo} src={teamALogo} />
                 ) : (
-                  
                   <TeamLogoPlaceholder
-                    teamName={homeTeam.name}
+                    teamName={teamA.name}
                     containerStyle={styles.placeholderContainer}
                     textStyle={styles.placeholderText}
                   />
-        
                 )}
                 <Text style={styles.teamNameText}>
-                  {homeTeam.name || "Home Team"}
+                  {teamA.name || "Team A"}
                 </Text>
               </View>
               <View style={styles.scoreBlock}>
                 <Text
                   style={styles.scoreText}
-                >{`${homeScore} : ${awayScore}`}</Text>
+                >{`${teamAScore} : ${teamBScore}`}</Text>
               </View>
               <View style={styles.teamBlock}>
-                {awayTeamLogo ? (
-                  <Image style={styles.teamLogo} src={awayTeamLogo} />
+                {teamBLogo ? (
+                  <Image style={styles.teamLogo} src={teamBLogo} />
                 ) : (
-                  
                   <TeamLogoPlaceholder
-                    teamName={awayTeam.name}
+                    teamName={teamB.name}
                     containerStyle={styles.placeholderContainer}
                     textStyle={styles.placeholderText}
                   />
-                  
                 )}
                 <Text style={styles.teamNameText}>
-                  {awayTeam.name || "Away Team"}
+                  {teamB.name || "Team B"}
                 </Text>
               </View>
             </View>
           </View>
-
-          {/* <View style={styles.qrCodeSection}>
-            <View style={styles.qrCodeTextBlock}>
-              <Text style={styles.qrCodeText}>
-                {t.qrCheckGame}
-              </Text>
-              <View style={styles.qrCodeButton}>
-                <Text style={styles.qrCodeButtonText}>{t.qrShowGame}</Text>
-              </View>
-            </View>
-            {gameQrCodeDataUrl ? (
-              <Image style={styles.qrCodePlaceholder} src={gameQrCodeDataUrl} />
-            ) : (
-              <View style={styles.qrCodePlaceholder} />
-            )}
-          </View> */}
         </View>
       </View>
       <View style={styles.footer} fixed>
@@ -2244,8 +2188,8 @@ const ReportDocument = ({
       gameDetails={gameDetails}
       footerLogoBuffer2={footerLogoBuffer2}
       gameQrCodeDataUrl={gameQrCodeDataUrl}
-      homeTeamLogo={gamePageLogos.homeTeamLogo}
-      awayTeamLogo={gamePageLogos.awayTeamLogo}
+      teamALogo={gamePageLogos.teamALogo}
+      teamBLogo={gamePageLogos.teamBLogo}
       leagueLogo={gamePageLogos.leagueLogo}
       t={t}
     />
@@ -2301,7 +2245,6 @@ const ReportDocument = ({
       t={t}
     />
 
-    {/* Use StructuredSummaryPage for the rest, which may have sub-headings */}
     <StructuredSummaryPage
       title={reportSections.projection.title}
       footerTitle={t.projectionFooter}
@@ -2318,7 +2261,6 @@ const ReportDocument = ({
     />
 
     <ScalingSystemPage footerLogoBuffer2={footerLogoBuffer2} t={t} />
-    {/* <ScoutingTeamPage footerLogoBuffer2={footerLogoBuffer2} t={t} /> */}
   </Document>
 );
 
@@ -2358,8 +2300,8 @@ function getBaseTeamName(name: string): string {
 function normalizeString(str: string): string {
   return str
     .toLowerCase()
-    .normalize("NFD") // Decompose characters (e.g., 'í' becomes 'i' + '´')
-    .replace(/[\u0300-\u036f]/g, ""); // Remove the accent marks (the combining diacritical marks)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
 async function fetchAndValidateLogo(
@@ -2378,23 +2320,17 @@ async function fetchAndValidateLogo(
         return null;
       }
   
-      // Step 2: Read the data buffer directly. We no longer trust the content-type header for validation.
       const buffer = await imageResponse.arrayBuffer();
   
-      // Step 3: Ensure the buffer actually contains data.
       if (!buffer || buffer.byteLength === 0) {
           console.log(`Validation failed for ${logoPath}: Response body was empty.`);
           return null;
       }
   
-      // Step 4: If we successfully read the buffer, we assume it's a valid image file.
       const base64 = Buffer.from(buffer).toString("base64");
   
-      // Step 5: Determine the correct MIME type for the data URL.
       let contentType = imageResponse.headers.get("content-type") || "image/png";
       
-      // If the server sent a non-image content type, we log a warning but proceed anyway,
-      // defaulting to 'image/png' which is a safe bet for logos.
       if (!contentType.startsWith("image/")) {
           console.warn(`Warning: Server sent non-image content-type (${contentType}) for ${logoPath}. Assuming image/png.`);
           contentType = "image/png";
@@ -2408,9 +2344,7 @@ async function fetchAndValidateLogo(
     }
   };
 
-  // --- Logic for Leagues (Unchanged as requested) ---
   if (type === "league") {
-    // 1. Query for the 'name' field and fetch more results.
     const query = `query SearchLeagues($filter: LeaguesFilter!) { leagues(filter: $filter, pagination: { first: 10 }) { edges { node { name logo } } } }`;
     const variables = { filter: { searchQuery: name } };
     
@@ -2427,18 +2361,14 @@ async function fetchAndValidateLogo(
       const edges = result.data?.leagues?.edges || [];
       const normalizedSearchName = normalizeString(name);
 
-      // 2. Iterate through results to find an exact, validated match.
       for (const edge of edges) {
         const foundNode = edge.node;
         if (foundNode && foundNode.logo && foundNode.name) {
           const normalizedFoundName = normalizeString(foundNode.name);
 
-          // 3. Perform name validation.
           if (normalizedFoundName === normalizedSearchName) {
             const validatedLogoUrl = await getAndValidateLogoDataUrl(foundNode.logo);
             if (validatedLogoUrl) {
-              // Found the correct league with a working logo.
-              //console.log(`SUCCESS: Validated logo for league "${name}"`);
               return validatedLogoUrl;
             }
           }
@@ -2452,14 +2382,12 @@ async function fetchAndValidateLogo(
     return null;
   }
 
-  // --- Final, Robust Logic for Teams ---
   if (type === "team") {
     const query = `query SearchTeams($filter: TeamsFilter!, $pagination: Pagination) { teams(filter: $filter, pagination: $pagination) { edges { node { name logo } } } }`;
     
     const searchTerm = name;
     console.log(`Searching for logos with primary term: "${searchTerm}"`);
 
-    // Get the normalized base name of the team we are looking for.
     const originalNormalizedBaseName = normalizeString(getBaseTeamName(searchTerm));
 
     try {
@@ -2477,16 +2405,11 @@ async function fetchAndValidateLogo(
         const result = await response.json();
         const edges = result.data?.teams?.edges || [];
 
-        //console.log(edges)
-
         for (const edge of edges) {
           const foundNode = edge.node;
           if (foundNode && foundNode.logo) {
-            // Get the normalized base name of the team found by the API.
             const foundNormalizedBaseName = normalizeString(getBaseTeamName(foundNode.name));
 
-            // --- THE FINAL VALIDATION ---
-            // If the normalized base names match, we have found a sister team.
             if (originalNormalizedBaseName === foundNormalizedBaseName) {
               const validatedLogoUrl = await getAndValidateLogoDataUrl(foundNode.logo);
               if (validatedLogoUrl) {
@@ -2531,10 +2454,7 @@ async function fetchTeamLogos(
     });
 
   const logoPromises = Array.from(teamNames).map(async (teamName) => {
-    // Use our new, reliable helper function
     const logoDataUrl = await fetchAndValidateLogo(teamName, "team");
-
-    // Only return an object if the logo is valid
     if (logoDataUrl) {
       return { teamName, logoDataUrl };
     }
@@ -2543,7 +2463,6 @@ async function fetchTeamLogos(
 
   const results = await Promise.all(logoPromises);
 
-  // Iterate through the results and populate the map only with valid entries
   for (const result of results) {
     if (result) {
       teamLogosMap.set(result.teamName, result.logoDataUrl);
@@ -2555,18 +2474,18 @@ async function fetchTeamLogos(
 
 async function fetchGamePageImages(gameDetails: GameDetails | null) {
   if (!gameDetails) {
-    return { homeTeamLogo: null, awayTeamLogo: null, leagueLogo: null };
+    return { teamALogo: null, teamBLogo: null, leagueLogo: null };
   }
 
-  const { homeTeam, awayTeam, league } = gameDetails;
+  const { teamA, teamB, league } = gameDetails;
 
-  const [homeTeamLogo, awayTeamLogo, leagueLogo] = await Promise.all([
-    fetchAndValidateLogo(homeTeam.name, "team"),
-    fetchAndValidateLogo(awayTeam.name, "team"),
+  const [teamALogo, teamBLogo, leagueLogo] = await Promise.all([
+    fetchAndValidateLogo(teamA.name, "team"),
+    fetchAndValidateLogo(teamB.name, "team"),
     league ? fetchAndValidateLogo(league, "league") : Promise.resolve(null),
   ]);
 
-  return { homeTeamLogo, awayTeamLogo, leagueLogo };
+  return { teamALogo, teamBLogo, leagueLogo };
 }
 
 // --- 6. API ENDPOINT ---
@@ -2604,6 +2523,7 @@ export async function POST(request: Request) {
       teamContext,
       traitRatings,
       targetLang,
+      gameContext,
     } = await request.json();
     if (!reportHtml || !reportHtmlBlueprint || !traitRatings) {
       return new NextResponse(
@@ -2621,7 +2541,6 @@ export async function POST(request: Request) {
     if (playerContext?.avatar) {
       const playerImageUrl = `https://assets.graet.com/${playerContext.avatar}`;
       try {
-        //console.log(`Fetching player avatar from: ${playerImageUrl}`);
         const response = await fetch(playerImageUrl);
         if (response.ok) {
           const contentType =
@@ -2649,7 +2568,6 @@ export async function POST(request: Request) {
         const fileBuffer = await fs.readFile(playerImagePath);
         const base64 = fileBuffer.toString("base64");
         playerImageSrc = `data:image/png;base64,${base64}`;
-        //console.log("Using fallback local player image.");
       } catch (error) {
         console.error("Could not read fallback player image file:", error);
       }
@@ -2680,26 +2598,29 @@ export async function POST(request: Request) {
       reportSections.seasonalStats as string | null
     );
 
-    let gameDetails: GameDetails | null = null;
-    if (reportSections.gameInfo) {
-      try {
-        const parseApiUrl = new URL("/api/parse-game-info", request.url);
-
-        const parseResponse = await fetch(parseApiUrl.toString(), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ gameInfoHtml: reportSections.gameInfo }),
-        });
-
-        if (parseResponse.ok) {
-          gameDetails = await parseResponse.json();
-        } else {
-          console.error("Failed to parse game info, will use fallback.");
+    // --- MODIFIED: Create gameDetails directly from gameContext ---
+    const gameDetails: GameDetails | null = gameContext
+      ? {
+          teamA: {
+            name: gameContext.teamA?.name || "Team A",
+            score: gameContext.teamAScore || null,
+          },
+          teamB: {
+            name: gameContext.teamB?.name || "Team B",
+            score: gameContext.teamBScore || null,
+          },
+          league: gameContext.league?.name || null,
+          // --- NEW: Format the game date for display ---
+          gameDate: gameContext.gameDate 
+            ? new Date(gameContext.gameDate).toLocaleDateString(locale, {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+                timeZone: 'UTC',
+              }).toUpperCase()
+            : null,
         }
-      } catch (e) {
-        console.error("Error calling parse-game-info API:", e);
-      }
-    }
+      : null;
 
     const gamePageLogos = await fetchGamePageImages(gameDetails);
 

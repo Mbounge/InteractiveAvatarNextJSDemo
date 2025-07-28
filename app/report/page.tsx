@@ -1,3 +1,5 @@
+//app/report/page.tsx
+
 "use client";
 
 import React, { useState } from 'react';
@@ -20,6 +22,9 @@ const ReportPage: React.FC = () => {
   // string: Show editor for an EXISTING report with this ID.
   const [selectedReportId, setSelectedReportId] = useState<string | null | undefined>(undefined);
 
+  // --- NEW: State to hold the type of the report being created/edited ---
+  const [reportType, setReportType] = useState<'skater' | 'goalie'>('skater');
+
   const handleCodeSubmit = (code: string) => {
     setIsLoading(true);
     setError(null);
@@ -36,11 +41,14 @@ const ReportPage: React.FC = () => {
     }, 500);
   };
 
-  // This function is passed down to the Dashboard.
-  // The Dashboard calls this when the user clicks "New Report" (id = null)
-  // or "Edit" (id = "some_string").
-  const handleSelectReport = (reportId: string | null) => {
+  // --- MODIFIED: This function now accepts the reportType from the dashboard modal ---
+  const handleSelectReport = (reportId: string | null, type: 'skater' | 'goalie' = 'skater') => {
     setSelectedReportId(reportId);
+    // If it's a new report (id is null), we set the type from the modal selection.
+    // If editing an existing report, the type will be loaded from the DB, but we default to 'skater'.
+    if (reportId === null) {
+      setReportType(type);
+    }
   };
 
   // This function is passed down to the Scouting Platform.
@@ -65,6 +73,8 @@ const ReportPage: React.FC = () => {
       <ScoutingPlatform 
         accessCode={accessCode}
         reportId={selectedReportId} // Pass the ID (or null) down
+        // --- NEW: Pass the reportType down ---
+        reportType={reportType}
         onBackToDashboard={handleBackToDashboard} // Pass the back function down
       />
     );

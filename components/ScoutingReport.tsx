@@ -24,6 +24,9 @@ import TableHeader from "@tiptap/extension-table-header";
 import { Extension, InputRule } from "@tiptap/core";
 import { Heading, Level } from "@tiptap/extension-heading";
 import { CellSelection } from "prosemirror-tables";
+import { DayPicker } from "react-day-picker";
+import "react-day-picker/dist/style.css";
+import { format, parse, isValid } from "date-fns";
 import {
   Upload,
   Sparkles,
@@ -60,13 +63,15 @@ import {
   CheckCircle,
   XCircle,
   Search,
+  Shield,
+  CalendarDays,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import Image from "next/image";
 import logo2 from "../public/Graet_Logo.svg";
 
-// --- NOTIFICATION COMPONENT ---
+// --- NOTIFICATION COMPONENT (No Changes) ---
 interface ProcessStatusProps {
   status:
     | "idle"
@@ -130,14 +135,15 @@ const ProcessStatus: React.FC<ProcessStatusProps> = ({ status, message }) => {
   );
 };
 
-// --- PROPS INTERFACE ---
+// --- PROPS INTERFACE (No Changes) ---
 interface ScoutingPlatformProps {
   accessCode: string;
   reportId: string | null;
+  reportType: 'skater' | 'goalie';
   onBackToDashboard: () => void;
 }
 
-// --- HELPER HOOK & FUNCTIONS ---
+// --- HELPER HOOK & FUNCTIONS (No Changes) ---
 
 const useMediaQuery = (query: string) => {
   const [matches, setMatches] = useState(false);
@@ -181,7 +187,7 @@ const Spinner: React.FC<{ className?: string }> = ({ className }) => (
   <Loader2 className={`animate-spin h-5 w-5 text-[#0e0c66] ${className}`} />
 );
 
-// --- TYPE DEFINITIONS ---
+// --- TYPE DEFINITIONS (No Changes) ---
 type Stats = {
   gamesPlayed: number;
   goals: number;
@@ -234,6 +240,17 @@ type Team = {
   leagues: { id: string; name: string }[];
 };
 type TeamSearchResult = { node: Team };
+
+type League = {
+  id: string;
+  name: string;
+  type: string;
+  level: string;
+  genderCategory: string;
+  countries: string[];
+};
+type LeagueSearchResult = { node: League };
+
 type Standing = { id: string; team: { id: string; name: string } };
 type LeagueStandingsResponse = {
   league: { id: string; name: string };
@@ -282,7 +299,7 @@ const AVAILABLE_LANGUAGES: Language[] = [
   { code: "GE", name: "Georgian" },
 ];
 
-// --- TIPTAP CONFIGURATION ---
+// --- TIPTAP CONFIGURATION (No Changes) ---
 const PREDEFINED_SIZES: { [key: string]: string } = {
   p: "12pt",
   h1: "24pt",
@@ -376,7 +393,7 @@ const editorExtensions = [
   TableCell,
 ];
 
-// --- HELPER COMPONENTS ---
+// --- HELPER COMPONENTS (No Changes to these) ---
 const formatPosition = (rawPosition: string | null | undefined): string => {
   if (!rawPosition) return "N/A";
   switch (rawPosition) {
@@ -824,6 +841,7 @@ const PlayerSearch: React.FC<{
 };
 
 const TeamSearch: React.FC<{
+  title?: string;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   searchResults: TeamSearchResult[];
@@ -832,6 +850,7 @@ const TeamSearch: React.FC<{
   onSelectTeam: (team: Team) => void;
   onClearTeam: () => void;
 }> = ({
+  title = "Select Team",
   searchQuery,
   onSearchChange,
   searchResults,
@@ -842,9 +861,13 @@ const TeamSearch: React.FC<{
 }) => {
   const searchResultsRef = useRef<HTMLDivElement>(null);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
+  const [isManualMode, setIsManualMode] = useState(false);
+  const [manualTeamName, setManualTeamName] = useState('');
+
   useEffect(() => {
     setIsResultsOpen(searchResults.length > 0);
   }, [searchResults]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -856,93 +879,433 @@ const TeamSearch: React.FC<{
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const handleSaveManualTeam = () => {
+    if (manualTeamName.trim()) {
+      const manualTeam: Team = {
+        id: `manual-${Date.now()}`,
+        name: manualTeamName.trim(),
+        shortName: manualTeamName.trim(),
+        country: 'N/A',
+        slug: '',
+        leagues: [],
+      };
+      onSelectTeam(manualTeam);
+      setIsManualMode(false);
+      setManualTeamName('');
+    }
+  };
+
   if (selectedTeam) {
     return (
       <div>
-        {" "}
-        <h2 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-4">
-          {" "}
-          Selected Team{" "}
-        </h2>{" "}
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">{title}</h3>
         <div className="flex items-center justify-between p-3 border rounded-xl bg-green-50 border-green-200/80">
-          {" "}
           <div className="flex flex-col">
-            {" "}
-            <span className="font-bold text-gray-800">
-              {selectedTeam.name}
-            </span>{" "}
+            <span className="font-bold text-gray-800">{selectedTeam.name}</span>
+            {/* --- FIX: Use a more reliable check for manual entry --- */}
             <span className="text-sm text-gray-600">
-              {selectedTeam.leagues?.[0]?.name || "No League"} -{" "}
-              {selectedTeam.country}
-            </span>{" "}
-          </div>{" "}
+              {selectedTeam.id.startsWith('manual-') ? "Manually Entered" : (selectedTeam.leagues?.[0]?.name || "N/A")}
+            </span>
+          </div>
           <button
-            onClick={onClearTeam}
+            onClick={() => {
+              onClearTeam();
+              setIsManualMode(false);
+            }}
             className="text-sm font-semibold text-indigo-600 hover:text-indigo-800"
           >
-            {" "}
-            Change{" "}
-          </button>{" "}
-        </div>{" "}
+            Change
+          </button>
+        </div>
       </div>
     );
   }
+
   return (
     <div>
-      {" "}
-      <h2 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-4">
-        {" "}
-        Select Team{" "}
-      </h2>{" "}
+      <h3 className="text-lg font-semibold text-gray-800 mb-2">{title}</h3>
       <div className="relative" ref={searchResultsRef}>
-        {" "}
-        <div className="relative">
-          {" "}
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            {" "}
-            <Search className="h-5 w-5 text-gray-800" />{" "}
-          </div>{" "}
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search for a team..."
-            className="block w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm placeholder-gray-500"
-          />{" "}
-          {isSearching && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <Spinner />
-            </div>
-          )}{" "}
-        </div>{" "}
-        {isResultsOpen && searchResults.length > 0 && (
-          <div className="absolute top-full mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 z-10 max-h-60 overflow-y-auto">
-            {" "}
-            {searchResults.map(({ node: team }) => (
-              <button
-                key={team.id}
-                onClick={() => onSelectTeam(team)}
-                className="w-full text-left p-3 hover:bg-gray-100 transition-colors flex justify-between items-center"
+        {isManualMode ? (
+          <div>
+            <div className="relative">
+              <input
+                type="text"
+                value={manualTeamName}
+                onChange={(e) => setManualTeamName(e.target.value)}
+                placeholder="Enter team name..."
+                className="block w-full pr-24 py-3 pl-4 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm placeholder-gray-500"
+              />
+              <button 
+                onClick={handleSaveManualTeam}
+                className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700"
               >
-                {" "}
-                <div>
-                  {" "}
-                  <p className="font-medium text-gray-800">{team.name}</p>{" "}
-                  <p className="text-sm text-gray-500">
-                    {team.leagues?.[0]?.name || "No League"}
-                  </p>{" "}
-                </div>{" "}
-                <span className="text-xs text-gray-400">
-                  {team.country}
-                </span>{" "}
+                Save
               </button>
-            ))}{" "}
+            </div>
+            <button onClick={() => setIsManualMode(false)} className="text-xs text-indigo-600 hover:underline mt-2">
+              Back to search
+            </button>
           </div>
-        )}{" "}
-      </div>{" "}
+        ) : (
+          <div>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-800" />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder="Search for a team..."
+                className="block w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm placeholder-gray-500"
+              />
+              {isSearching && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <Spinner />
+                </div>
+              )}
+            </div>
+            <button onClick={() => setIsManualMode(true)} className="text-xs text-indigo-600 hover:underline mt-2">
+              Can't find the team? Enter manually.
+            </button>
+            {isResultsOpen && searchResults.length > 0 && (
+              <div className="absolute top-full mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 z-10 max-h-60 overflow-y-auto">
+                {searchResults.map(({ node: team }) => (
+                  <button
+                    key={team.id}
+                    onClick={() => onSelectTeam(team)}
+                    className="w-full text-left p-3 hover:bg-gray-100 transition-colors flex justify-between items-center"
+                  >
+                    <div>
+                      <p className="font-medium text-gray-800">{team.name}</p>
+                      <p className="text-sm text-gray-500">
+                        {team.leagues?.[0]?.name || "No League"}
+                      </p>
+                    </div>
+                    <span className="text-xs text-gray-400">{team.country}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
+
+const LeagueSearch: React.FC<{
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+  searchResults: LeagueSearchResult[];
+  isSearching: boolean;
+  selectedLeague: League | null;
+  onSelectLeague: (league: League) => void;
+  onClearLeague: () => void;
+}> = ({
+  searchQuery,
+  onSearchChange,
+  searchResults,
+  isSearching,
+  selectedLeague,
+  onSelectLeague,
+  onClearLeague,
+}) => {
+  const searchResultsRef = useRef<HTMLDivElement>(null);
+  const [isResultsOpen, setIsResultsOpen] = useState(false);
+  const [isManualMode, setIsManualMode] = useState(false);
+  const [manualLeagueName, setManualLeagueName] = useState('');
+
+  useEffect(() => {
+    setIsResultsOpen(searchResults.length > 0);
+  }, [searchResults]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchResultsRef.current &&
+        !searchResultsRef.current.contains(event.target as Node)
+      )
+        setIsResultsOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSaveManualLeague = () => {
+    if (manualLeagueName.trim()) {
+      const manualLeague: League = {
+        id: `manual-${Date.now()}`,
+        name: manualLeagueName.trim(),
+        type: 'N/A',
+        level: 'N/A',
+        genderCategory: 'N/A',
+        countries: [],
+      };
+      onSelectLeague(manualLeague);
+      setIsManualMode(false);
+      setManualLeagueName('');
+    }
+  };
+
+  if (selectedLeague) {
+    return (
+      <div>
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">Selected League</h3>
+        <div className="flex items-center justify-between p-3 border rounded-xl bg-green-50 border-green-200/80">
+          <div className="flex flex-col">
+            <span className="font-bold text-gray-800">{selectedLeague.name}</span>
+            <span className="text-sm text-gray-600">
+              {selectedLeague.id.startsWith('manual-') ? "Manually Entered" : `${selectedLeague.countries.join(", ")} - ${selectedLeague.level}`}
+            </span>
+          </div>
+          <button
+            onClick={() => {
+              onClearLeague();
+              setIsManualMode(false);
+            }}
+            className="text-sm font-semibold text-indigo-600 hover:text-indigo-800"
+          >
+            Change
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h3 className="text-lg font-semibold text-gray-800 mb-2">Select League</h3>
+      <div className="relative" ref={searchResultsRef}>
+        {isManualMode ? (
+          <div>
+            <div className="relative">
+              <input
+                type="text"
+                value={manualLeagueName}
+                onChange={(e) => setManualLeagueName(e.target.value)}
+                placeholder="Enter league name..."
+                className="block w-full pr-24 py-3 pl-4 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm placeholder-gray-500"
+              />
+              <button 
+                onClick={handleSaveManualLeague}
+                className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700"
+              >
+                Save
+              </button>
+            </div>
+            <button onClick={() => setIsManualMode(false)} className="text-xs text-indigo-600 hover:underline mt-2">
+              Back to search
+            </button>
+          </div>
+        ) : (
+          <div>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Shield className="h-5 w-5 text-gray-800" />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder="Search for a league..."
+                className="block w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm placeholder-gray-500"
+              />
+              {isSearching && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <Spinner />
+                </div>
+              )}
+            </div>
+            <button onClick={() => setIsManualMode(true)} className="text-xs text-indigo-600 hover:underline mt-2">
+              Can't find the league? Enter manually.
+            </button>
+            {isResultsOpen && searchResults.length > 0 && (
+              <div className="absolute top-full mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 z-10 max-h-60 overflow-y-auto">
+                {searchResults.map(({ node: league }) => (
+                  <button
+                    key={league.id}
+                    onClick={() => onSelectLeague(league)}
+                    className="w-full text-left p-3 hover:bg-gray-100 transition-colors flex justify-between items-center"
+                  >
+                    <div>
+                      <p className="font-medium text-gray-800">{league.name}</p>
+                      <p className="text-sm text-gray-500">{league.level}</p>
+                    </div>
+                    <span className="text-xs text-gray-400">{league.countries.join(", ")}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const MaskedDatePicker: React.FC<{
+  selectedDate: Date | undefined;
+  onDateChange: (date: Date | undefined) => void;
+}> = ({ selectedDate, onDateChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [dateChars, setDateChars] = useState<string[]>([]);
+  const pickerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const placeholder = 'YYYY/MM/DD';
+
+  useEffect(() => {
+    if (selectedDate) {
+      setDateChars(format(selectedDate, 'yyyyMMdd').split(''));
+    } else {
+      setDateChars([]);
+    }
+  }, [selectedDate]);
+
+  useEffect(() => {
+    let display = placeholder.split('');
+    let cursorPosition = 0;
+
+    const year = dateChars.slice(0, 4);
+    const month = dateChars.slice(4, 6);
+    const day = dateChars.slice(6, 8);
+
+    year.forEach((char, i) => (display[i] = char));
+    month.forEach((char, i) => (display[i + 5] = char));
+    day.forEach((char, i) => (display[i + 8] = char));
+
+    if (dateChars.length < 4) {
+      cursorPosition = dateChars.length;
+    } else if (dateChars.length === 4) {
+      cursorPosition = 5;
+    } else if (dateChars.length < 6) {
+      cursorPosition = dateChars.length + 1;
+    } else if (dateChars.length === 6) {
+      cursorPosition = 8;
+    } else {
+      cursorPosition = dateChars.length + 2;
+    }
+
+    if (inputRef.current) {
+      inputRef.current.value = display.join('');
+      inputRef.current.setSelectionRange(cursorPosition, cursorPosition);
+    }
+
+    if (dateChars.length === 8) {
+      const dateStr = `${year.join('')}/${month.join('')}/${day.join('')}`;
+      const parsed = parse(dateStr, 'yyyy/MM/dd', new Date());
+      if (isValid(parsed)) {
+        onDateChange(parsed);
+      }
+    } else {
+      onDateChange(undefined);
+    }
+  }, [dateChars, onDateChange]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleDayClick = (date: Date | undefined) => {
+    if (date) {
+      setDateChars(format(date, 'yyyyMMdd').split(''));
+      onDateChange(date);
+    }
+    setIsOpen(false);
+    inputRef.current?.blur();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    if (e.key >= '0' && e.key <= '9') {
+      if (dateChars.length < 8) {
+        setDateChars([...dateChars, e.key]);
+      }
+    } else if (e.key === 'Backspace') {
+      if (dateChars.length > 0) {
+        setDateChars(dateChars.slice(0, -1));
+      }
+    }
+  };
+
+  const handleClick = (e: React.MouseEvent<HTMLInputElement>) => {
+    const firstPlaceholderIndex = inputRef.current?.value.indexOf('Y') ?? -1;
+    if (firstPlaceholderIndex !== -1) {
+      e.currentTarget.setSelectionRange(firstPlaceholderIndex, firstPlaceholderIndex);
+      return;
+    }
+    const secondPlaceholderIndex = inputRef.current?.value.indexOf('M') ?? -1;
+    if (secondPlaceholderIndex !== -1) {
+      e.currentTarget.setSelectionRange(secondPlaceholderIndex, secondPlaceholderIndex);
+      return;
+    }
+    const thirdPlaceholderIndex = inputRef.current?.value.indexOf('D') ?? -1;
+    if (thirdPlaceholderIndex !== -1) {
+      e.currentTarget.setSelectionRange(thirdPlaceholderIndex, thirdPlaceholderIndex);
+    }
+  };
+
+  return (
+    <div className="relative" ref={pickerRef}>
+      <style>{`
+        .rdp {
+          --rdp-cell-size: 40px;
+          --rdp-accent-color: #4f46e5; 
+          --rdp-background-color: #e0e7ff;
+          --rdp-accent-color-dark: #3730a3;
+          --rdp-background-color-dark: #c7d2fe;
+          --rdp-outline: 2px solid var(--rdp-accent-color);
+          --rdp-outline-selected: 3px solid var(--rdp-accent-color);
+          margin: 0;
+        }
+        .rdp-caption_label { font-weight: 600; }
+        .rdp-nav_button { border-radius: 99px; }
+        .rdp-day_selected {
+          font-weight: 600;
+          background-color: var(--rdp-accent-color);
+          border-radius: 99px;
+        }
+      `}</style>
+      <div className="relative">
+        <input
+          ref={inputRef}
+          type="text"
+          onKeyDown={handleKeyDown}
+          onClick={handleClick}
+          onFocus={() => setIsOpen(true)}
+          className="block w-full pl-4 pr-10 py-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm placeholder-gray-500"
+        />
+        <CalendarDays
+          className="h-5 w-5 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer"
+          onClick={() => {
+            setIsOpen(!isOpen);
+            inputRef.current?.focus();
+          }}
+        />
+      </div>
+      {isOpen && (
+        <div className="absolute top-full mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 z-20 p-2">
+          <DayPicker
+            mode="single"
+            selected={selectedDate}
+            onSelect={handleDayClick}
+            initialFocus={isOpen}
+            defaultMonth={selectedDate}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
 
 const LanguageSelector: React.FC<{
   selectedLanguages: string[];
@@ -1586,9 +1949,10 @@ const EditorPlaceholder = ({ onStart }: { onStart: () => void }) => (
 const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
   accessCode,
   reportId,
+  reportType,
   onBackToDashboard,
 }) => {
-  // --- STATE ---
+  // --- STATE (No Changes) ---
   const [currentReportId, setCurrentReportId] = useState<string | null>(
     reportId
   );
@@ -1603,13 +1967,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
   const [searchResults, setSearchResults] = useState<PlayerSearchResult[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [isSearching, setIsSearching] = useState(false);
-  const [teamSearchQuery, setTeamSearchQuery] = useState("");
-  const debouncedTeamSearchQuery = useDebounce(teamSearchQuery, 300);
-  const [teamSearchResults, setTeamSearchResults] = useState<
-    TeamSearchResult[]
-  >([]);
-  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
-  const [isSearchingTeams, setIsSearchingTeams] = useState(false);
+  
   const [leagueStandings, setLeagueStandings] =
     useState<LeagueStandingsResponse | null>(null);
   const [seasonalStats, setSeasonalStats] = useState<SeasonalStat[]>([]);
@@ -1641,13 +1999,40 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
     useState(false);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
 
-  // --- REFS ---
+  const [leagueSearchQuery, setLeagueSearchQuery] = useState('');
+  const debouncedLeagueSearchQuery = useDebounce(leagueSearchQuery, 300);
+  const [leagueSearchResults, setLeagueSearchResults] = useState<LeagueSearchResult[]>([]);
+  const [isSearchingLeagues, setIsSearchingLeagues] = useState(false);
+  const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
+
+  const [teamASearchQuery, setTeamASearchQuery] = useState('');
+  const debouncedTeamASearchQuery = useDebounce(teamASearchQuery, 300);
+  const [teamASearchResults, setTeamASearchResults] = useState<TeamSearchResult[]>([]);
+  const [isSearchingTeamA, setIsSearchingTeamA] = useState(false);
+  const [teamA, setTeamA] = useState<Team | null>(null);
+
+  const [teamBSearchQuery, setTeamBSearchQuery] = useState('');
+  const debouncedTeamBSearchQuery = useDebounce(teamBSearchQuery, 300);
+  const [teamBSearchResults, setTeamBSearchResults] = useState<TeamSearchResult[]>([]);
+  const [isSearchingTeamB, setIsSearchingTeamB] = useState(false);
+  const [teamB, setTeamB] = useState<Team | null>(null);
+
+  const [teamAScore, setTeamAScore] = useState('');
+  const [teamBScore, setTeamBScore] = useState('');
+  
+  const [gameDate, setGameDate] = useState<Date | undefined>(undefined);
+
+  const [currentReportType, setCurrentReportType] = useState(reportType);
+
+
+  // --- REFS (No Changes) ---
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sidebarScrollRef = useRef<HTMLDivElement>(null);
 
   const activeLanguageRef = useRef(activeLanguage);
 
+  // --- FUNCTIONS (No Changes until loadReportData) ---
   const applyFontSizes = (editorInstance: Editor) => {
     const { tr, doc } = editorInstance.state;
     let modified = false;
@@ -1723,13 +2108,24 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
         const data = await response.json();
 
         setSelectedPlayer(data.playerContext);
-        setSelectedTeam(data.teamContext || null);
         setTraitRatings(data.traitRatings);
         setOriginalReportHtml(data.originalReportHtml);
         setTranslatedReports(data.translatedReports || {});
         setTranscriptionText(data.transcriptionText);
         setSeasonalStats(data.seasonalStatsContext || []);
         setLeagueStandings(data.leagueStandingsContext || null);
+        setCurrentReportType(data.reportType || 'skater');
+
+        if (data.gameContext) {
+            setSelectedLeague(data.gameContext.league || null);
+            setTeamA(data.gameContext.teamA || null);
+            setTeamB(data.gameContext.teamB || null);
+            setTeamAScore(data.gameContext.teamAScore || '');
+            setTeamBScore(data.gameContext.teamBScore || '');
+            if (data.gameContext.gameDate) {
+              setGameDate(new Date(data.gameContext.gameDate));
+            }
+        }
 
         initEditor(data.originalReportHtml);
         setHasGeneratedReport(true);
@@ -1810,33 +2206,28 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
 
   const handleRemoveFile = (fileToRemove: File) =>
     setSelectedFiles((prev) => prev.filter((file) => file !== fileToRemove));
+  
   const handleSelectPlayer = (player: Player) => {
     setSelectedPlayer(player);
     setSearchQuery("");
     setSearchResults([]);
-    if (player.currentTeam)
-      setSelectedTeam({
-        id: player.currentTeam.id,
-        name: player.currentTeam.name,
-        shortName: player.currentTeam.shortName,
-        country: player.currentTeam.country,
-        slug: "",
-        leagues: player.currentTeam.leagues,
-      });
+    if (player.currentTeam) {
+        setTeamA({
+            id: player.currentTeam.id,
+            name: player.currentTeam.name,
+            shortName: player.currentTeam.shortName,
+            country: player.currentTeam.country,
+            slug: "",
+            leagues: player.currentTeam.leagues,
+        });
+    }
   };
   const handleClearPlayer = () => {
     setSelectedPlayer(null);
     setSeasonalStats([]);
+    setTeamA(null);
   };
-  const handleSelectTeam = (team: Team) => {
-    setSelectedTeam(team);
-    setTeamSearchQuery("");
-    setTeamSearchResults([]);
-  };
-  const handleClearTeam = () => {
-    setSelectedTeam(null);
-    setLeagueStandings(null);
-  };
+
   const handleRatingChange = useCallback(
     (trait: keyof TraitRatings, newRating: number) =>
       setTraitRatings((prev) => ({ ...prev, [trait]: newRating })),
@@ -1884,12 +2275,12 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
   }, [debouncedSearchQuery, selectedPlayer]);
 
   useEffect(() => {
-    if (debouncedTeamSearchQuery.length < 2 || selectedTeam) {
-      setTeamSearchResults([]);
+    if (debouncedTeamASearchQuery.length < 2 || teamA) {
+      setTeamASearchResults([]);
       return;
     }
     const fetchTeams = async () => {
-      setIsSearchingTeams(true);
+      setIsSearchingTeamA(true);
       try {
         const response = await fetch("https://api.graet.com", {
           method: "POST",
@@ -1897,29 +2288,95 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
           body: JSON.stringify({
             query: `query SearchTeams($filter: TeamsFilter!, $pagination: Pagination) { teams(filter: $filter, pagination: $pagination) { edges { node { id name shortName country slug leagues { id name } } } } }`,
             variables: {
-              filter: { searchQuery: debouncedTeamSearchQuery },
+              filter: { searchQuery: debouncedTeamASearchQuery },
               pagination: { first: 10 },
             },
           }),
         });
         if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
         const result = await response.json();
-        if (result.errors)
-          throw new Error(result.errors.map((e: any) => e.message).join("\n"));
-        setTeamSearchResults(result.data?.teams?.edges || []);
+        if (result.errors) throw new Error(result.errors.map((e: any) => e.message).join("\n"));
+        setTeamASearchResults(result.data?.teams?.edges || []);
       } catch (error: any) {
-        toast.error(`Could not fetch teams: ${error.message}`);
-        setTeamSearchResults([]);
+        toast.error(`Could not fetch teams for Team A: ${error.message}`);
+        setTeamASearchResults([]);
       } finally {
-        setIsSearchingTeams(false);
+        setIsSearchingTeamA(false);
       }
     };
     fetchTeams();
-  }, [debouncedTeamSearchQuery, selectedTeam]);
+  }, [debouncedTeamASearchQuery, teamA]);
+
+  useEffect(() => {
+    if (debouncedTeamBSearchQuery.length < 2 || teamB) {
+      setTeamBSearchResults([]);
+      return;
+    }
+    const fetchTeams = async () => {
+      setIsSearchingTeamB(true);
+      try {
+        const response = await fetch("https://api.graet.com", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: `query SearchTeams($filter: TeamsFilter!, $pagination: Pagination) { teams(filter: $filter, pagination: $pagination) { edges { node { id name shortName country slug leagues { id name } } } } }`,
+            variables: {
+              filter: { searchQuery: debouncedTeamBSearchQuery },
+              pagination: { first: 10 },
+            },
+          }),
+        });
+        if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+        const result = await response.json();
+        if (result.errors) throw new Error(result.errors.map((e: any) => e.message).join("\n"));
+        setTeamBSearchResults(result.data?.teams?.edges || []);
+      } catch (error: any) {
+        toast.error(`Could not fetch teams for Team B: ${error.message}`);
+        setTeamBSearchResults([]);
+      } finally {
+        setIsSearchingTeamB(false);
+      }
+    };
+    fetchTeams();
+  }, [debouncedTeamBSearchQuery, teamB]);
+
+  useEffect(() => {
+    if (debouncedLeagueSearchQuery.length < 2 || selectedLeague) {
+      setLeagueSearchResults([]);
+      return;
+    }
+    const fetchLeagues = async () => {
+      setIsSearchingLeagues(true);
+      try {
+        const response = await fetch("https://api.graet.com", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: `query SearchLeagues($filter: LeaguesFilter!, $pagination: Pagination) { leagues(filter: $filter, pagination: $pagination) { edges { node { id name type level genderCategory countries } } } }`,
+            variables: {
+              filter: { searchQuery: debouncedLeagueSearchQuery, countries: null },
+              pagination: { first: 10 },
+            },
+          }),
+        });
+        if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+        const result = await response.json();
+        if (result.errors) throw new Error(result.errors.map((e: any) => e.message).join("\n"));
+        setLeagueSearchResults(result.data?.leagues?.edges || []);
+      } catch (error: any) {
+        toast.error(`Could not fetch leagues: ${error.message}`);
+        setLeagueSearchResults([]);
+      } finally {
+        setIsSearchingLeagues(false);
+      }
+    };
+    fetchLeagues();
+  }, [debouncedLeagueSearchQuery, selectedLeague]);
+
 
   useEffect(() => {
     const fetchLeagueStandings = async () => {
-      if (!selectedTeam || !selectedTeam.leagues?.[0]?.id) {
+      if (!teamA || !teamA.leagues?.[0]?.id) {
         setLeagueStandings(null);
         return;
       }
@@ -1934,9 +2391,9 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
           body: JSON.stringify({
             query: `query SearchLeagueStandings($leagueId: ObjectId!, $season: String, $teamId: ObjectId) { leagueStandings(leagueId: $leagueId, season: $season, teamId: $teamId) { league { id name } groups { group standings { id team { id name } } } } }`,
             variables: {
-              leagueId: selectedTeam.leagues[0].id,
+              leagueId: teamA.leagues[0].id,
               season: "2024-2025",
-              teamId: selectedTeam.id,
+              teamId: teamA.id,
             },
           }),
         });
@@ -1968,7 +2425,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
       }
     };
     fetchLeagueStandings();
-  }, [selectedTeam]);
+  }, [teamA]);
 
   useEffect(() => {
     if (!selectedPlayer) {
@@ -2046,7 +2503,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
         [targetLangCode]: marked.parse(data.translatedText) as string,
       }));
       showToast(`Translated to ${targetLanguage.name}!`, 'success', { id: toastId });
-    } catch (error) {
+    } catch (error: any) {
       showToast(`Could not translate to ${targetLanguage.name}.`, 'error', { id: toastId });
     } finally {
       setTranslatingLanguages((prev) => ({ ...prev, [targetLangCode]: false }));
@@ -2059,8 +2516,8 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
     );
 
   const handleProcessAudio = async () => {
-    if (selectedFiles.length === 0 || !selectedPlayer || !selectedTeam) {
-      toast.error("Please select a player, team, and audio file.");
+    if (selectedFiles.length === 0 || !selectedPlayer || !teamA || !teamB || !selectedLeague) {
+      toast.error("Please select a player, league, both game teams, and an audio file.");
       return;
     }
     setOriginalReportHtml(null);
@@ -2087,14 +2544,14 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
                 file,
                 apiKey,
                 selectedPlayer,
-                selectedTeam,
+                teamA,
                 leagueStandings
               )
             : await handleInlineUploadAndTranscribe(
                 file,
                 apiKey,
                 selectedPlayer,
-                selectedTeam,
+                teamA,
                 leagueStandings
               );
         allTranscriptions.push(singleTranscription);
@@ -2123,9 +2580,17 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
         body: JSON.stringify({
           transcription: combinedTranscription,
           playerContext: selectedPlayer,
-          teamContext: selectedTeam,
+          teamContext: teamA,
           standingsContext: leagueStandings,
           seasonalStatsContext: seasonalStats,
+          gameContext: {
+            league: selectedLeague,
+            teamA: teamA,
+            teamB: teamB,
+            teamAScore: teamAScore,
+            teamBScore: teamBScore,
+            gameDate: gameDate ? gameDate.toISOString() : null,
+          }
         }),
       });
       if (!generateResponse.ok)
@@ -2278,16 +2743,27 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
     }
     setIsSaving(true);
     const toastId = showToast('Saving report...', 'loading');
+    
     const reportData = {
+      reportType: currentReportType,
       playerContext: selectedPlayer,
-      teamContext: selectedTeam,
+      teamContext: teamA,
       traitRatings,
       originalReportHtml,
       translatedReports,
       transcriptionText,
       seasonalStatsContext: seasonalStats,
       leagueStandingsContext: leagueStandings,
+      gameContext: {
+        league: selectedLeague,
+        teamA: teamA,
+        teamB: teamB,
+        teamAScore: teamAScore,
+        teamBScore: teamBScore,
+        gameDate: gameDate ? gameDate.toISOString() : null,
+      }
     };
+
     try {
       const url = currentReportId
         ? `/api/reports/${currentReportId}`
@@ -2352,13 +2828,21 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             playerContext: selectedPlayer,
-            teamContext: selectedTeam,
+            teamContext: teamA,
             standingsContext: leagueStandings,
             seasonalStatsContext: seasonalStats,
             reportHtml: editor.getHTML(),
             reportHtmlBlueprint: originalReportHtml,
             traitRatings,
             targetLang: activeLanguage,
+            gameContext: {
+                league: selectedLeague,
+                teamA: teamA,
+                teamB: teamB,
+                teamAScore: teamAScore,
+                teamBScore: teamBScore,
+                gameDate: gameDate ? gameDate.toISOString() : null,
+            }
           }),
         });
         if (!response.ok)
@@ -2523,15 +3007,79 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
                 onSelectPlayer={handleSelectPlayer}
                 onClearPlayer={handleClearPlayer}
               />
-              <TeamSearch
-                searchQuery={teamSearchQuery}
-                onSearchChange={setTeamSearchQuery}
-                searchResults={teamSearchResults}
-                isSearching={isSearchingTeams}
-                selectedTeam={selectedTeam}
-                onSelectTeam={handleSelectTeam}
-                onClearTeam={handleClearTeam}
-              />
+              
+              <div className="space-y-6">
+                <h2 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                  Scouted Game Details
+                </h2>
+                <LeagueSearch
+                  searchQuery={leagueSearchQuery}
+                  onSearchChange={setLeagueSearchQuery}
+                  searchResults={leagueSearchResults}
+                  isSearching={isSearchingLeagues}
+                  selectedLeague={selectedLeague}
+                  onSelectLeague={(league) => {
+                    setSelectedLeague(league);
+                    setLeagueSearchQuery('');
+                    setLeagueSearchResults([]);
+                  }}
+                  onClearLeague={() => setSelectedLeague(null)}
+                />
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Game Date</h3>
+                  <MaskedDatePicker selectedDate={gameDate} onDateChange={setGameDate} />
+                </div>
+                <TeamSearch
+                  title="Team A"
+                  searchQuery={teamASearchQuery}
+                  onSearchChange={setTeamASearchQuery}
+                  searchResults={teamASearchResults}
+                  isSearching={isSearchingTeamA}
+                  selectedTeam={teamA}
+                  onSelectTeam={(team) => {
+                    setTeamA(team);
+                    setTeamASearchQuery('');
+                    setTeamASearchResults([]);
+                  }}
+                  onClearTeam={() => setTeamA(null)}
+                />
+                <TeamSearch
+                  title="Team B"
+                  searchQuery={teamBSearchQuery}
+                  onSearchChange={setTeamBSearchQuery}
+                  searchResults={teamBSearchResults}
+                  isSearching={isSearchingTeamB}
+                  selectedTeam={teamB}
+                  onSelectTeam={(team) => {
+                    setTeamB(team);
+                    setTeamBSearchQuery('');
+                    setTeamBSearchResults([]);
+                  }}
+                  onClearTeam={() => setTeamB(null)}
+                />
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Final Score</h3>
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="number"
+                      placeholder="Team A"
+                      value={teamAScore}
+                      onChange={(e) => setTeamAScore(e.target.value)}
+                      className="block w-full px-4 py-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm placeholder-gray-500 text-center"
+                    />
+                    <span className="font-bold text-gray-500">:</span>
+                    <input
+                      type="number"
+                      placeholder="Team B"
+                      value={teamBScore}
+                      onChange={(e) => setTeamBScore(e.target.value)}
+                      className="block w-full px-4 py-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm placeholder-gray-500 text-center"
+                    />
+                  </div>
+                </div>
+              </div>
+
+
               <LanguageSelector
                 selectedLanguages={selectedLanguages}
                 onSelectionChange={handleLanguageSelectionChange}
@@ -2626,7 +3174,9 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
                   isLoading ||
                   selectedFiles.length === 0 ||
                   !selectedPlayer ||
-                  !selectedTeam
+                  !selectedLeague ||
+                  !teamA ||
+                  !teamB
                 }
                 className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#0e0c66] text-white font-semibold rounded-xl shadow-lg hover:bg-[#0e0c66]/90 transform hover:scale-105 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:scale-100"
               >

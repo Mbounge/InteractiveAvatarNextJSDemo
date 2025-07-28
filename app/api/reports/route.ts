@@ -24,7 +24,8 @@ export async function GET(request: NextRequest) {
     // Find all reports where the 'scoutIdentifier' matches the one from the header.
     const reports = await Report.find({ scoutIdentifier })
       .sort({ updatedAt: -1 }) // Sort by most recently updated
-      .select('playerContext.name playerContext.currentTeam.name updatedAt'); // Only send back the data needed for the list view to be efficient.
+      // --- MODIFIED: Added 'reportType' to the selection ---
+      .select('playerContext.name playerContext.currentTeam.name updatedAt reportType'); // Only send back the data needed for the list view to be efficient.
 
     return NextResponse.json(reports);
   } catch (error) {
@@ -50,9 +51,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json(); // Get the report data from the request
     
     // Create a new report document using our Mongoose model
+    // The 'reportType' will be included in the 'body' from the frontend
     const newReport = new Report({
       ...body,
-      scoutIdentifier, // Tag the report with the scout's ID
+      scoutIdentifier, 
     });
 
     await newReport.save(); // Save the document to the database
