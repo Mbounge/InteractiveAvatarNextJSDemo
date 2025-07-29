@@ -1,5 +1,3 @@
-//app/api/pdf/route.tsx
-
 import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
@@ -21,11 +19,12 @@ import {
   Path,
   Image,
 } from "@react-pdf/renderer";
-import { parse, HTMLElement } from "node-html-parser";
+// --- MODIFIED: Import Node type for type checking ---
+import { parse, HTMLElement, Node } from "node-html-parser";
 import QRCode from "qrcode";
 import { type Style } from "@react-pdf/types";
 
-// --- 1. TRANSLATION & LOCALE HELPERS ---
+// --- 1. TRANSLATION & LOCALE HELPERS (No Changes) ---
 
 async function getTranslations(lang: string) {
   const langCode = lang.toLowerCase();
@@ -76,7 +75,7 @@ const getLocaleForLang = (lang: string) => {
   return map[lang.toLowerCase()] || "en-US";
 };
 
-// --- TYPE DEFINITIONS ---
+// --- TYPE DEFINITIONS (No Changes) ---
 
 type GameDetails = {
   teamA: { name: string; score: number | null };
@@ -99,7 +98,7 @@ type ReportSection = {
   html: string;
 };
 
-// --- 2. FONT REGISTRATION ---
+// --- 2. FONT REGISTRATION (No Changes) ---
 Font.register({
   family: "DejaVu",
   fonts: [
@@ -124,7 +123,7 @@ Font.register({
 
 Font.registerHyphenationCallback((word) => [word]);
 
-// --- 3. STYLING ---
+// --- 3. STYLING (No Changes) ---
 const styles = StyleSheet.create({
   pageTitle: {
     fontWeight: "bold",
@@ -286,7 +285,7 @@ const styles = StyleSheet.create({
   },
   traitPageHeader: {
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 60,
   },
   subSectionContainer: {
     marginBottom: 24,
@@ -993,34 +992,48 @@ const splitReportByHeadings = (
   return sections;
 };
 
+// --- MODIFIED: New, robust parseTraitHtml function ---
 const parseTraitHtml = (html: string | null) => {
   if (!html) return { subSections: [] };
 
+  const root = parse(html);
   const subSections: { title: string | null; content: string }[] = [];
-  const parts = html
-    .split(/(?=<strong>.+?:<\/strong>)/g)
-    .filter((part) => part.trim() !== "");
+  
+  // Find all potential subheadings (strong tags)
+  const subheadings = root.querySelectorAll('strong');
 
-  for (const part of parts) {
-    const partRoot = parse(part);
-    const titleNode = partRoot.querySelector("strong");
-
-    if (titleNode) {
-      const title = decodeHtmlEntities(
-        titleNode.innerText.replace(":", "").trim()
-      );
-      titleNode.remove();
-      const content = partRoot.innerHTML.trim();
-      subSections.push({ title, content });
-    } else {
-      const content = part.trim();
-      if (content.startsWith("<p>") && content.endsWith("</p>")) {
-        subSections.push({ title: null, content: content });
-      } else {
-        subSections.push({ title: null, content: `<p>${content}</p>` });
-      }
+  if (subheadings.length === 0) {
+    // If no strong tags, treat the whole block as one section with no title
+    if (root.innerHTML.trim()) {
+      subSections.push({ title: null, content: root.innerHTML.trim() });
     }
+    return { subSections };
   }
+
+  let lastIndex = 0;
+  subheadings.forEach((headingNode, i) => {
+    const title = decodeHtmlEntities(headingNode.innerText.trim());
+    const headingOuterHtml = headingNode.outerHTML;
+    const currentHtml = root.innerHTML;
+
+    const startIndex = currentHtml.indexOf(headingOuterHtml, lastIndex);
+    const nextHeadingNode = subheadings[i + 1];
+    let endIndex = currentHtml.length;
+
+    if (nextHeadingNode) {
+      endIndex = currentHtml.indexOf(nextHeadingNode.outerHTML, startIndex + 1);
+    }
+
+    // The content is everything between this heading and the next one
+    const contentHtml = currentHtml.substring(startIndex + headingOuterHtml.length, endIndex).trim();
+    
+    subSections.push({
+      title: title,
+      content: contentHtml,
+    });
+
+    lastIndex = startIndex + 1;
+  });
 
   return { subSections };
 };
@@ -2598,7 +2611,6 @@ export async function POST(request: Request) {
       reportSections.seasonalStats as string | null
     );
 
-    // --- MODIFIED: Create gameDetails directly from gameContext ---
     const gameDetails: GameDetails | null = gameContext
       ? {
           teamA: {
@@ -2610,7 +2622,6 @@ export async function POST(request: Request) {
             score: gameContext.teamBScore || null,
           },
           league: gameContext.league?.name || null,
-          // --- NEW: Format the game date for display ---
           gameDate: gameContext.gameDate 
             ? new Date(gameContext.gameDate).toLocaleDateString(locale, {
                 month: 'long',
