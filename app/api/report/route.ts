@@ -134,22 +134,29 @@ export async function POST(request: Request) {
               -   **Scout's Raw Note:** "He's just lazy on the backcheck, doesn't even try. He's a liability."
               -   **Your Reframed Output:** "A significant opportunity exists for him to elevate his off-puck impact and become a true 200-foot player. By channeling his energy into consistent and determined backchecking routes, he can not only neutralize opposition rushes but also create immediate transitional opportunities for his team."
 
-      2.  **Always Lead with Strength:** In every section, you MUST begin by identifying and clearly stating what the player does well. Establish their existing strengths as the foundation from which they can build.
+      2.  **Adopt an Authentic, Human Voice (CRUCIAL):** The report must sound like it was written by a human expert, not a machine.
+          -   **AVOID PASSIVE, DESCRIPTIVE "AI-ISMS":** Do not use phrases like "is characterized by," "demonstrates," "exhibits," "is a notable strength."
+          -   **USE AN ACTIVE, EVALUATIVE VOICE:** Speak directly and confidently.
+          -   **Example:**
+              -   **Instead of:** "Simon's defensive game is characterized by effective stick work."
+              -   **Write:** "What stands out in Simon's defensive game is his effective stick work." or "Simon builds his defensive game on a foundation of strong stick positioning."
 
-      3.  **The Art of Reframing:** Reframe every challenge into a clear, actionable opportunity. Do not just replace negative words; change the entire sentence structure to be forward-looking.
+      3.  **Always Lead with Strength:** In every section, you MUST begin by identifying and clearly stating what the player does well. Establish their existing strengths as the foundation from which they can build.
+
+      4.  **The Art of Reframing:** Reframe every challenge into a clear, actionable opportunity. Do not just replace negative words; change the entire sentence structure to be forward-looking.
           -   **Method:** First, describe the current state of the skill. Then, introduce the next developmental step. Finally, explain the positive outcome of that development.
           -   **NEVER USE:** "weakness," "struggle," "problem," "lacks," "fails to," "poor," "bad," "suboptimal," "timid," "inefficient," "choppy," "soft," "lazy," "liability."
 
-      4.  **Connect Actions to Positive Outcomes:** Do not just state an area for improvement. You MUST explain the benefit of that improvement. Example: "...focusing on a more horizontal drive from a standstill will directly translate to more explosive first-step quickness."
+      5.  **Connect Actions to Positive Outcomes:** Do not just state an area for improvement. You MUST explain the benefit of that improvement. Example: "...focusing on a more horizontal drive from a standstill will directly translate to more explosive first-step quickness."
 
-      5.  **The "Notes" Section as a Developmental Synthesis:** The "Notes" section must provide a new, higher-level insight. DO NOT simply summarize the points above. Instead, identify the core theme of the section, connect the player's strengths to their developmental opportunities, and conclude with an empowering, forward-looking statement about their potential in that category.
+      6.  **The "Notes" Section as a Developmental Synthesis:** The "Notes" section must provide a new, higher-level insight. DO NOT simply summarize the points above. Instead, identify the core theme of the section, connect the player's strengths to their developmental opportunities, and conclude with an empowering, forward-looking statement about their potential in that category.
 
-      6.  **Use Correct Hockey Terminology (CRUCIAL FORMATTING RULE):**
+      7.  **Use Correct Hockey Terminology (CRUCIAL FORMATTING RULE):**
           -   Specialized hockey terms are common nouns and MUST NOT be capitalized unless they start a sentence.
           -   **Correct:** mohawk, crossover, power play, penalty kill, backcheck, forecheck, box-out.
           -   **INCORRECT:** Mohawk, Crossover, Power Play, Penalty Kill.
 
-      7.  **Vary Your Language:** Do not be repetitive. Use a rich vocabulary and vary your sentence structures between sections to make the report engaging and natural to read. Avoid starting every developmental point with the same phrase.
+      8.  **Vary Your Language:** Do not be repetitive. Use a rich vocabulary and vary your sentence structures between sections to make the report engaging and natural to read. Avoid starting every developmental point with the same phrase.
       ---
 
       **CONTEXTUAL DATA (FOR YOUR REFERENCE):**
@@ -278,7 +285,7 @@ export async function POST(request: Request) {
 
       10.  **Formatting Rules:**
           - **Main Title:** You MUST use the exact HTML tag: \`<h1 style="text-align: center;">GRAET SCOUTING REPORT</h1>\`.
-          - **Section Headings:** Main section headings MUST strictly follow the format: \`### [SECTION NAME] \`.
+          - **Section Headings:** Main section headings MUST strictly follow the format: \`### [SECTION NAME] \`. Do not add any other text or context in parentheses, such as "(GOALIE SPECIFICS)" or "(NOT ASSESSED)".
           - **Subheadings:** Subheadings that you create MUST be bolded. **Always use the word "and" instead of an ampersand (&).**
           - **Spacing:** There must be a blank line between each sub-category block. please response the \n you see in the template
           - **Subheading Spacing (CRUCIAL):** After the paragraph for one subheading, you MUST include a blank line (\n) before the next subheading begins.
