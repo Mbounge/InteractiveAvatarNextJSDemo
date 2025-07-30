@@ -2574,7 +2574,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
       message: "Generating scout report...",
     });
     try {
-      const generateResponse = await fetch("/api/report", {
+      const generateResponse = await fetch("/api/report-openai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
