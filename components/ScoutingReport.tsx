@@ -2703,7 +2703,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
       const standingsContext = standings?.groups
         ? `For context, the teams in this league include: ${Array.from(new Set(standings.groups.flatMap((g) => g.standings.map((s) => s.team.name)))).join(", ")}.`
         : "";
-      const promptText = `You are a highly specialized hockey transcription assistant... **Audio for Player:** ${player.name} of ${team.name}.`; // Abridged for brevity
+        const promptText = `You are a highly specialized hockey transcription assistant. Your primary goal is to produce a clean, accurate transcript of a scout's audio notes. **Transcription Rules:** 1. **Accuracy First:** Focus on clarity and accuracy. 2. **Team & League Names:** Correctly identify and spell the full names of teams and leagues. Use proper capitalization for these proper nouns (e.g., "Leksands IF", "SHL"). ${standingsContext} 3. **Hockey Terminology (Crucial):** Do NOT capitalize common hockey-specific technical terms, even if they are also proper nouns in other contexts. Treat them as common nouns. - **Correct Examples:** mohawk turn, texas hockey, michigan goal, slapshot, crossover, backcheck. - **Incorrect Examples:** Mohawk Turn, Texas Hockey, Michigan Goal. **Audio for Player:** ${player.name} of ${team.name}.`;
       const genRes = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
         {
