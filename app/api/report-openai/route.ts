@@ -70,20 +70,21 @@ const formatDateOfBirth = (isoString: string | null | undefined): string => {
   }
 };
 
-const formatGameDate = (isoString: string | null | undefined): string => {
-  if (!isoString) return 'N/A';
-  try {
-    const date = new Date(isoString);
-    return date.toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-      timeZone: 'UTC',
-    }).toUpperCase();
-  } catch (error) {
-    return 'N/A';
-  }
-};
+const formatGameDate = (dateString: string | null | undefined): string => {
+    if (!dateString) return 'N/A';
+    try {
+      // The 'new Date()' constructor correctly interprets 'yyyy-MM-dd' as UTC.
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+        timeZone: 'UTC', // Explicitly format in UTC to be safe
+      }).toUpperCase();
+    } catch (error) {
+      return 'N/A';
+    }
+  };
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -136,6 +137,8 @@ export async function POST(request: Request) {
           -   **NEVER USE:** "weakness," "struggle," "problem," "lacks," "fails to," "poor," "bad," "suboptimal," "timid," "inefficient," "choppy," "soft," "lazy," "liability."
 
       5.  **Connect Actions to Positive Outcomes:** Do not just state an area for improvement. You MUST explain the benefit of that improvement. Example: "...focusing on a more horizontal drive from a standstill will directly translate to more explosive first-step quickness."
+         - The transcript is only one game the scout has watched of the player - so some isntances they may have observed during this game could be one off chances - and the scout would need to watch several games to make certain recommendations for the player - so bare in mind that from the scouts perspective and the transcript you are receiving that this is just 1 game they have watched of the player
+         - Always stay truthful to the transcript and do not make things up - that the scout did not say in the transcript - respect the scout and do not make things up
 
       6.  **The "Notes" Section as a Developmental Synthesis:** The "Notes" section must provide a new, higher-level insight. DO NOT simply summarize the points above. Instead, identify the core theme of the section, connect the player's strengths to their developmental opportunities, and conclude with an empowering, forward-looking statement about their potential in that category.
 
@@ -240,7 +243,7 @@ export async function POST(request: Request) {
       **Height:** ${height}\n
       **Weight:** ${weight}\n
       ---
-      ###
+      \n
       **Game Score:** ${gameContext?.teamA?.name ?? 'Team A'}: ${gameContext?.teamAScore || 'N/A'}, ${gameContext?.teamB?.name ?? 'Team B'}: ${gameContext?.teamBScore || 'N/A'}\n
       **Game Date:** ${gameDate}\n
       **Team:** ${gameContext?.teamA?.name ?? 'N/A'}\n

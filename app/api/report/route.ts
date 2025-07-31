@@ -72,15 +72,16 @@ const formatDateOfBirth = (isoString: string | null | undefined): string => {
   }
 };
 
-const formatGameDate = (isoString: string | null | undefined): string => {
-  if (!isoString) return 'N/A';
+const formatGameDate = (dateString: string | null | undefined): string => {
+  if (!dateString) return 'N/A';
   try {
-    const date = new Date(isoString);
+    // The 'new Date()' constructor correctly interprets 'yyyy-MM-dd' as UTC.
+    const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
       month: 'long',
       day: 'numeric',
       year: 'numeric',
-      timeZone: 'UTC',
+      timeZone: 'UTC', // Explicitly format in UTC to be safe
     }).toUpperCase();
   } catch (error) {
     return 'N/A';

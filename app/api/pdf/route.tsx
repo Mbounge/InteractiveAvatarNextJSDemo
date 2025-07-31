@@ -19,7 +19,6 @@ import {
   Path,
   Image,
 } from "@react-pdf/renderer";
-// --- MODIFIED: Import Node type for type checking ---
 import { parse, HTMLElement, Node } from "node-html-parser";
 import QRCode from "qrcode";
 import { type Style } from "@react-pdf/types";
@@ -2342,11 +2341,11 @@ async function fetchAndValidateLogo(
   
       const base64 = Buffer.from(buffer).toString("base64");
   
-      let contentType = imageResponse.headers.get("content-type") || "image/png";
-      
-      if (!contentType.startsWith("image/")) {
-          console.warn(`Warning: Server sent non-image content-type (${contentType}) for ${logoPath}. Assuming image/png.`);
-          contentType = "image/png";
+      const extension = logoPath.split('.').pop()?.toLowerCase() || 'png';
+      let contentType = `image/${extension}`;
+
+      if (extension === 'jpg' || extension === 'jpeg') {
+        contentType = 'image/jpeg';
       }
   
       return `data:${contentType};base64,${base64}`;

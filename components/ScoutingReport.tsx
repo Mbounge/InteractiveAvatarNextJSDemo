@@ -1145,6 +1145,7 @@ const LeagueSearch: React.FC<{
   );
 };
 
+// --- MODIFIED: MaskedDatePicker Component with Editing Bug Fix ---
 const MaskedDatePicker: React.FC<{
   selectedDate: Date | undefined;
   onDateChange: (date: Date | undefined) => void;
@@ -1156,12 +1157,18 @@ const MaskedDatePicker: React.FC<{
 
   const placeholder = 'YYYY/MM/DD';
 
+  // --- FIX: This effect now only runs when the selectedDate prop *actually changes*. ---
+  // It uses a ref to track the previous date and prevents the effect from overwriting user input on every re-render.
+  const prevSelectedDateRef = useRef<Date | undefined>();
   useEffect(() => {
-    if (selectedDate) {
-      setDateChars(format(selectedDate, 'yyyyMMdd').split(''));
-    } else {
-      setDateChars([]);
+    if (selectedDate?.getTime() !== prevSelectedDateRef.current?.getTime()) {
+      if (selectedDate) {
+        setDateChars(format(selectedDate, 'yyyyMMdd').split(''));
+      } else {
+        setDateChars([]);
+      }
     }
+    prevSelectedDateRef.current = selectedDate;
   }, [selectedDate]);
 
   useEffect(() => {
@@ -1216,7 +1223,7 @@ const MaskedDatePicker: React.FC<{
 
   const handleDayClick = (date: Date | undefined) => {
     if (date) {
-      setDateChars(format(date, 'yyyyMMdd').split(''));
+      // This will trigger the first useEffect to update the dateChars
       onDateChange(date);
     }
     setIsOpen(false);
@@ -1237,6 +1244,7 @@ const MaskedDatePicker: React.FC<{
   };
 
   const handleClick = (e: React.MouseEvent<HTMLInputElement>) => {
+    // This logic remains the same to correctly position the cursor on click
     const firstPlaceholderIndex = inputRef.current?.value.indexOf('Y') ?? -1;
     if (firstPlaceholderIndex !== -1) {
       e.currentTarget.setSelectionRange(firstPlaceholderIndex, firstPlaceholderIndex);
@@ -1281,6 +1289,7 @@ const MaskedDatePicker: React.FC<{
           onKeyDown={handleKeyDown}
           onClick={handleClick}
           onFocus={() => setIsOpen(true)}
+          // We remove the onChange and onBlur handlers as they are not needed with this logic
           className="block w-full pl-4 pr-10 py-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm placeholder-gray-500"
         />
         <CalendarDays
@@ -2589,7 +2598,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
             teamB: teamB,
             teamAScore: teamAScore,
             teamBScore: teamBScore,
-            gameDate: gameDate ? gameDate.toISOString() : null,
+            gameDate: gameDate ? format(gameDate, 'yyyy-MM-dd') : null,
           }
         }),
       });
@@ -2760,7 +2769,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
         teamB: teamB,
         teamAScore: teamAScore,
         teamBScore: teamBScore,
-        gameDate: gameDate ? gameDate.toISOString() : null,
+        gameDate: gameDate ? format(gameDate, 'yyyy-MM-dd') : null,
       }
     };
 

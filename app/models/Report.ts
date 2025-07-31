@@ -4,7 +4,7 @@ import mongoose, { Schema, Document, models, Model } from 'mongoose';
 
 // This is a TypeScript interface. It helps your code know the "shape" of a report object.
 export interface IReport extends Document {
-  scoutIdentifier: string; // The access code, used to identify the scout
+  scoutIdentifier: string;
   reportType: 'skater' | 'goalie';
   playerContext: object;
   teamContext: object;
@@ -39,7 +39,19 @@ const ReportSchema: Schema<IReport> = new Schema({
   transcriptionText: { type: String, default: '' },
   seasonalStatsContext: { type: Object, default: {} },
   leagueStandingsContext: { type: Object, default: {} },
-  gameContext: { type: Object, required: true, default: {} },
+  
+  gameContext: { 
+    type: {
+      league: { type: Object },
+      teamA: { type: Object },
+      teamB: { type: Object },
+      teamAScore: { type: String },
+      teamBScore: { type: String },
+      gameDate: { type: String, default: null }
+    }, 
+    required: true, 
+    default: {} 
+  },
 
 }, {
 
