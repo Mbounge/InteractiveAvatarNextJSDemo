@@ -155,3 +155,10 @@ li {
 .ProseMirror li {
   margin-bottom: 0.05rem;
 }
+
+.ProseMirror hr {
+  border: none;
+  border-top: 1px solid #e5e7eb; /* Tailwind's gray-200 - light gray */
+  margin: 1.5rem 0;
+  background: transparent;
+}

@@ -139,7 +139,7 @@ const ProcessStatus: React.FC<ProcessStatusProps> = ({ status, message }) => {
 interface ScoutingPlatformProps {
   accessCode: string;
   reportId: string | null;
-  reportType: 'skater' | 'goalie';
+  reportType: "skater" | "goalie";
   onBackToDashboard: () => void;
 }
 
@@ -187,7 +187,6 @@ const Spinner: React.FC<{ className?: string }> = ({ className }) => (
   <Loader2 className={`animate-spin h-5 w-5 text-[#0e0c66] ${className}`} />
 );
 
-// --- TYPE DEFINITIONS (No Changes) ---
 type Stats = {
   gamesPlayed: number;
   goals: number;
@@ -433,7 +432,11 @@ const ToolbarButton: React.FC<ToolbarButtonProps> = ({
     onClick={onClick}
     title={title}
     disabled={disabled}
-    className={`p-2 rounded-lg transition-colors ${isActive ? "bg-indigo-100 text-indigo-700" : "hover:bg-gray-100 text-gray-600"} disabled:opacity-40 disabled:cursor-not-allowed`}
+    className={`p-2 rounded-lg transition-colors ${
+      isActive
+        ? "bg-indigo-100 text-indigo-700"
+        : "hover:bg-gray-100 text-gray-600"
+    } disabled:opacity-40 disabled:cursor-not-allowed`}
   >
     {" "}
     {children}{" "}
@@ -485,7 +488,9 @@ const CustomDropdown: React.FC<CustomDropdownProps> = React.memo(
                   onChange(option.value);
                   setIsOpen(false);
                 }}
-                className={`w-full text-left p-2 text-sm hover:bg-gray-100 ${value === option.value ? "font-bold bg-gray-100" : ""}`}
+                className={`w-full text-left p-2 text-sm hover:bg-gray-100 ${
+                  value === option.value ? "font-bold bg-gray-100" : ""
+                }`}
               >
                 {" "}
                 {option.label}{" "}
@@ -503,6 +508,7 @@ const TableCreationGrid: React.FC<{ editor: Editor; close: () => void }> = ({
   close,
 }) => {
   const [hovered, setHovered] = useState({ rows: 0, cols: 0 });
+
   const createTable = (rows: number, cols: number) => {
     editor
       .chain()
@@ -511,12 +517,11 @@ const TableCreationGrid: React.FC<{ editor: Editor; close: () => void }> = ({
       .run();
     close();
   };
+
   return (
-    <div className="absolute z-10 bg-white shadow-lg border rounded-md p-2 mt-1">
-      {" "}
+    <div className="absolute z-10 bg-white shadow-lg border rounded-md p-2 mt-1 right-0">
       {Array.from({ length: 5 }).map((_, rowIndex) => (
         <div key={rowIndex} className="flex">
-          {" "}
           {Array.from({ length: 5 }).map((_, colIndex) => (
             <div
               key={colIndex}
@@ -524,15 +529,18 @@ const TableCreationGrid: React.FC<{ editor: Editor; close: () => void }> = ({
                 setHovered({ rows: rowIndex + 1, cols: colIndex + 1 })
               }
               onClick={() => createTable(rowIndex + 1, colIndex + 1)}
-              className={`w-6 h-6 border border-gray-300 cursor-pointer ${rowIndex < hovered.rows && colIndex < hovered.cols ? "bg-blue-300" : "bg-white"}`}
+              className={`w-6 h-6 border border-gray-300 cursor-pointer ${
+                rowIndex < hovered.rows && colIndex < hovered.cols
+                  ? "bg-blue-300"
+                  : "bg-white"
+              }`}
             />
-          ))}{" "}
+          ))}
         </div>
-      ))}{" "}
+      ))}
       <div className="text-center text-sm mt-1">
-        {" "}
-        {hovered.rows} x {hovered.cols}{" "}
-      </div>{" "}
+        {hovered.rows} x {hovered.cols}
+      </div>
     </div>
   );
 };
@@ -828,9 +836,7 @@ const PlayerSearch: React.FC<{
                     {player.currentTeam?.name || "No Team"}
                   </p>{" "}
                 </div>{" "}
-                <span className="text-xs text-gray-400">
-                  {player.country}
-                </span>{" "}
+                <span className="text-xs text-gray-400">{player.country}</span>{" "}
               </button>
             ))}{" "}
           </div>
@@ -862,7 +868,7 @@ const TeamSearch: React.FC<{
   const searchResultsRef = useRef<HTMLDivElement>(null);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
   const [isManualMode, setIsManualMode] = useState(false);
-  const [manualTeamName, setManualTeamName] = useState('');
+  const [manualTeamName, setManualTeamName] = useState("");
 
   useEffect(() => {
     setIsResultsOpen(searchResults.length > 0);
@@ -886,13 +892,13 @@ const TeamSearch: React.FC<{
         id: `manual-${Date.now()}`,
         name: manualTeamName.trim(),
         shortName: manualTeamName.trim(),
-        country: 'N/A',
-        slug: '',
+        country: "N/A",
+        slug: "",
         leagues: [],
       };
       onSelectTeam(manualTeam);
       setIsManualMode(false);
-      setManualTeamName('');
+      setManualTeamName("");
     }
   };
 
@@ -905,7 +911,9 @@ const TeamSearch: React.FC<{
             <span className="font-bold text-gray-800">{selectedTeam.name}</span>
             {/* --- FIX: Use a more reliable check for manual entry --- */}
             <span className="text-sm text-gray-600">
-              {selectedTeam.id.startsWith('manual-') ? "Manually Entered" : (selectedTeam.leagues?.[0]?.name || "N/A")}
+              {selectedTeam.id.startsWith("manual-")
+                ? "Manually Entered"
+                : selectedTeam.leagues?.[0]?.name || "N/A"}
             </span>
           </div>
           <button
@@ -936,14 +944,17 @@ const TeamSearch: React.FC<{
                 placeholder="Enter team name..."
                 className="block w-full pr-24 py-3 pl-4 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm placeholder-gray-500"
               />
-              <button 
+              <button
                 onClick={handleSaveManualTeam}
                 className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700"
               >
                 Save
               </button>
             </div>
-            <button onClick={() => setIsManualMode(false)} className="text-xs text-indigo-600 hover:underline mt-2">
+            <button
+              onClick={() => setIsManualMode(false)}
+              className="text-xs text-indigo-600 hover:underline mt-2"
+            >
               Back to search
             </button>
           </div>
@@ -966,7 +977,10 @@ const TeamSearch: React.FC<{
                 </div>
               )}
             </div>
-            <button onClick={() => setIsManualMode(true)} className="text-xs text-indigo-600 hover:underline mt-2">
+            <button
+              onClick={() => setIsManualMode(true)}
+              className="text-xs text-indigo-600 hover:underline mt-2"
+            >
               Can't find the team? Enter manually.
             </button>
             {isResultsOpen && searchResults.length > 0 && (
@@ -983,7 +997,9 @@ const TeamSearch: React.FC<{
                         {team.leagues?.[0]?.name || "No League"}
                       </p>
                     </div>
-                    <span className="text-xs text-gray-400">{team.country}</span>
+                    <span className="text-xs text-gray-400">
+                      {team.country}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -1015,7 +1031,7 @@ const LeagueSearch: React.FC<{
   const searchResultsRef = useRef<HTMLDivElement>(null);
   const [isResultsOpen, setIsResultsOpen] = useState(false);
   const [isManualMode, setIsManualMode] = useState(false);
-  const [manualLeagueName, setManualLeagueName] = useState('');
+  const [manualLeagueName, setManualLeagueName] = useState("");
 
   useEffect(() => {
     setIsResultsOpen(searchResults.length > 0);
@@ -1038,26 +1054,34 @@ const LeagueSearch: React.FC<{
       const manualLeague: League = {
         id: `manual-${Date.now()}`,
         name: manualLeagueName.trim(),
-        type: 'N/A',
-        level: 'N/A',
-        genderCategory: 'N/A',
+        type: "N/A",
+        level: "N/A",
+        genderCategory: "N/A",
         countries: [],
       };
       onSelectLeague(manualLeague);
       setIsManualMode(false);
-      setManualLeagueName('');
+      setManualLeagueName("");
     }
   };
 
   if (selectedLeague) {
     return (
       <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">Selected League</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">
+          Selected League
+        </h3>
         <div className="flex items-center justify-between p-3 border rounded-xl bg-green-50 border-green-200/80">
           <div className="flex flex-col">
-            <span className="font-bold text-gray-800">{selectedLeague.name}</span>
+            <span className="font-bold text-gray-800">
+              {selectedLeague.name}
+            </span>
             <span className="text-sm text-gray-600">
-              {selectedLeague.id.startsWith('manual-') ? "Manually Entered" : `${selectedLeague.countries.join(", ")} - ${selectedLeague.level}`}
+              {selectedLeague.id.startsWith("manual-")
+                ? "Manually Entered"
+                : `${selectedLeague.countries.join(", ")} - ${
+                    selectedLeague.level
+                  }`}
             </span>
           </div>
           <button
@@ -1076,7 +1100,9 @@ const LeagueSearch: React.FC<{
 
   return (
     <div>
-      <h3 className="text-lg font-semibold text-gray-800 mb-2">Select League</h3>
+      <h3 className="text-lg font-semibold text-gray-800 mb-2">
+        Select League
+      </h3>
       <div className="relative" ref={searchResultsRef}>
         {isManualMode ? (
           <div>
@@ -1088,14 +1114,17 @@ const LeagueSearch: React.FC<{
                 placeholder="Enter league name..."
                 className="block w-full pr-24 py-3 pl-4 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm placeholder-gray-500"
               />
-              <button 
+              <button
                 onClick={handleSaveManualLeague}
                 className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700"
               >
                 Save
               </button>
             </div>
-            <button onClick={() => setIsManualMode(false)} className="text-xs text-indigo-600 hover:underline mt-2">
+            <button
+              onClick={() => setIsManualMode(false)}
+              className="text-xs text-indigo-600 hover:underline mt-2"
+            >
               Back to search
             </button>
           </div>
@@ -1118,7 +1147,10 @@ const LeagueSearch: React.FC<{
                 </div>
               )}
             </div>
-            <button onClick={() => setIsManualMode(true)} className="text-xs text-indigo-600 hover:underline mt-2">
+            <button
+              onClick={() => setIsManualMode(true)}
+              className="text-xs text-indigo-600 hover:underline mt-2"
+            >
               Can't find the league? Enter manually.
             </button>
             {isResultsOpen && searchResults.length > 0 && (
@@ -1133,7 +1165,9 @@ const LeagueSearch: React.FC<{
                       <p className="font-medium text-gray-800">{league.name}</p>
                       <p className="text-sm text-gray-500">{league.level}</p>
                     </div>
-                    <span className="text-xs text-gray-400">{league.countries.join(", ")}</span>
+                    <span className="text-xs text-gray-400">
+                      {league.countries.join(", ")}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -1155,15 +1189,13 @@ const MaskedDatePicker: React.FC<{
   const pickerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const placeholder = 'YYYY/MM/DD';
+  const placeholder = "YYYY/MM/DD";
 
-  // --- FIX: This effect now only runs when the selectedDate prop *actually changes*. ---
-  // It uses a ref to track the previous date and prevents the effect from overwriting user input on every re-render.
-  const prevSelectedDateRef = useRef<Date | undefined>();
+  const prevSelectedDateRef = useRef<Date | undefined>(undefined);
   useEffect(() => {
     if (selectedDate?.getTime() !== prevSelectedDateRef.current?.getTime()) {
       if (selectedDate) {
-        setDateChars(format(selectedDate, 'yyyyMMdd').split(''));
+        setDateChars(format(selectedDate, "yyyyMMdd").split(""));
       } else {
         setDateChars([]);
       }
@@ -1172,7 +1204,7 @@ const MaskedDatePicker: React.FC<{
   }, [selectedDate]);
 
   useEffect(() => {
-    let display = placeholder.split('');
+    let display = placeholder.split("");
     let cursorPosition = 0;
 
     const year = dateChars.slice(0, 4);
@@ -1196,13 +1228,13 @@ const MaskedDatePicker: React.FC<{
     }
 
     if (inputRef.current) {
-      inputRef.current.value = display.join('');
+      inputRef.current.value = display.join("");
       inputRef.current.setSelectionRange(cursorPosition, cursorPosition);
     }
 
     if (dateChars.length === 8) {
-      const dateStr = `${year.join('')}/${month.join('')}/${day.join('')}`;
-      const parsed = parse(dateStr, 'yyyy/MM/dd', new Date());
+      const dateStr = `${year.join("")}/${month.join("")}/${day.join("")}`;
+      const parsed = parse(dateStr, "yyyy/MM/dd", new Date());
       if (isValid(parsed)) {
         onDateChange(parsed);
       }
@@ -1213,7 +1245,10 @@ const MaskedDatePicker: React.FC<{
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
+      if (
+        pickerRef.current &&
+        !pickerRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -1232,11 +1267,11 @@ const MaskedDatePicker: React.FC<{
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     e.preventDefault();
-    if (e.key >= '0' && e.key <= '9') {
+    if (e.key >= "0" && e.key <= "9") {
       if (dateChars.length < 8) {
         setDateChars([...dateChars, e.key]);
       }
-    } else if (e.key === 'Backspace') {
+    } else if (e.key === "Backspace") {
       if (dateChars.length > 0) {
         setDateChars(dateChars.slice(0, -1));
       }
@@ -1244,20 +1279,28 @@ const MaskedDatePicker: React.FC<{
   };
 
   const handleClick = (e: React.MouseEvent<HTMLInputElement>) => {
-    // This logic remains the same to correctly position the cursor on click
-    const firstPlaceholderIndex = inputRef.current?.value.indexOf('Y') ?? -1;
+    const firstPlaceholderIndex = inputRef.current?.value.indexOf("Y") ?? -1;
     if (firstPlaceholderIndex !== -1) {
-      e.currentTarget.setSelectionRange(firstPlaceholderIndex, firstPlaceholderIndex);
+      e.currentTarget.setSelectionRange(
+        firstPlaceholderIndex,
+        firstPlaceholderIndex
+      );
       return;
     }
-    const secondPlaceholderIndex = inputRef.current?.value.indexOf('M') ?? -1;
+    const secondPlaceholderIndex = inputRef.current?.value.indexOf("M") ?? -1;
     if (secondPlaceholderIndex !== -1) {
-      e.currentTarget.setSelectionRange(secondPlaceholderIndex, secondPlaceholderIndex);
+      e.currentTarget.setSelectionRange(
+        secondPlaceholderIndex,
+        secondPlaceholderIndex
+      );
       return;
     }
-    const thirdPlaceholderIndex = inputRef.current?.value.indexOf('D') ?? -1;
+    const thirdPlaceholderIndex = inputRef.current?.value.indexOf("D") ?? -1;
     if (thirdPlaceholderIndex !== -1) {
-      e.currentTarget.setSelectionRange(thirdPlaceholderIndex, thirdPlaceholderIndex);
+      e.currentTarget.setSelectionRange(
+        thirdPlaceholderIndex,
+        thirdPlaceholderIndex
+      );
     }
   };
 
@@ -1315,7 +1358,6 @@ const MaskedDatePicker: React.FC<{
   );
 };
 
-
 const LanguageSelector: React.FC<{
   selectedLanguages: string[];
   onSelectionChange: (langCode: string) => void;
@@ -1335,7 +1377,11 @@ const LanguageSelector: React.FC<{
             <button
               key={lang.code}
               onClick={() => onSelectionChange(lang.code)}
-              className={`flex items-center justify-center space-x-2 p-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${isSelected ? "bg-indigo-600 text-white shadow-md transform scale-105" : "bg-white border border-gray-300 text-gray-800 hover:bg-gray-50 shadow-sm"}`}
+              className={`flex items-center justify-center space-x-2 p-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                isSelected
+                  ? "bg-indigo-600 text-white shadow-md transform scale-105"
+                  : "bg-white border border-gray-300 text-gray-800 hover:bg-gray-50 shadow-sm"
+              }`}
             >
               {" "}
               {isSelected && <Check className="w-4 h-4" />}{" "}
@@ -1405,7 +1451,9 @@ const ReportLanguageSwitcher: React.FC<{
                   onLanguageChange(langCode);
                   setIsOpen(false);
                 }}
-                className={`w-full text-left p-2 text-sm hover:bg-gray-100 ${activeLanguage === langCode ? "font-bold bg-gray-100" : ""}`}
+                className={`w-full text-left p-2 text-sm hover:bg-gray-100 ${
+                  activeLanguage === langCode ? "font-bold bg-gray-100" : ""
+                }`}
               >
                 {" "}
                 {AVAILABLE_LANGUAGES.find((l) => l.code === langCode)?.name ||
@@ -1442,8 +1490,15 @@ const ReportLanguageSwitcher: React.FC<{
         <button
           key={langCode}
           onClick={() => onLanguageChange(langCode)}
-          title={`Switch to ${AVAILABLE_LANGUAGES.find((l) => l.code === langCode)?.name || "English"}`}
-          className={`px-3 h-7 flex items-center justify-center text-xs font-bold rounded-md transition-colors ${activeLanguage === langCode ? "bg-white text-gray-800 shadow-sm" : "bg-transparent text-gray-500 hover:text-gray-700"}`}
+          title={`Switch to ${
+            AVAILABLE_LANGUAGES.find((l) => l.code === langCode)?.name ||
+            "English"
+          }`}
+          className={`px-3 h-7 flex items-center justify-center text-xs font-bold rounded-md transition-colors ${
+            activeLanguage === langCode
+              ? "bg-white text-gray-800 shadow-sm"
+              : "bg-transparent text-gray-500 hover:text-gray-700"
+          }`}
         >
           {" "}
           {langCode}{" "}
@@ -1455,7 +1510,9 @@ const ReportLanguageSwitcher: React.FC<{
             <button
               key={langCode}
               disabled
-              title={`Translating to ${AVAILABLE_LANGUAGES.find((l) => l.code === langCode)?.name}...`}
+              title={`Translating to ${
+                AVAILABLE_LANGUAGES.find((l) => l.code === langCode)?.name
+              }...`}
               className="w-10 h-7 flex items-center justify-center text-xs font-bold rounded-md bg-transparent text-gray-500"
             >
               {" "}
@@ -1656,10 +1713,10 @@ const useToolbarState = (editor: Editor | null) => {
       const newStyle = editor.isActive("heading", { level: 1 })
         ? "h1"
         : editor.isActive("heading", { level: 2 })
-          ? "h2"
-          : editor.isActive("heading", { level: 3 })
-            ? "h3"
-            : "p";
+        ? "h2"
+        : editor.isActive("heading", { level: 3 })
+        ? "h3"
+        : "p";
       setState({
         currentStyle: newStyle,
         currentFontSize:
@@ -1671,10 +1728,10 @@ const useToolbarState = (editor: Editor | null) => {
         textAlign: editor.isActive({ textAlign: "center" })
           ? "center"
           : editor.isActive({ textAlign: "right" })
-            ? "right"
-            : editor.isActive({ textAlign: "justify" })
-              ? "justify"
-              : "left",
+          ? "right"
+          : editor.isActive({ textAlign: "justify" })
+          ? "justify"
+          : "left",
         isBulletList: editor.isActive("bulletList"),
         isOrderedList: editor.isActive("orderedList"),
         isCodeBlock: editor.isActive("codeBlock"),
@@ -1942,8 +1999,7 @@ const EditorPlaceholder = ({ onStart }: { onStart: () => void }) => (
     </h3>{" "}
     <p className="text-gray-600 mb-8 max-w-md mx-auto">
       {" "}
-      Select a player and upload an audio file to generate a scouting
-      report.{" "}
+      Select a player and upload an audio file to generate a scouting report.{" "}
     </p>{" "}
     <button
       onClick={onStart}
@@ -1976,7 +2032,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
   const [searchResults, setSearchResults] = useState<PlayerSearchResult[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [isSearching, setIsSearching] = useState(false);
-  
+
   const [leagueStandings, setLeagueStandings] =
     useState<LeagueStandingsResponse | null>(null);
   const [seasonalStats, setSeasonalStats] = useState<SeasonalStat[]>([]);
@@ -2008,31 +2064,36 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
     useState(false);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
 
-  const [leagueSearchQuery, setLeagueSearchQuery] = useState('');
+  const [leagueSearchQuery, setLeagueSearchQuery] = useState("");
   const debouncedLeagueSearchQuery = useDebounce(leagueSearchQuery, 300);
-  const [leagueSearchResults, setLeagueSearchResults] = useState<LeagueSearchResult[]>([]);
+  const [leagueSearchResults, setLeagueSearchResults] = useState<
+    LeagueSearchResult[]
+  >([]);
   const [isSearchingLeagues, setIsSearchingLeagues] = useState(false);
   const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
 
-  const [teamASearchQuery, setTeamASearchQuery] = useState('');
+  const [teamASearchQuery, setTeamASearchQuery] = useState("");
   const debouncedTeamASearchQuery = useDebounce(teamASearchQuery, 300);
-  const [teamASearchResults, setTeamASearchResults] = useState<TeamSearchResult[]>([]);
+  const [teamASearchResults, setTeamASearchResults] = useState<
+    TeamSearchResult[]
+  >([]);
   const [isSearchingTeamA, setIsSearchingTeamA] = useState(false);
   const [teamA, setTeamA] = useState<Team | null>(null);
 
-  const [teamBSearchQuery, setTeamBSearchQuery] = useState('');
+  const [teamBSearchQuery, setTeamBSearchQuery] = useState("");
   const debouncedTeamBSearchQuery = useDebounce(teamBSearchQuery, 300);
-  const [teamBSearchResults, setTeamBSearchResults] = useState<TeamSearchResult[]>([]);
+  const [teamBSearchResults, setTeamBSearchResults] = useState<
+    TeamSearchResult[]
+  >([]);
   const [isSearchingTeamB, setIsSearchingTeamB] = useState(false);
   const [teamB, setTeamB] = useState<Team | null>(null);
 
-  const [teamAScore, setTeamAScore] = useState('');
-  const [teamBScore, setTeamBScore] = useState('');
-  
+  const [teamAScore, setTeamAScore] = useState("");
+  const [teamBScore, setTeamBScore] = useState("");
+
   const [gameDate, setGameDate] = useState<Date | undefined>(undefined);
 
   const [currentReportType, setCurrentReportType] = useState(reportType);
-
 
   // --- REFS (No Changes) ---
   const exportMenuRef = useRef<HTMLDivElement>(null);
@@ -2078,19 +2139,20 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
         onUpdate: ({ editor: updatedEditor }) => {
           const currentHtml = updatedEditor.getHTML();
 
-          if (activeLanguageRef.current === 'EN') {
+          if (activeLanguageRef.current === "EN") {
             setOriginalReportHtml(currentHtml);
           } else {
-            setTranslatedReports(prev => ({ ...prev, [activeLanguageRef.current]: currentHtml }));
+            setTranslatedReports((prev) => ({
+              ...prev,
+              [activeLanguageRef.current]: currentHtml,
+            }));
           }
-  
         },
       });
       setEditor(newEditor);
     },
 
-    [] 
-  
+    []
   );
 
   useEffect(() => {
@@ -2123,17 +2185,17 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
         setTranscriptionText(data.transcriptionText);
         setSeasonalStats(data.seasonalStatsContext || []);
         setLeagueStandings(data.leagueStandingsContext || null);
-        setCurrentReportType(data.reportType || 'skater');
+        setCurrentReportType(data.reportType || "skater");
 
         if (data.gameContext) {
-            setSelectedLeague(data.gameContext.league || null);
-            setTeamA(data.gameContext.teamA || null);
-            setTeamB(data.gameContext.teamB || null);
-            setTeamAScore(data.gameContext.teamAScore || '');
-            setTeamBScore(data.gameContext.teamBScore || '');
-            if (data.gameContext.gameDate) {
-              setGameDate(new Date(data.gameContext.gameDate));
-            }
+          setSelectedLeague(data.gameContext.league || null);
+          setTeamA(data.gameContext.teamA || null);
+          setTeamB(data.gameContext.teamB || null);
+          setTeamAScore(data.gameContext.teamAScore || "");
+          setTeamBScore(data.gameContext.teamBScore || "");
+          if (data.gameContext.gameDate) {
+            setGameDate(new Date(data.gameContext.gameDate));
+          }
         }
 
         initEditor(data.originalReportHtml);
@@ -2143,7 +2205,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
           message: "Report loaded successfully!",
         });
       } catch (error: any) {
-        showToast(error.message || 'Failed to load report.', 'error');
+        showToast(error.message || "Failed to load report.", "error");
         setProcessState({ status: "error", message: "Failed to load report." });
         onBackToDashboard();
       } finally {
@@ -2199,36 +2261,36 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
     if (files && files.length > 0) {
       const validFiles = Array.from(files).filter((file) => {
         if (!file.type.startsWith("audio/")) {
-          showToast(`Invalid file type: ${file.name}.`, 'error');
+          showToast(`Invalid file type: ${file.name}.`, "error");
           return false;
         }
         if (file.size / (1024 * 1024) > 100) {
-          showToast(`${file.name} exceeds 100MB limit.`, 'error');
+          showToast(`${file.name} exceeds 100MB limit.`, "error");
           return false;
         }
         return true;
       });
       setSelectedFiles((prev) => [...prev, ...validFiles]);
-      showToast(`${validFiles.length} file(s) selected!`, 'success');
+      showToast(`${validFiles.length} file(s) selected!`, "success");
     }
   };
 
   const handleRemoveFile = (fileToRemove: File) =>
     setSelectedFiles((prev) => prev.filter((file) => file !== fileToRemove));
-  
+
   const handleSelectPlayer = (player: Player) => {
     setSelectedPlayer(player);
     setSearchQuery("");
     setSearchResults([]);
     if (player.currentTeam) {
-        setTeamA({
-            id: player.currentTeam.id,
-            name: player.currentTeam.name,
-            shortName: player.currentTeam.shortName,
-            country: player.currentTeam.country,
-            slug: "",
-            leagues: player.currentTeam.leagues,
-        });
+      setTeamA({
+        id: player.currentTeam.id,
+        name: player.currentTeam.name,
+        shortName: player.currentTeam.shortName,
+        country: player.currentTeam.country,
+        slug: "",
+        leagues: player.currentTeam.leagues,
+      });
     }
   };
   const handleClearPlayer = () => {
@@ -2274,7 +2336,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
           throw new Error(result.errors.map((e: any) => e.message).join("\n"));
         setSearchResults(result.data?.users?.edges || []);
       } catch (error: any) {
-        showToast(`Could not fetch players: ${error.message}`, 'error');
+        showToast(`Could not fetch players: ${error.message}`, "error");
         setSearchResults([]);
       } finally {
         setIsSearching(false);
@@ -2304,7 +2366,8 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
         });
         if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
         const result = await response.json();
-        if (result.errors) throw new Error(result.errors.map((e: any) => e.message).join("\n"));
+        if (result.errors)
+          throw new Error(result.errors.map((e: any) => e.message).join("\n"));
         setTeamASearchResults(result.data?.teams?.edges || []);
       } catch (error: any) {
         toast.error(`Could not fetch teams for Team A: ${error.message}`);
@@ -2337,7 +2400,8 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
         });
         if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
         const result = await response.json();
-        if (result.errors) throw new Error(result.errors.map((e: any) => e.message).join("\n"));
+        if (result.errors)
+          throw new Error(result.errors.map((e: any) => e.message).join("\n"));
         setTeamBSearchResults(result.data?.teams?.edges || []);
       } catch (error: any) {
         toast.error(`Could not fetch teams for Team B: ${error.message}`);
@@ -2363,14 +2427,18 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
           body: JSON.stringify({
             query: `query SearchLeagues($filter: LeaguesFilter!, $pagination: Pagination) { leagues(filter: $filter, pagination: $pagination) { edges { node { id name type level genderCategory countries } } } }`,
             variables: {
-              filter: { searchQuery: debouncedLeagueSearchQuery, countries: null },
+              filter: {
+                searchQuery: debouncedLeagueSearchQuery,
+                countries: null,
+              },
               pagination: { first: 10 },
             },
           }),
         });
         if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
         const result = await response.json();
-        if (result.errors) throw new Error(result.errors.map((e: any) => e.message).join("\n"));
+        if (result.errors)
+          throw new Error(result.errors.map((e: any) => e.message).join("\n"));
         setLeagueSearchResults(result.data?.leagues?.edges || []);
       } catch (error: any) {
         toast.error(`Could not fetch leagues: ${error.message}`);
@@ -2381,7 +2449,6 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
     };
     fetchLeagues();
   }, [debouncedLeagueSearchQuery, selectedLeague]);
-
 
   useEffect(() => {
     const fetchLeagueStandings = async () => {
@@ -2494,7 +2561,10 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
     );
     if (!targetLanguage) return;
     setTranslatingLanguages((prev) => ({ ...prev, [targetLangCode]: true }));
-    const toastId = showToast(`Translating to ${targetLanguage.name}...`, 'loading');
+    const toastId = showToast(
+      `Translating to ${targetLanguage.name}...`,
+      "loading"
+    );
     try {
       const response = await fetch("/api/translate", {
         method: "POST",
@@ -2511,9 +2581,13 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
         ...prev,
         [targetLangCode]: marked.parse(data.translatedText) as string,
       }));
-      showToast(`Translated to ${targetLanguage.name}!`, 'success', { id: toastId });
+      showToast(`Translated to ${targetLanguage.name}!`, "success", {
+        id: toastId,
+      });
     } catch (error: any) {
-      showToast(`Could not translate to ${targetLanguage.name}.`, 'error', { id: toastId });
+      showToast(`Could not translate to ${targetLanguage.name}.`, "error", {
+        id: toastId,
+      });
     } finally {
       setTranslatingLanguages((prev) => ({ ...prev, [targetLangCode]: false }));
     }
@@ -2525,8 +2599,16 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
     );
 
   const handleProcessAudio = async () => {
-    if (selectedFiles.length === 0 || !selectedPlayer || !teamA || !teamB || !selectedLeague) {
-      toast.error("Please select a player, league, both game teams, and an audio file.");
+    if (
+      selectedFiles.length === 0 ||
+      !selectedPlayer ||
+      !teamA ||
+      !teamB ||
+      !selectedLeague
+    ) {
+      toast.error(
+        "Please select a player, league, both game teams, and an audio file."
+      );
       return;
     }
     setOriginalReportHtml(null);
@@ -2535,7 +2617,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
     setActiveLanguage("EN");
     const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
     if (!apiKey) {
-      showToast("API Key is not configured.", 'error');
+      showToast("API Key is not configured.", "error");
       return;
     }
 
@@ -2598,8 +2680,8 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
             teamB: teamB,
             teamAScore: teamAScore,
             teamBScore: teamBScore,
-            gameDate: gameDate ? format(gameDate, 'yyyy-MM-dd') : null,
-          }
+            gameDate: gameDate ? format(gameDate, "yyyy-MM-dd") : null,
+          },
         }),
       });
       if (!generateResponse.ok)
@@ -2642,7 +2724,11 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
   ): Promise<string> => {
     const audioBase64 = arrayBufferToBase64(await file.arrayBuffer());
     const standingsContext = standings?.groups
-      ? `For context, the teams in this league include: ${Array.from(new Set(standings.groups.flatMap((g) => g.standings.map((s) => s.team.name)))).join(", ")}.`
+      ? `For context, the teams in this league include: ${Array.from(
+          new Set(
+            standings.groups.flatMap((g) => g.standings.map((s) => s.team.name))
+          )
+        ).join(", ")}.`
       : "";
     const promptText = `You are a highly specialized hockey transcription assistant. Your primary goal is to produce a clean, accurate transcript of a scout's audio notes. **Transcription Rules:** 1. **Accuracy First:** Focus on clarity and accuracy. 2. **Team & League Names:** Correctly identify and spell the full names of teams and leagues. Use proper capitalization for these proper nouns (e.g., "Leksands IF", "SHL"). ${standingsContext} 3. **Hockey Terminology (Crucial):** Do NOT capitalize common hockey-specific technical terms, even if they are also proper nouns in other contexts. Treat them as common nouns. - **Correct Examples:** mohawk turn, texas hockey, michigan goal, slapshot, crossover, backcheck. - **Incorrect Examples:** Mohawk Turn, Texas Hockey, Michigan Goal. **Audio for Player:** ${player.name} of ${team.name}.`;
     const response = await fetch(
@@ -2710,9 +2796,15 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
       const fileUri = fileInfo.file.uri;
       fileNameOnServer = fileInfo.file.name;
       const standingsContext = standings?.groups
-        ? `For context, the teams in this league include: ${Array.from(new Set(standings.groups.flatMap((g) => g.standings.map((s) => s.team.name)))).join(", ")}.`
+        ? `For context, the teams in this league include: ${Array.from(
+            new Set(
+              standings.groups.flatMap((g) =>
+                g.standings.map((s) => s.team.name)
+              )
+            )
+          ).join(", ")}.`
         : "";
-        const promptText = `You are a highly specialized hockey transcription assistant. Your primary goal is to produce a clean, accurate transcript of a scout's audio notes. **Transcription Rules:** 1. **Accuracy First:** Focus on clarity and accuracy. 2. **Team & League Names:** Correctly identify and spell the full names of teams and leagues. Use proper capitalization for these proper nouns (e.g., "Leksands IF", "SHL"). ${standingsContext} 3. **Hockey Terminology (Crucial):** Do NOT capitalize common hockey-specific technical terms, even if they are also proper nouns in other contexts. Treat them as common nouns. - **Correct Examples:** mohawk turn, texas hockey, michigan goal, slapshot, crossover, backcheck. - **Incorrect Examples:** Mohawk Turn, Texas Hockey, Michigan Goal. **Audio for Player:** ${player.name} of ${team.name}.`;
+      const promptText = `You are a highly specialized hockey transcription assistant. Your primary goal is to produce a clean, accurate transcript of a scout's audio notes. **Transcription Rules:** 1. **Accuracy First:** Focus on clarity and accuracy. 2. **Team & League Names:** Correctly identify and spell the full names of teams and leagues. Use proper capitalization for these proper nouns (e.g., "Leksands IF", "SHL"). ${standingsContext} 3. **Hockey Terminology (Crucial):** Do NOT capitalize common hockey-specific technical terms, even if they are also proper nouns in other contexts. Treat them as common nouns. - **Correct Examples:** mohawk turn, texas hockey, michigan goal, slapshot, crossover, backcheck. - **Incorrect Examples:** Mohawk Turn, Texas Hockey, Michigan Goal. **Audio for Player:** ${player.name} of ${team.name}.`;
       const genRes = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
         {
@@ -2747,12 +2839,12 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
 
   const handleSaveReport = async () => {
     if (!selectedPlayer) {
-      showToast("Cannot save without a selected player.", 'error');
+      showToast("Cannot save without a selected player.", "error");
       return;
     }
     setIsSaving(true);
-    const toastId = showToast('Saving report...', 'loading');
-    
+    const toastId = showToast("Saving report...", "loading");
+
     const reportData = {
       reportType: currentReportType,
       playerContext: selectedPlayer,
@@ -2769,8 +2861,8 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
         teamB: teamB,
         teamAScore: teamAScore,
         teamBScore: teamBScore,
-        gameDate: gameDate ? format(gameDate, 'yyyy-MM-dd') : null,
-      }
+        gameDate: gameDate ? format(gameDate, "yyyy-MM-dd") : null,
+      },
     };
 
     try {
@@ -2792,9 +2884,11 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
         );
       const savedReport = await response.json();
       if (!currentReportId) setCurrentReportId(savedReport._id);
-      showToast('Report saved successfully!', 'success', { id: toastId });
+      showToast("Report saved successfully!", "success", { id: toastId });
     } catch (error: any) {
-      showToast(error.message || 'Could not save report.', 'error', { id: toastId });
+      showToast(error.message || "Could not save report.", "error", {
+        id: toastId,
+      });
     } finally {
       setIsSaving(false);
     }
@@ -2806,12 +2900,16 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
       hasGeneratedReport &&
       Object.values(traitRatings).some((r) => r === 0)
     ) {
-      showToast("Please rate all player traits before exporting.", 'error');
+      showToast("Please rate all player traits before exporting.", "error");
       setIsExportMenuOpen(false);
       return;
     }
     setIsExportMenuOpen(false);
-    const fileName = `${(editor.state.doc.firstChild?.textContent || "Scouting Report").replace(/[^a-z0-9]/gi, "_").toLowerCase()}.${format}`;
+    const fileName = `${(
+      editor.state.doc.firstChild?.textContent || "Scouting Report"
+    )
+      .replace(/[^a-z0-9]/gi, "_")
+      .toLowerCase()}.${format}`;
     const downloadFile = (blob: Blob, name: string) => {
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
@@ -2826,11 +2924,11 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
         new Blob([editor.getText()], { type: "text/plain" }),
         fileName
       );
-      showToast("Exported as TXT!", 'success');
+      showToast("Exported as TXT!", "success");
       return;
     }
     if (format === "pdf") {
-      const toastId = showToast("Generating PDF...", 'loading');
+      const toastId = showToast("Generating PDF...", "loading");
       try {
         const response = await fetch("/api/pdf", {
           method: "POST",
@@ -2845,21 +2943,23 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
             traitRatings,
             targetLang: activeLanguage,
             gameContext: {
-                league: selectedLeague,
-                teamA: teamA,
-                teamB: teamB,
-                teamAScore: teamAScore,
-                teamBScore: teamBScore,
-                gameDate: gameDate ? gameDate.toISOString() : null,
-            }
+              league: selectedLeague,
+              teamA: teamA,
+              teamB: teamB,
+              teamAScore: teamAScore,
+              teamBScore: teamBScore,
+              gameDate: gameDate ? gameDate.toISOString() : null,
+            },
           }),
         });
         if (!response.ok)
           throw new Error(`PDF generation failed: ${response.statusText}`);
         downloadFile(await response.blob(), fileName);
-        showToast("PDF downloaded!", 'success', { id: toastId });
+        showToast("PDF downloaded!", "success", { id: toastId });
       } catch (error: any) {
-        showToast(`Could not generate PDF: ${error.message}`, 'error', { id: toastId });
+        showToast(`Could not generate PDF: ${error.message}`, "error", {
+          id: toastId,
+        });
       }
     }
   };
@@ -2872,10 +2972,10 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
     processState.status === "transcribing"
       ? "Transcribing..."
       : processState.status === "generating"
-        ? "Generating..."
-        : processState.status === "loading"
-          ? "Loading Context..."
-          : "Generate Report";
+      ? "Generating..."
+      : processState.status === "loading"
+      ? "Loading Context..."
+      : "Generate Report";
 
   return (
     <div className="h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex flex-col font-sans text-black overflow-hidden">
@@ -2950,10 +3050,18 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
         )}
 
         <aside
-          className={`flex-shrink-0 bg-white/60 backdrop-blur-md border-r border-white/30 flex flex-col z-20 transition-all duration-300 ease-in-out lg:relative ${isDesktopSidebarCollapsed ? "lg:w-0" : "lg:w-[420px]"} absolute top-0 left-0 h-full w-full max-w-md sm:w-96 lg:max-w-none transform lg:transform-none ${isMobileSidebarOpen ? "translate-x-0 shadow-lg" : "-translate-x-full"}`}
+          className={`flex-shrink-0 bg-white/60 backdrop-blur-md border-r border-white/30 flex flex-col z-40 transition-all duration-300 ease-in-out lg:relative ${
+            isDesktopSidebarCollapsed ? "lg:w-0" : "lg:w-[420px]"
+          } absolute top-0 left-0 h-full max-w-md sm:w-96 lg:max-w-none transform ${
+            isMobileSidebarOpen
+              ? "translate-x-0 shadow-lg"
+              : "-translate-x-full"
+          } lg:translate-x-0 lg:shadow-none`}
         >
           <div
-            className={`flex-1 flex flex-col min-h-0 ${isDesktopSidebarCollapsed ? "lg:hidden" : ""}`}
+            className={`flex-1 flex flex-col min-h-0 ${
+              isDesktopSidebarCollapsed ? "lg:hidden" : ""
+            }`}
           >
             <div
               ref={sidebarScrollRef}
@@ -3016,7 +3124,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
                 onSelectPlayer={handleSelectPlayer}
                 onClearPlayer={handleClearPlayer}
               />
-              
+
               <div className="space-y-6">
                 <h2 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
                   Scouted Game Details
@@ -3029,14 +3137,19 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
                   selectedLeague={selectedLeague}
                   onSelectLeague={(league) => {
                     setSelectedLeague(league);
-                    setLeagueSearchQuery('');
+                    setLeagueSearchQuery("");
                     setLeagueSearchResults([]);
                   }}
                   onClearLeague={() => setSelectedLeague(null)}
                 />
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Game Date</h3>
-                  <MaskedDatePicker selectedDate={gameDate} onDateChange={setGameDate} />
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                    Game Date
+                  </h3>
+                  <MaskedDatePicker
+                    selectedDate={gameDate}
+                    onDateChange={setGameDate}
+                  />
                 </div>
                 <TeamSearch
                   title="Team A"
@@ -3047,7 +3160,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
                   selectedTeam={teamA}
                   onSelectTeam={(team) => {
                     setTeamA(team);
-                    setTeamASearchQuery('');
+                    setTeamASearchQuery("");
                     setTeamASearchResults([]);
                   }}
                   onClearTeam={() => setTeamA(null)}
@@ -3061,13 +3174,15 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
                   selectedTeam={teamB}
                   onSelectTeam={(team) => {
                     setTeamB(team);
-                    setTeamBSearchQuery('');
+                    setTeamBSearchQuery("");
                     setTeamBSearchResults([]);
                   }}
                   onClearTeam={() => setTeamB(null)}
                 />
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Final Score</h3>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                    Final Score
+                  </h3>
                   <div className="flex items-center gap-4">
                     <input
                       type="number"
@@ -3087,7 +3202,6 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
                   </div>
                 </div>
               </div>
-
 
               <LanguageSelector
                 selectedLanguages={selectedLanguages}
@@ -3132,10 +3246,10 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
                     {selectedFiles.map((file, index) => (
                       <div
                         key={`${file.name}-${index}`}
-                        className="flex items-center justify-between p-2.5 border rounded-lg bg-white shadow-sm"
+                        className="flex items-center justify-between p-3 border border-gray-200/80 rounded-xl bg-white/70 backdrop-blur-sm shadow-sm hover:bg-white/90 transition-colors"
                       >
                         <div className="flex items-center space-x-3 truncate">
-                          <FileText className="w-5 h-5 text-gray-500 flex-shrink-0" />
+                          <FileText className="w-5 h-5 text-indigo-500 flex-shrink-0" />
                           <div className="truncate">
                             <p className="text-sm font-medium text-gray-800 truncate">
                               {file.name}
@@ -3147,7 +3261,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
                         </div>
                         <button
                           onClick={() => handleRemoveFile(file)}
-                          className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-100 rounded-full transition-colors"
+                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors flex-shrink-0"
                           title="Remove file"
                         >
                           <X className="w-4 h-4" />
@@ -3203,7 +3317,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
         {isMobileSidebarOpen && (
           <div
             onClick={() => setIsMobileSidebarOpen(false)}
-            className="lg:hidden absolute inset-0 bg-black bg-opacity-50 z-10"
+            className="lg:hidden absolute inset-0 bg-white/20 backdrop-blur-sm z-30"
           ></div>
         )}
 
@@ -3238,13 +3352,17 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
               >
                 <button
                   onClick={() => editor.chain().focus().toggleBold().run()}
-                  className={`p-1 ${editor.isActive("bold") ? "bg-gray-700" : ""} rounded`}
+                  className={`p-1 ${
+                    editor.isActive("bold") ? "bg-gray-700" : ""
+                  } rounded`}
                 >
                   <Bold className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => editor.chain().focus().toggleItalic().run()}
-                  className={`p-1 ${editor.isActive("italic") ? "bg-gray-700" : ""} rounded`}
+                  className={`p-1 ${
+                    editor.isActive("italic") ? "bg-gray-700" : ""
+                  } rounded`}
                 >
                   <Italic className="w-4 h-4" />
                 </button>
