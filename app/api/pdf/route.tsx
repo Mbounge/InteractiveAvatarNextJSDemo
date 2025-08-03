@@ -74,7 +74,6 @@ const getLocaleForLang = (lang: string) => {
   return map[lang.toLowerCase()] || "en-US";
 };
 
-// --- TYPE DEFINITIONS (No Changes) ---
 
 type GameDetails = {
   teamA: { name: string; score: number | null };
@@ -122,7 +121,6 @@ Font.register({
 
 Font.registerHyphenationCallback((word) => [word]);
 
-// --- 3. STYLING (No Changes) ---
 const styles = StyleSheet.create({
   pageTitle: {
     fontWeight: "bold",
@@ -639,7 +637,6 @@ const styles = StyleSheet.create({
     color: "#374151",
     textAlign: "justify",
   },
-  // --- MODIFICATION END ---
 
   footerLogo: {
     width: 50,
@@ -649,17 +646,16 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 16,
-    backgroundColor: "#F3F4F6", // Same as the original placeholder
+    backgroundColor: "#F3F4F6", 
     justifyContent: "center",
     alignItems: "center",
   },
   placeholderText: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#9CA3AF", // A medium-light gray for a subtle look
+    color: "#9CA3AF", 
   },
 
-  // For the small icon in the Stats Table
   placeholderIconContainer: {
     width: 42,
     height: 42,
@@ -950,7 +946,6 @@ const splitReportByHeadings = (
     "compete level": "competeLevel",
     "defensive game": "defensiveGame",
     "overall summary": "overallSummary",
-    projection: "projection",
     recommendation: "recommendation",
   };
 
@@ -1475,7 +1470,7 @@ const HtmlRenderer = ({
     node: any,
     index: number,
     inheritedStyles: Style
-  ): JSX.Element | JSX.Element[] | null => {
+  ): React.JSX.Element | React.JSX.Element[] | null => {
     if (node.nodeType === 3) {
       const textContent = node.text;
       if (textContent.trim().length === 0) {
@@ -2189,12 +2184,12 @@ const ReportDocument = ({
       t={t}
     />
 
-    <StatsPage
+    {reportSections.seasonalStats && <StatsPage
       html={reportSections.seasonalStats}
       footerLogoBuffer2={footerLogoBuffer2}
       teamLogosMap={teamLogosMap}
       t={t}
-    />
+    />}
 
     <ScoutedGamePage
       gameDetails={gameDetails}
@@ -2206,71 +2201,64 @@ const ReportDocument = ({
       t={t}
     />
 
-    <TraitPage
+    {reportSections.skating && <TraitPage
       title={reportSections.skating.title}
       html={reportSections.skating.html}
       rating={traitRatings.skating}
       footerLogoBuffer2={footerLogoBuffer2}
       t={t}
-    />
-    <TraitPage
+    />}
+    {reportSections.puckSkills && <TraitPage
       title={reportSections.puckSkills.title}
       html={reportSections.puckSkills.html}
       rating={traitRatings.puckSkills}
       footerLogoBuffer2={footerLogoBuffer2}
       t={t}
-    />
-    <TraitPage
+    />}
+    {reportSections.hockeyIq && <TraitPage
       title={reportSections.hockeyIq.title}
       html={reportSections.hockeyIq.html}
       rating={traitRatings.hockeyIq}
       footerLogoBuffer2={footerLogoBuffer2}
       t={t}
-    />
-    <TraitPage
+    />}
+    {reportSections.shot && <TraitPage
       title={reportSections.shot.title}
       html={reportSections.shot.html}
       rating={traitRatings.shot}
       footerLogoBuffer2={footerLogoBuffer2}
       t={t}
-    />
-    <TraitPage
+    />}
+    {reportSections.competeLevel && <TraitPage
       title={reportSections.competeLevel.title}
       html={reportSections.competeLevel.html}
       rating={traitRatings.competeLevel}
       footerLogoBuffer2={footerLogoBuffer2}
       t={t}
-    />
-    <TraitPage
+    />}
+    {reportSections.defensiveGame && <TraitPage
       title={reportSections.defensiveGame.title}
       html={reportSections.defensiveGame.html}
       rating={traitRatings.defensiveGame}
       footerLogoBuffer2={footerLogoBuffer2}
       t={t}
-    />
+    />}
 
-    <OverallSummaryPage
+    {reportSections.overallSummary && <OverallSummaryPage
       title={reportSections.overallSummary.title}
       footerTitle={t.summaryFooter}
       html={reportSections.overallSummary.html}
       footerLogoBuffer2={footerLogoBuffer2}
       t={t}
-    />
+    />}
 
-    <StructuredSummaryPage
-      title={reportSections.projection.title}
-      footerTitle={t.projectionFooter}
-      html={reportSections.projection.html}
-      footerLogoBuffer2={footerLogoBuffer2}
-      t={t}
-    />
-    <StructuredSummaryPage
+    {reportSections.recommendation && <StructuredSummaryPage
       title={reportSections.recommendation.title}
       footerTitle={t.recommendationFooter}
       html={reportSections.recommendation.html}
       footerLogoBuffer2={footerLogoBuffer2}
       t={t}
-    />
+    />}
 
     <ScalingSystemPage footerLogoBuffer2={footerLogoBuffer2} t={t} />
   </Document>

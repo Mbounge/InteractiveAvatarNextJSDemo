@@ -136,7 +136,7 @@ export async function POST(request: Request) {
           -   **Method:** First, describe the current state of the skill. Then, introduce the next developmental step. Finally, explain the positive outcome of that development.
           -   **NEVER USE:** "weakness," "struggle," "problem," "lacks," "fails to," "poor," "bad," "suboptimal," "timid," "inefficient," "choppy," "soft," "lazy," "liability."
           **Technical Reframing:** Instead of just positive spin, provide technical context - show your deep expertise:
-          - "His crossovers lack power on tight turns → "Needs to work on knee bend and weight transfer through crossovers to generate more power in tight spaces"
+          - "His crossovers lack power on tight turns → "Needs to work on knee bend and a wider base through crossovers to generate more power in tight spaces"
           - "Made some bad passes" → "Forces passes through traffic instead of finding available support options"
 
       5.  **Connect Actions to Positive Outcomes:** Do not just state an area for improvement. You MUST explain the benefit of that improvement. Example: "...focusing on a more horizontal drive from a standstill will directly translate to more explosive first-step quickness."
@@ -293,11 +293,6 @@ export async function POST(request: Request) {
       ### OVERALL SUMMARY
       [A concise paragraph summarizing the player's key foundational strengths, followed by the primary areas for development, framed positively.]
 
-      ### PROJECTION
-      **Best-Case Scenario:** [Plausible high-end projection.]\n
-      **Realistic Projection:** [More likely outcome.]\n
-      **Development Timeline:** [Estimated time.]\n
-
       ### RECOMMENDATION
       **Short-Term:** [Actionable, positive feedback for the next 1-2 years.]\n
       **Long-Term:** [Broader, empowering development goals.]\n
@@ -322,7 +317,7 @@ export async function POST(request: Request) {
         },
       ],
       temperature: 0.2,
-      max_completion_tokens: 4096
+      max_tokens: 4096
     });
 
     const report = response.choices[0].message.content;
@@ -341,8 +336,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ report });
   } catch (error) {
     console.error("Error generating report with OpenAI:", error);
-    return NextResponse.json(
-      { error: "Failed to generate report with OpenAI." },
+    return new NextResponse(
+      JSON.stringify({ error: "Failed to generate report with OpenAI." }),
       { status: 500 }
     );
   }
