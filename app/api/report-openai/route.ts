@@ -201,8 +201,8 @@ export async function POST(request: Request) {
       2. **Seasonal Stats Table Generation:** You MUST replace the \`[SEASONAL_STATS_TABLE_HERE]\` placeholder by following these steps precisely:
       a. **Check Primary Source:** Look at the \`Player's Full Seasonal History Stats\` data provided in the context.
       b. **If History Exists:** If the array is not empty, you must perform the following sub-steps:
-          i. **Identify Recent Seasons:** Sort the entire \`Player's Full Seasonal History Stats\` array by the \`season\` field in DESCENDING order.
-          ii. **Select a Maximum of Four:** From this sorted list, take ONLY the top 4 entries.
+          i. **Identify Recent latest Seasons:** Sort the entire \`Player's Full Seasonal History Stats\` array by the \`season\` field in DESCENDING order.
+          ii. **Select a Maximum of Four:** From this sorted list, take ONLY the top 4 latest entries. only the latest - do not pick one from each year - only the most up to date latest 4
           iii. **Generate Table:** Create a Markdown table using this final selection of 4 (or fewer) seasons, sorted with the most recent season at the top. The first three columns MUST be Team, League, and Season. The subsequent columns must be position-relevant.
       c. **Fallback to Player Data:** If the \`Player's Full Seasonal History Stats\` array is empty, check the \`playerContext.stats.season\` object. If it contains data, create a single-row Markdown table.
       d. If any entry in the data of the seasonal stats contains no team name for example: N/A - do not put it into the table and skip to the next entry
