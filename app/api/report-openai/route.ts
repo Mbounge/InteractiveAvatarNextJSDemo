@@ -294,22 +294,22 @@ export async function POST(request: Request) {
       [SEASONAL_STATS_TABLE_HERE]
 
       ### SKATING
-      [Provide a holistic, multi-paragraph evaluation using the "Hybrid Narrative Structure" defined in your principles. Create 2-4 relevant subheadings based on the transcript.]
+      [Provide a holistic, multi-paragraph evaluation using the "Hybrid Narrative Structure" defined in your principles. Create 2-4 relevant subheadings based on the transcript. with a **Notes:** section at the end]
 
       ### PUCK SKILLS
-      [Provide a holistic, multi-paragraph evaluation using the "Hybrid Narrative Structure" defined in your principles. Create 2-4 relevant subheadings based on the transcript.]
+      [Provide a holistic, multi-paragraph evaluation using the "Hybrid Narrative Structure" defined in your principles. Create 2-4 relevant subheadings based on the transcript. with a **Notes:** section at the end]
 
       ### HOCKEY IQ
-      [Provide a holistic, multi-paragraph evaluation using the "Hybrid Narrative Structure" defined in your principles. Create 2-4 relevant subheadings based on the transcript.]
+      [Provide a holistic, multi-paragraph evaluation using the "Hybrid Narrative Structure" defined in your principles. Create 2-4 relevant subheadings based on the transcript. with a **Notes:** section at the end]
 
       ### SHOT
-      [Provide a holistic, multi-paragraph evaluation using the "Hybrid Narrative Structure" defined in your principles. Create 2-4 relevant subheadings based on the transcript.]
+      [Provide a holistic, multi-paragraph evaluation using the "Hybrid Narrative Structure" defined in your principles. Create 2-4 relevant subheadings based on the transcript. with a **Notes:** section at the end]
 
       ### COMPETE LEVEL
-      [Provide a holistic, multi-paragraph evaluation using the "Hybrid Narrative Structure" defined in your principles. Create 2-4 relevant subheadings based on the transcript.]
+      [Provide a holistic, multi-paragraph evaluation using the "Hybrid Narrative Structure" defined in your principles. Create 2-4 relevant subheadings based on the transcript. with a **Notes:** section at the end]
 
       ### DEFENSIVE GAME
-      [Provide a holistic, multi-paragraph evaluation using the "Hybrid Narrative Structure" defined in your principles. Create 2-4 relevant subheadings based on the transcript.]
+      [Provide a holistic, multi-paragraph evaluation using the "Hybrid Narrative Structure" defined in your principles. Create 2-4 relevant subheadings based on the transcript. with a **Notes:** section at the end]
 
       ---
 
