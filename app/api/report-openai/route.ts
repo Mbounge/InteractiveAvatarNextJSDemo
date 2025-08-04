@@ -122,7 +122,7 @@ export async function POST(request: Request) {
     ---
     **STYLE AND TERMINOLOGY GUIDE: REFERENCE EXAMPLES**
 
-    To ensure your reports sound like they were written by a top-tier human scout, you MUST study the vocabulary, and action-oriented language in the following list of hockey jargon and technical language. Your task is to **fuse** this vivid, language with the structured, positive, developmental framework defined in your primary mission. remember to stay away from negative language and how you frame your sentences - also notice how they are no em dashes - do not use them when making your report.  Do not copy these examples directly, but use them as a guide to enrich your own writing and incorporate authentic hockey jargon.
+    To ensure your reports sound like they were written by a top-tier human scout, you MUST study the vocabulary, and action-oriented language in the following list of hockey jargon and technical language. Your task is to **fuse** this vivid, language with the structured, positive, developmental framework defined in your primary mission. remember to stay away from negative language and how you frame your sentences - also notice how they are no em dashes - do not use them when making your report.  Do not copy these examples directly, but use them as a guide to enrich your own writing and incorporate authentic hockey jargon. Stay true to making the reports positive
     
     1-on-1, 1-on-2, 1-on-4, 2-on-0, 2-on-1, 2-on-2, 3-on-0, 3-on-1, 3-on-2, 3-on-3, 4-on-2, 4-on-3, 4-on-4, 5-on-3, 5-on-5, 5-on-6, 6-on-5, A1 (Primary Assist), Above the puck, Absorb contact, Absorb rushes, Acceleration, Active feet, Active stick, Active stick read, Activation, Adaptability, Advantage creation, Aerial breakout, Aerial outlet, Aerial pass, Aggression, Agility, AHL, Anchor defenseman, Angle, Angle entry, Angle of attack, Angle-changing shot, Angle-changing wrister, Angling, Ankle flexion, Anticipation, Apple, Area pass, Assist, Attack, Attacker, Awareness, Babysitter, Back of the net, Back post, Back pressure, Back-check, Backcheck, Backchecking, Backdoor, Backdoor play, Backdoor tap-in, Backdoor feed, Backdoor pass, Backhand, Backhand sauce, Backhand deke, Backhand dish,
      Backhand feed, Backhand pass, Backhand saucer pass, Backhand shot, Backpedal, Backpressure reads, Backside coverage, Backside entry, Bag skate, Balance, Bank pass, Bank shot, Barn, Barnburner, Bar down, Basket, Battle, Battle level, Battles, BCHL, Beauty, Beaver tap/tail , Behind-the-net cycle, Bench, Bench minor, Benchwarmer, Bender, Between-the-legs, Between-the-legs deke, Biscuit, Blind pass, Blindside hit, Block, Blocker, Blocker save, Blocker side, Blocked shot, Blocking shots, Blow a gasket/tire, Blue line, Blue line keep-in, Blueline, Blueliner, Board battle, Board breakout, Board chip, Board play, Boarding, Boarding penalty, Boards, Body check, Body position, Body positioning, Body-check timing, Bottom corner, Bottom six, Bottom-pair, Bottom-six, Box out, Box plus one, Box outs, Breakaway, Breakaway goal, Breakaway lane, Breakout, Breakout coverage,
@@ -191,6 +191,8 @@ export async function POST(request: Request) {
           - Net-front presence, board battles, puck protection
           - Backcheck angle, defensive gaps, stick checks
           - Release points, shooting lanes, screen presence
+
+        10. **Keep the reports positive**
       ---
 
       ${examples}
