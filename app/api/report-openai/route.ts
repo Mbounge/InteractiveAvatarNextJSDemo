@@ -117,6 +117,87 @@ export async function POST(request: Request) {
     if (standingsContext && standingsContext.groups) {
         standingsInfo = JSON.stringify(standingsContext, null, 2);
     }
+
+    const examples = `
+    ---
+    **STYLE AND TERMINOLOGY GUIDE: REFERENCE EXAMPLES**
+
+    To ensure your reports sound like they were written by a top-tier human scout, you MUST study the vocabulary, and action-oriented language in the following real-world examples. Your task is to **fuse** this vivid, language with the structured, positive, developmental framework defined in your primary mission. remember to stay away from negative language and how you frame your sentences - also notice how they are no em dashes - do not use them when making your report.  Do not copy these examples directly, but use them as a guide to enrich your own writing and incorporate authentic hockey jargon.
+
+    > **Example 1:**
+    > "A No. 1 overall performance by Schaefer. How about that assist. Weight shifts wide, forcing the defender to come across, so he taps the puck under their stick, skates through it, drags around the next defender, and quickly handles to pass under the stick for an easy one-timer -- the whole thing happening at an insane speed. But it was only one of many impressive plays. Rushes with multiple give-and-gos, chip and drive entries, backhand slip passes for exits, pressured retrievals, matching footwork off the rush. At his best, he’s manipulating defenders with pace, routes, and fakes, and he has the skill to deke, pass, or shoot instantly when doing it. Uses the middle, draws pressure before passing, and lots of activation. In the middle of every single rush. Whiffed on pokes but easily recovered for the stop and kept most of rushes wide. He has physical skills too: Skating through the hands, intercepting opponents on retrievals, winning the inside battle at the net front, etc. It’s not always put together perfectly -- he throws a ton of pucks straight up the wall into battles and makes a lot of mistakes on retrievals with immediate passes before having drawn pressure. But he also does the opposite of those plenty enough, and his pace and urgency means he’s always correcting mistakes and prepared for the next phase of the game. A special talent with basically unmatched runway in this draft class. It’s rare for a defenceman to be the true No. 1 prospect, but he’s different."
+
+    > **Example 2:**
+    > "A first-overall calibre performance from Schaefer, who was otherworldly when it came to rush creation in this game. He might have pulled off the assist of the season in this game, picking up the puck in the neutral zone, shifting weight quickly to bait Carson Rehkopf and then blowing by him, before entering the offensive zone, dangling Finn Harding on his way to the net and then passing off to Malcolm Spence, who was left all alone in tight for Erie’s fourth goal. Insane stuff. It wasn’t his only dynamic rush sequence, either. He dangled between his own legs in the first period to try and beat a defender down the wall, and tried a similar rush where he did beat the defender before charging towards the net and trying to stuff the puck past Jack Ivankovic. His off-puck reads were also very strong, as he joined the rush up the ice, slowed his pace to match his teammates and keep the play onside before getting the puck and stepping into shots from distance."
+
+    > **Example 3:**
+    > "Schaefer was head and shoulders the best player on the ice tonight. It’s something he’s started making a habit of in big moments on big stages. So smooth with his outlets, reads the play, activated every opportunity he could and had some nice defensive plays in all three zones. First, the bad. There were a few pizzas tossed up the middle that were intercepted. Not sure where the mind or execution were for those plays, but they were fairly egregious... A beautiful primary helper where he made an outlet, jumped into the play, got it back, penetrated the middle, dished it over to Schmidt and kept pushing down Broadway to back up the defenders and provide a lane for Schmidt to hit and snipe from the flank. Then there was the highlight of the night end-to-end rush goal finished with a goalmouth deke and stuff on the forehand."
+
+    > **Example 4:**
+    > "A lot of activity and some high-end plays from Schaefer, but also some misses. First, the great. He had a rush where he exploded up the ice with crossovers, handling the puck at breakneck speed, cut inside, and passed across the slot for a chance. Later, he read the defender’s momentum, cut inside, and got a chance. He has scoring tools and the skating, even though not the cleanest looking, might be elite. He’s extremely quick, explosive, and adjusts/adapts instantly. Recovery speed is unmatched, allowing him to fix mistakes, which there was a fairly large amount of -- bad passes up the wall, overskating against the rush, some sloppy stick work and handling, and jumping passing lanes too soon. But when it works defensively, he’s a machine. He’s first to react to every play."
+
+    > **Example 5:**
+    > "Matthew Schaefer showed more diverse flashes in this game. He stood up against the rush, walling his blue line and checking the opponent to the ice. Instead of carrying the puck himself, he used a couple of give-and-goes and looked to use trailers as he got in the offensive zone. Good defensive zone coverage in some shifts and transition plays: a one-touch pass to space (that didn’t connect but good idea) and through passes to teammates. He battled for possesion, going one-on-one with Martone, and showed urgency and a motor and a willingness to engage. Schaefer is raw and uncertain in some aspects, but the floor is already high because of the many plays he can make. Some Thomas Harley in him. But the defence is also more projectable at the same age. The longer runway may end up pushing him ahead of other, more fixed prospects in the draft."
+
+    > **Example 6:**
+    > "What a game from Schaefer, who looked every bit the first overall challenger he was projected to be coming into the season.
+    Not only was this the first four-point game in his OHL career, but it was also his first multi-goal game in the league. His first
+    goal came off a long-range wrister after a clean faceoff win after he drew pressure towards him and opened up a lane for
+    himself. His second goal was scored on the breakaway after he exited the penalty box, picked up the loose puck and left
+    defenders in his dust as he deked out the goaltender. But his best offensive play of the game may have been his primary
+    assist on Erie’s fourth goal. Schaefer picked up the loose puck in the offensive zone, tried to make a move to get around a
+    defender and was tripped, which drew a penalty. Then he recovered the loose puck and delivered an insanely quick cross-ice
+    pass to Malcolm Spence at the far post. The entire sequence was started and finished in about five seconds. But this game
+    was more than just the plays he picked up points on. He’s such a dynamic handler, confident on retrievals and breakouts,
+    escapes forechecking pressure with ease, ducking around defenders and able to start the breakout. Starts passing plays
+    through the neutral zone and controlled zone entries where he passes off over the blueline and then drives the middle to
+    take defenders out of the play. Tons of dynamic activations, he shoots for rebounds, then drives deeper to pick up his own
+    rebounds. Defensively, he was really solid too. He’s so good at defending 1-on-1 situations, mirroring footwork, matching
+    pace, and sealing off quickly in open ice before stripping carriers of the puck. He steps into lanes and forces players into
+    turnovers, kills rushes before they’ve even fully materialized. The only player he was beat cleanly down the wall by was Kevin
+    He, and he took a tripping penalty on the play. It’s when there are multiple pass options that he can get a little overzealous
+    and discombobulated, unsure of which threat to pick up. He can be pulled out of position on those sequences, but he’s such a
+    strong skater that he’s able to get back to the correct spots in time -- rarely are those mistakes ever costly. Looks like he’s got
+    his legs under him now. This was a world-class showing, and he played a ton in this game too."
+
+    > **Example 6:**
+    > "From the opening whistle, it was clear that Schaefer was going to take control of this game on both sides of the ice. Mere
+    seconds into this one, he pinched aggressively on Czechia’s right winger to force a dump-in, before coming back into his
+    own zone to support Huang on the breakout. Two minutes later, he took the puck and activated right into the offensive zone
+    for a net drive and shot — a frequent occurrence with Schaefer in this tournament. He also showcased some fantastic rush
+    defence on Czechia’s six power play opportunities, consistently using his edgework and reach to pry pucks off of Czech
+    entry carriers’ sticks. Even when at a speed disadvantage, Schaefer’s timing and stick discipline made it nearly impossible to
+    overwhelm him.
+    Schaefer’s skating is just phenomenal. The way he effortlessly goes from an L cut to a hard push is absurd, and he transfers
+    backwards momentum seamlessly into lateral motion. His head stays almost perfectly level when skating forward at full
+    speed, allowing him to maintain full control of the puck while chugging his way up the ice. Cam told me he sees Schaefer as a
+    NHL DRAFT GUIDE 2025
+    top-three pick in the 2025 NHL Draft, and I have to agree. He’s absolutely dominant, and will likely be on Canada’s WJC roster
+    as a draft-eligible. Despite the under-20 squad having many older defencemen to choose from, I have a feeling Schaefer’s
+    going to force their hand."
+
+    > **Example 7:**
+    > "This game was a near-perfect reflection of the type of power and speed game that Misa projects to play at in the NHL. He
+    is able to fly in on the forecheck, hammer defenders, create turnovers, recover the puck and quickly set up a mate with
+    seemingly eyes in the back of his head. His transitional game snaps you to attention as he attacks defenders’ feet with speed
+    and darting movement. His use of crossovers to build up speed and disrupt the flow of the retreating D is highly impressive.
+    Defensively, he is active, engaged, physical, and intelligent with his support and switches. He times stick lifts on the
+    backcheck, he tied up sticks effectively to thwart bang-bang chances against. And, of course, he added a couple of assists in
+    this one because even when he’s not scoring every night, he has to hit the scoresheet."
+
+    > **Example 8:**
+    > "Misa’s physical game was on another level tonight. He set the tone early with a huge hit in the corner to force a turnover,
+    and went right to space to create an odd-man advantage and consistently laid hard hits on the forecheck. He drew a penalty
+    entering the zone on the rush and being taken down in open-ice. His goal-scoring pace may have slowed, but he’s still
+    generating a ton of scoring chances. His one-timer in the high slot created a rebound on Saginaw’s first goal, and he added
+    another assist by generously passing up to Kristian Epperson for the empty-netter instead of taking the shot himself. Teamed
+    up with Epperson on a backcheck to force a turnover in the neutral zone before starting the rush back up the other way. Tons
+    of dynamic rushes, mostly with Epperson, using his explosive stride to quickly create odd-man rushes and using the middle
+    of the ice. Off-puck, he lifted sticks to create lanes for his teammates while driving the net. His puck recovery, backchecking,
+    and defensive reads were all excellent tonight. Even when the puck isn’t going in for him as easily as it has this season, he’s
+    always impacting the game positively in another aspect. He’s a number one centre in the NHL."
+    ---
+    `
     
     const systemPrompt = `
     You are a world-class Developmental Hockey Scout and Performance Psychologist. Your voice is that of an expert, supportive mentor, blending very deep technical analysis with modern coaching psychology. Your primary mission is to analyze a scout's raw transcription and transform it into a professional, strength-based, and growth-oriented development report that is both compelling and technically precise.
@@ -134,7 +215,7 @@ export async function POST(request: Request) {
            
       4.  **The Art of Reframing:** Reframe challenges into clear, actionable insights for improvement. Do not just replace negative words; change the entire sentence structure to be forward-looking.
           -   **Method:** First, describe the current state of the skill. Then, introduce the next developmental step. Finally, explain the positive outcome of that development.
-          -   **NEVER USE:** "weakness," "struggle," "problem," "lacks," "fails to," "poor," "bad," "suboptimal," "timid," "inefficient," "choppy," "soft," "lazy," "liability."
+          -   **NEVER USE:** "weakness,", "fumbled", "struggle," "problem," "lacks," "fails to," "poor," "bad," "suboptimal," "timid," "inefficient," "choppy," "soft," "lazy," "liability." - any other words with negative connotations. 
           **Technical Reframing:** Instead of just positive spin, provide technical context - show your deep expertise:
           - "His crossovers lack power on tight turns → "Needs to work on knee bend and a wider base through crossovers to generate more power in tight spaces"
           - "Made some bad passes" → "Forces passes through traffic instead of finding available support options"
@@ -150,7 +231,7 @@ export async function POST(request: Request) {
           -   **Correct:** mohawk, crossover, power play, penalty kill, backcheck, forecheck, box-out.
           -   **INCORRECT:** Mohawk, Crossover, Power Play, Penalty Kill.
 
-      8.  **Vary Your Language:** Do not be repetitive. Use a rich vocabulary and vary your sentence structures between sections to make the report engaging and natural to read. Avoid starting every developmental point with the same phrase.
+      8.  **Vary Your Language:** Do not be repetitive. Use a rich vocabulary and vary your sentence structures between sections to make the report engaging and natural to read. Avoid starting every developmental point with the same phrase. In fact vary your use of language and try to not say the same types of words and phrases in the report - try your best here
           - use positive language in your content - we do not want sentences or phrases to read with negative language like this: "Transitions from backward to forward skating can appear clumsy, lacking the fluidity seen in his gliding turns" - we do not want this - especially with words like clumsy - if the transcript contains these negative type of words reframe them into something more positive looking
           - Every developmental point MUST be supported by specific situations from the transcript. Do not make generic statements (make sure you always reference the transcript - and do not make stuff up that was not said or is not present in the transcript). If the scout noted "he lost the puck three times in the offensive zone," reference that directly and explain the technical reason why.
           **Technical Precision Over Softness:** Use the language real scouts use:
@@ -166,6 +247,8 @@ export async function POST(request: Request) {
           - Backcheck angle, defensive gaps, stick checks
           - Release points, shooting lanes, screen presence
       ---
+
+      ${examples}
 
       **PRINCIPLES FOR REPORT GENERATION:**
 
@@ -303,6 +386,7 @@ export async function POST(request: Request) {
       ${transcription}
       ---
     `;
+
 
     const response = await openai.chat.completions.create({
       model: 'chatgpt-4o-latest',
