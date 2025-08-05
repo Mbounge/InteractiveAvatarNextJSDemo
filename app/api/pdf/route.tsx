@@ -67,8 +67,8 @@ const formatPosition = (rawPosition: string | null | undefined): string => {
     case 'CENTER': return 'CENTER';
     case 'LEFT_WING': return 'LEFT WING';
     case 'RIGHT_WING': return 'RIGHT WING';
-    case 'LEFT_DEFENSIVE': return 'LEFT DEFENSIVEMEN';
-    case 'RIGHT_DEFENSIVE': return 'RIGHT DEFENSIVEMEN';
+    case 'LEFT_DEFENSIVE': return 'LEFT DEFENSEMEN';
+    case 'RIGHT_DEFENSIVE': return 'RIGHT DEFENSEMEN';
     case 'DEFENDER': return 'DEFENDER';
     case 'GOALTENDER': return 'GOALIE';
     default: return rawPosition;
