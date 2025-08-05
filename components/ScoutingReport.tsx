@@ -2894,7 +2894,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
     }
   };
 
-  const handleExport = async (format: "pdf" | "txt") => {
+  const handleExport = async (exportFormat: "pdf" | "txt") => {
     if (!editor) return;
     if (
       hasGeneratedReport &&
@@ -2909,7 +2909,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
       editor.state.doc.firstChild?.textContent || "Scouting Report"
     )
       .replace(/[^a-z0-9]/gi, "_")
-      .toLowerCase()}.${format}`;
+      .toLowerCase()}.${exportFormat}`;
     const downloadFile = (blob: Blob, name: string) => {
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
@@ -2919,7 +2919,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
       document.body.removeChild(link);
       URL.revokeObjectURL(link.href);
     };
-    if (format === "txt") {
+    if (exportFormat === "txt") {
       downloadFile(
         new Blob([editor.getText()], { type: "text/plain" }),
         fileName
@@ -2927,7 +2927,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
       showToast("Exported as TXT!", "success");
       return;
     }
-    if (format === "pdf") {
+    if (exportFormat === "pdf") {
       const toastId = showToast("Generating PDF...", "loading");
       try {
         const response = await fetch("/api/pdf", {
@@ -2948,7 +2948,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
               teamB: teamB,
               teamAScore: teamAScore,
               teamBScore: teamBScore,
-              gameDate: gameDate ? gameDate.toISOString() : null,
+              gameDate: gameDate ? format(gameDate, "yyyy-MM-dd") : null,
             },
           }),
         });
