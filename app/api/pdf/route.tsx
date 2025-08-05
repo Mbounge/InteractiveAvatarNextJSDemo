@@ -988,7 +988,20 @@ const splitReportByHeadings = (
   return sections;
 };
 
-// --- MODIFIED: New, robust parseTraitHtml function ---
+const formatPosition = (rawPosition: string | null | undefined): string => {
+  if (!rawPosition) return 'N/A';
+  switch (rawPosition) {
+    case 'CENTER': return 'CENTER';
+    case 'LEFT_WING': return 'LEFT WING';
+    case 'RIGHT_WING': return 'RIGHT WING';
+    case 'LEFT_DEFENSIVE': return 'LEFT DEFENSIVEMEN';
+    case 'RIGHT_DEFENSIVE': return 'RIGHT DEFENSIVEMEN';
+    case 'DEFENDER': return 'DEFENDER';
+    case 'GOALTENDER': return 'GOALIE';
+    default: return rawPosition;
+  }
+};
+
 const parseTraitHtml = (html: string | null) => {
   if (!html) return { subSections: [] };
 
@@ -2084,7 +2097,7 @@ const ReportDocument = ({
               {playerContext?.name || "Player Name"}
             </Text>
             <Text style={styles.playerPosition}>
-              {(playerContext?.bio?.position || "Position").replace(/_/g, " ")}
+            {formatPosition(playerContext?.bio?.position)}
             </Text>
           </View>
           <View style={styles.infoSection}>
