@@ -25,7 +25,7 @@ import { parse, HTMLElement, Node } from "node-html-parser";
 import QRCode from "qrcode";
 import { type Style } from "@react-pdf/types";
 
-// --- 1. TRANSLATION & LOCALE HELPERS (No Changes) ---
+// --- 1. TRANSLATION & LOCALE HELPERS ---
 
 async function getTranslations(lang: string) {
   const langCode = lang.toLowerCase();
@@ -60,6 +60,20 @@ async function getTranslations(lang: string) {
 
   return translations;
 }
+
+const formatPosition = (rawPosition: string | null | undefined): string => {
+  if (!rawPosition) return 'N/A';
+  switch (rawPosition) {
+    case 'CENTER': return 'CENTER';
+    case 'LEFT_WING': return 'LEFT WING';
+    case 'RIGHT_WING': return 'RIGHT WING';
+    case 'LEFT_DEFENSIVE': return 'LEFT DEFENSIVEMEN';
+    case 'RIGHT_DEFENSIVE': return 'RIGHT DEFENSIVEMEN';
+    case 'DEFENDER': return 'DEFENDER';
+    case 'GOALTENDER': return 'GOALIE';
+    default: return rawPosition;
+  }
+};
 
 const getLocaleForLang = (lang: string) => {
   const map: { [key: string]: string } = {
@@ -986,20 +1000,6 @@ const splitReportByHeadings = (
   });
 
   return sections;
-};
-
-const formatPosition = (rawPosition: string | null | undefined): string => {
-  if (!rawPosition) return 'N/A';
-  switch (rawPosition) {
-    case 'CENTER': return 'CENTER';
-    case 'LEFT_WING': return 'LEFT WING';
-    case 'RIGHT_WING': return 'RIGHT WING';
-    case 'LEFT_DEFENSIVE': return 'LEFT DEFENSIVEMEN';
-    case 'RIGHT_DEFENSIVE': return 'RIGHT DEFENSIVEMEN';
-    case 'DEFENDER': return 'DEFENDER';
-    case 'GOALTENDER': return 'GOALIE';
-    default: return rawPosition;
-  }
 };
 
 const parseTraitHtml = (html: string | null) => {

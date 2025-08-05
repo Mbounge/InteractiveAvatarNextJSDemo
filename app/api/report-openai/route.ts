@@ -1,3 +1,5 @@
+//api/report-openai
+
 import OpenAI from 'openai';
 import { NextResponse } from "next/server";
 
@@ -191,6 +193,29 @@ export async function POST(request: Request) {
           - Net-front presence, board battles, puck protection
           - Backcheck angle, defensive gaps, stick checks
           - Release points, shooting lanes, screen presence
+          **CRITICAL TECHNICAL TERMINOLOGY CLARIFICATIONS:**
+
+        **Position vs. Handedness Distinction (CRUCIAL):**
+            - **Position**: "Left Defensivemen" or "Right Defensivemen" refers to which SIDE of the ice the player typically plays on
+            - **Handedness/Shooting**: "Left-handed" or "left-shot" refers to which hand is LOWER on the stick (left hand lower = left-shot)
+            - **These are INDEPENDENT**: A right defenseman (position) can be left-handed (shoots left)
+            - **NEVER assume**: Do not assume a player's shooting hand based on their defensive position
+            - **Use the data**: Always refer to the provided handedness data, not the position data, when discussing shooting
+
+        **Four-Way Mobility vs. Crossovers (CRUCIAL):**
+            - **Four-Way Mobility**: The ability to quickly and fluidly change directions in all four directions (forward, backward, left, right) while maintaining speed and balance
+            - **Crossovers**: A specific skating technique where one skate crosses over the other to generate power and speed, typically used in turns
+            - **These are DIFFERENT skills**: Four-way mobility is about directional changes and agility; crossovers are a specific power-generation technique
+            - **DO NOT conflate**: Never discuss crossovers when analyzing four-way mobility, and vice versa
+            - **Correct usage**: 
+                - Four-way mobility: "shows excellent four-way mobility with quick pivots and seamless transitions between forward and backward skating"
+                - Crossovers: "generates good power through his crossovers in tight turns along the boards"
+
+        **Additional Skating Technique Clarifications:**
+            - **Mohawks**: A specific turn where the player changes from forward to backward (or vice versa) by placing one skate perpendicular to the other
+            - **Pivots**: Quick directional changes, often 180-degree turns
+            - **Transitions**: Changes between forward and backward skating
+            - **Edge work**: The use of inside and outside edges of the skate blades for control and power
 
         10. **Keep the reports positive**
       ---
