@@ -65,6 +65,7 @@ import {
   Search,
   Shield,
   CalendarDays,
+  RefreshCw, // <-- IMPORT THE NEW ICON
 } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -1750,6 +1751,7 @@ const useToolbarState = (editor: Editor | null) => {
   return state;
 };
 
+// --- MODIFIED: EditorToolbar Component ---
 const EditorToolbar: React.FC<{
   editor: Editor | null;
   isMobileSidebarOpen: boolean;
@@ -1760,6 +1762,7 @@ const EditorToolbar: React.FC<{
   onLanguageChange: (langCode: string) => void;
   translatedReports: Record<string, string>;
   translatingLanguages: Record<string, boolean>;
+  onReTranslateAll: () => void; // <-- ADD NEW PROP
 }> = ({
   editor,
   isMobileSidebarOpen,
@@ -1770,11 +1773,13 @@ const EditorToolbar: React.FC<{
   onLanguageChange,
   translatedReports,
   translatingLanguages,
+  onReTranslateAll, // <-- DESTRUCTURE NEW PROP
 }) => {
   const [isTableDropdownOpen, setTableDropdownOpen] = useState(false);
   const tableMenuRef = useRef<HTMLDivElement>(null);
   const toolbarState = useToolbarState(editor);
   const isDesktop = useMediaQuery("(min-width: 1024px)");
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -1787,6 +1792,7 @@ const EditorToolbar: React.FC<{
       document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isTableDropdownOpen]);
+
   const handleStyleChange = useCallback(
     (style: string) => {
       if (!editor) return;
@@ -1801,6 +1807,7 @@ const EditorToolbar: React.FC<{
     },
     [editor]
   );
+
   const handleFontSizeChange = useCallback(
     (size: string) => {
       if (!editor) return; //@ts-ignore
@@ -1808,7 +1815,16 @@ const EditorToolbar: React.FC<{
     },
     [editor]
   );
+
   if (!editor) return null;
+
+  // --- LOGIC FOR THE NEW BUTTON ---
+  const showReTranslateButton =
+    activeLanguage === "EN" && Object.keys(translatedReports).length > 0;
+  const isAnyTranslationRunning = Object.values(translatingLanguages).some(
+    (status) => status === true
+  );
+
   const styleOptions: DropdownOption[] = [
     { label: "Paragraph", value: "p" },
     { label: "Heading 1", value: "h1" },
@@ -1975,6 +1991,20 @@ const EditorToolbar: React.FC<{
         </div>{" "}
         <div className="flex items-center space-x-1 border-l border-gray-300/50 pl-2 ml-2">
           {" "}
+          {/* --- NEW BUTTON IS ADDED HERE --- */}
+          {showReTranslateButton && (
+            <ToolbarButton
+              onClick={onReTranslateAll}
+              title="Update all translations with the latest English version"
+              disabled={isAnyTranslationRunning}
+            >
+              {isAnyTranslationRunning ? (
+                <RefreshCw className="w-5 h-5 animate-spin" />
+              ) : (
+                <RefreshCw className="w-5 h-5" />
+              )}
+            </ToolbarButton>
+          )}
           <ReportLanguageSwitcher
             activeLanguage={activeLanguage}
             onLanguageChange={onLanguageChange}
@@ -2591,6 +2621,36 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
     } finally {
       setTranslatingLanguages((prev) => ({ ...prev, [targetLangCode]: false }));
     }
+  };
+
+  // --- NEW FUNCTION TO RE-TRANSLATE ---
+  const handleReTranslateAll = async () => {
+    if (!originalReportHtml) {
+      showToast("The original English report is empty.", "error");
+      return;
+    }
+
+    const languagesToUpdate = Object.keys(translatedReports);
+    if (languagesToUpdate.length === 0) {
+      showToast("No translations exist yet to be updated.", "info");
+      return;
+    }
+
+    const toastId = showToast(
+      `Updating ${languagesToUpdate.length} translation(s)...`,
+      "loading"
+    );
+
+    // Trigger all translations. The existing UI will handle individual loading states.
+    await Promise.all(
+      languagesToUpdate.map((langCode) =>
+        handleTranslateReport(originalReportHtml, langCode)
+      )
+    );
+
+    showToast(`All translations have been updated.`, "success", {
+      id: toastId,
+    });
   };
 
   const triggerAllTranslations = (reportHtml: string) =>
@@ -3336,6 +3396,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
             onLanguageChange={setActiveLanguage}
             translatedReports={translatedReports}
             translatingLanguages={translatingLanguages}
+            onReTranslateAll={handleReTranslateAll} // <-- PASS THE NEW HANDLER
           />
           {editor && (
             <>

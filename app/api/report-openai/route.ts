@@ -196,7 +196,7 @@ export async function POST(request: Request) {
           **CRITICAL TECHNICAL TERMINOLOGY CLARIFICATIONS:**
 
         **Position vs. Handedness Distinction (CRUCIAL):**
-            - **Position**: "Left Defensivemen" or "Right Defensivemen" refers to which SIDE of the ice the player typically plays on
+            - **Position**: "Left Defenseman" or "Right Defenseman" refers to which SIDE of the ice the player typically plays on
             - **Handedness/Shooting**: "Left-handed" or "left-shot" refers to which hand is LOWER on the stick (left hand lower = left-shot)
             - **These are INDEPENDENT**: A right defenseman (position) can be left-handed (shoots left)
             - **NEVER assume**: Do not assume a player's shooting hand based on their defensive position
@@ -218,6 +218,9 @@ export async function POST(request: Request) {
             - **Edge work**: The use of inside and outside edges of the skate blades for control and power
 
         10. **Keep the reports positive**
+
+        11. **No Projection based responses in the ### RECOMMENDATION section** - so you don't mention anything about the player being in the nhl, ohl etc... as best position etc..
+            - Give other empowering recommendations that actually help the player progress to the next level of their play and is helpful
       ---
 
       ${examples}
