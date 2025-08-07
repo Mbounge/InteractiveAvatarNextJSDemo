@@ -6,6 +6,7 @@
   "heightLabel": "Längd",
   "weightLabel": "Vikt",
   "shootsLabel": "Skjuter",
+  "catchesLabel": "Plock",
   "qrCheckProfile": "Kolla {playerName}s profil på Graet",
   "qrViewProfile": "Visa profil",
   "bioFooter": "BIO",

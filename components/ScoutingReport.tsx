@@ -65,7 +65,7 @@ import {
   Search,
   Shield,
   CalendarDays,
-  RefreshCw, // <-- IMPORT THE NEW ICON
+  RefreshCw,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -188,6 +188,7 @@ const Spinner: React.FC<{ className?: string }> = ({ className }) => (
   <Loader2 className={`animate-spin h-5 w-5 text-[#0e0c66] ${className}`} />
 );
 
+// --- TYPE DEFINITIONS (No Changes) ---
 type Stats = {
   gamesPlayed: number;
   goals: number;
@@ -285,6 +286,14 @@ type TraitRatings = {
   shot: number;
   competeLevel: number;
   defensiveGame: number;
+};
+type GoalieTraitRatings = {
+  creaseMobility: number;
+  positioningAngles: number;
+  puckTracking: number;
+  saveExecution: number;
+  mentalToughness: number;
+  puckHandling: number;
 };
 type Language = { code: string; name: string };
 
@@ -393,7 +402,7 @@ const editorExtensions = [
   TableCell,
 ];
 
-// --- HELPER COMPONENTS (No Changes to these) ---
+// --- HELPER COMPONENTS (No Changes) ---
 const formatPosition = (rawPosition: string | null | undefined): string => {
   if (!rawPosition) return "N/A";
   switch (rawPosition) {
@@ -910,7 +919,6 @@ const TeamSearch: React.FC<{
         <div className="flex items-center justify-between p-3 border rounded-xl bg-green-50 border-green-200/80">
           <div className="flex flex-col">
             <span className="font-bold text-gray-800">{selectedTeam.name}</span>
-            {/* --- FIX: Use a more reliable check for manual entry --- */}
             <span className="text-sm text-gray-600">
               {selectedTeam.id.startsWith("manual-")
                 ? "Manually Entered"
@@ -1180,7 +1188,6 @@ const LeagueSearch: React.FC<{
   );
 };
 
-// --- MODIFIED: MaskedDatePicker Component with Editing Bug Fix ---
 const MaskedDatePicker: React.FC<{
   selectedDate: Date | undefined;
   onDateChange: (date: Date | undefined) => void;
@@ -1259,7 +1266,6 @@ const MaskedDatePicker: React.FC<{
 
   const handleDayClick = (date: Date | undefined) => {
     if (date) {
-      // This will trigger the first useEffect to update the dateChars
       onDateChange(date);
     }
     setIsOpen(false);
@@ -1333,7 +1339,6 @@ const MaskedDatePicker: React.FC<{
           onKeyDown={handleKeyDown}
           onClick={handleClick}
           onFocus={() => setIsOpen(true)}
-          // We remove the onChange and onBlur handlers as they are not needed with this logic
           className="block w-full pl-4 pr-10 py-3 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm placeholder-gray-500"
         />
         <CalendarDays
@@ -1751,7 +1756,6 @@ const useToolbarState = (editor: Editor | null) => {
   return state;
 };
 
-// --- MODIFIED: EditorToolbar Component ---
 const EditorToolbar: React.FC<{
   editor: Editor | null;
   isMobileSidebarOpen: boolean;
@@ -1762,7 +1766,7 @@ const EditorToolbar: React.FC<{
   onLanguageChange: (langCode: string) => void;
   translatedReports: Record<string, string>;
   translatingLanguages: Record<string, boolean>;
-  onReTranslateAll: () => void; // <-- ADD NEW PROP
+  onReTranslateAll: () => void;
 }> = ({
   editor,
   isMobileSidebarOpen,
@@ -1773,7 +1777,7 @@ const EditorToolbar: React.FC<{
   onLanguageChange,
   translatedReports,
   translatingLanguages,
-  onReTranslateAll, // <-- DESTRUCTURE NEW PROP
+  onReTranslateAll,
 }) => {
   const [isTableDropdownOpen, setTableDropdownOpen] = useState(false);
   const tableMenuRef = useRef<HTMLDivElement>(null);
@@ -1818,7 +1822,6 @@ const EditorToolbar: React.FC<{
 
   if (!editor) return null;
 
-  // --- LOGIC FOR THE NEW BUTTON ---
   const showReTranslateButton =
     activeLanguage === "EN" && Object.keys(translatedReports).length > 0;
   const isAnyTranslationRunning = Object.values(translatingLanguages).some(
@@ -1991,7 +1994,6 @@ const EditorToolbar: React.FC<{
         </div>{" "}
         <div className="flex items-center space-x-1 border-l border-gray-300/50 pl-2 ml-2">
           {" "}
-          {/* --- NEW BUTTON IS ADDED HERE --- */}
           {showReTranslateButton && (
             <ToolbarButton
               onClick={onReTranslateAll}
@@ -2077,6 +2079,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
     Record<string, boolean>
   >({});
   const [activeLanguage, setActiveLanguage] = useState("EN");
+  
   const [traitRatings, setTraitRatings] = useState<TraitRatings>({
     skating: 0,
     puckSkills: 0,
@@ -2085,6 +2088,15 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
     competeLevel: 0,
     defensiveGame: 0,
   });
+  const [goalieTraitRatings, setGoalieTraitRatings] = useState<GoalieTraitRatings>({
+    creaseMobility: 0,
+    positioningAngles: 0,
+    puckTracking: 0,
+    saveExecution: 0,
+    mentalToughness: 0,
+    puckHandling: 0,
+  });
+
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [transcriptionText, setTranscriptionText] = useState<string>("");
   const [editor, setEditor] = useState<Editor | null>(null);
@@ -2132,7 +2144,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
 
   const activeLanguageRef = useRef(activeLanguage);
 
-  // --- FUNCTIONS (No Changes until loadReportData) ---
+  // --- FUNCTIONS (MODIFIED) ---
   const applyFontSizes = (editorInstance: Editor) => {
     const { tr, doc } = editorInstance.state;
     let modified = false;
@@ -2181,7 +2193,6 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
       });
       setEditor(newEditor);
     },
-
     []
   );
 
@@ -2208,14 +2219,21 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
           throw new Error("Could not load the specified report.");
         const data = await response.json();
 
+        const loadedReportType = data.reportType || 'skater';
+        setCurrentReportType(loadedReportType);
+
+        if (loadedReportType === 'goalie') {
+            setGoalieTraitRatings(data.traitRatings);
+        } else {
+            setTraitRatings(data.traitRatings);
+        }
+
         setSelectedPlayer(data.playerContext);
-        setTraitRatings(data.traitRatings);
         setOriginalReportHtml(data.originalReportHtml);
         setTranslatedReports(data.translatedReports || {});
         setTranscriptionText(data.transcriptionText);
         setSeasonalStats(data.seasonalStatsContext || []);
         setLeagueStandings(data.leagueStandingsContext || null);
-        setCurrentReportType(data.reportType || "skater");
 
         if (data.gameContext) {
           setSelectedLeague(data.gameContext.league || null);
@@ -2224,7 +2242,9 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
           setTeamAScore(data.gameContext.teamAScore || "");
           setTeamBScore(data.gameContext.teamBScore || "");
           if (data.gameContext.gameDate) {
-            setGameDate(new Date(data.gameContext.gameDate));
+            // --- BUG FIX: Parse date string as local, not UTC ---
+            const localDate = parse(data.gameContext.gameDate, 'yyyy-MM-dd', new Date());
+            setGameDate(localDate);
           }
         }
 
@@ -2334,6 +2354,13 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
       setTraitRatings((prev) => ({ ...prev, [trait]: newRating })),
     []
   );
+
+  const handleGoalieRatingChange = useCallback(
+    (trait: keyof GoalieTraitRatings, newRating: number) =>
+      setGoalieTraitRatings((prev) => ({ ...prev, [trait]: newRating })),
+    []
+  );
+
   const handleLanguageSelectionChange = (langCode: string) =>
     setSelectedLanguages((prev) =>
       prev.includes(langCode)
@@ -2623,7 +2650,6 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
     }
   };
 
-  // --- NEW FUNCTION TO RE-TRANSLATE ---
   const handleReTranslateAll = async () => {
     if (!originalReportHtml) {
       showToast("The original English report is empty.", "error");
@@ -2641,7 +2667,6 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
       "loading"
     );
 
-    // Trigger all translations. The existing UI will handle individual loading states.
     await Promise.all(
       languagesToUpdate.map((langCode) =>
         handleTranslateReport(originalReportHtml, langCode)
@@ -2725,7 +2750,11 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
       message: "Generating scout report...",
     });
     try {
-      const generateResponse = await fetch("/api/report-openai", {
+      const endpoint = currentReportType === 'goalie' 
+        ? '/api/report-openai-goalie' 
+        : '/api/report-openai';
+
+      const generateResponse = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -2909,7 +2938,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
       reportType: currentReportType,
       playerContext: selectedPlayer,
       teamContext: teamA,
-      traitRatings,
+      traitRatings: currentReportType === 'goalie' ? goalieTraitRatings : traitRatings,
       originalReportHtml,
       translatedReports,
       transcriptionText,
@@ -2956,9 +2985,11 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
 
   const handleExport = async (exportFormat: "pdf" | "txt") => {
     if (!editor) return;
+    
+    const ratingsToCheck = currentReportType === 'goalie' ? goalieTraitRatings : traitRatings;
     if (
       hasGeneratedReport &&
-      Object.values(traitRatings).some((r) => r === 0)
+      Object.values(ratingsToCheck).some((r) => r === 0)
     ) {
       showToast("Please rate all player traits before exporting.", "error");
       setIsExportMenuOpen(false);
@@ -3000,7 +3031,8 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
             seasonalStatsContext: seasonalStats,
             reportHtml: editor.getHTML(),
             reportHtmlBlueprint: originalReportHtml,
-            traitRatings,
+            traitRatings: ratingsToCheck,
+            reportType: currentReportType,
             targetLang: activeLanguage,
             gameContext: {
               league: selectedLeague,
@@ -3135,42 +3167,74 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
                   </h2>
                   <div className="space-y-4">
                     <RatingScaleLegend />
-                    <TraitRatingSelector
-                      title="Skating"
-                      rating={traitRatings.skating}
-                      onRatingChange={(r) => handleRatingChange("skating", r)}
-                    />
-                    <TraitRatingSelector
-                      title="Puck Skills"
-                      rating={traitRatings.puckSkills}
-                      onRatingChange={(r) =>
-                        handleRatingChange("puckSkills", r)
-                      }
-                    />
-                    <TraitRatingSelector
-                      title="Hockey IQ"
-                      rating={traitRatings.hockeyIq}
-                      onRatingChange={(r) => handleRatingChange("hockeyIq", r)}
-                    />
-                    <TraitRatingSelector
-                      title="Shot"
-                      rating={traitRatings.shot}
-                      onRatingChange={(r) => handleRatingChange("shot", r)}
-                    />
-                    <TraitRatingSelector
-                      title="Compete Level"
-                      rating={traitRatings.competeLevel}
-                      onRatingChange={(r) =>
-                        handleRatingChange("competeLevel", r)
-                      }
-                    />
-                    <TraitRatingSelector
-                      title="Defensive Game"
-                      rating={traitRatings.defensiveGame}
-                      onRatingChange={(r) =>
-                        handleRatingChange("defensiveGame", r)
-                      }
-                    />
+                    {currentReportType === 'skater' && (
+                      <>
+                        <TraitRatingSelector
+                          title="Skating"
+                          rating={traitRatings.skating}
+                          onRatingChange={(r) => handleRatingChange("skating", r)}
+                        />
+                        <TraitRatingSelector
+                          title="Puck Skills"
+                          rating={traitRatings.puckSkills}
+                          onRatingChange={(r) => handleRatingChange("puckSkills", r)}
+                        />
+                        <TraitRatingSelector
+                          title="Hockey IQ"
+                          rating={traitRatings.hockeyIq}
+                          onRatingChange={(r) => handleRatingChange("hockeyIq", r)}
+                        />
+                        <TraitRatingSelector
+                          title="Shot"
+                          rating={traitRatings.shot}
+                          onRatingChange={(r) => handleRatingChange("shot", r)}
+                        />
+                        <TraitRatingSelector
+                          title="Compete Level"
+                          rating={traitRatings.competeLevel}
+                          onRatingChange={(r) => handleRatingChange("competeLevel", r)}
+                        />
+                        <TraitRatingSelector
+                          title="Defensive Game"
+                          rating={traitRatings.defensiveGame}
+                          onRatingChange={(r) => handleRatingChange("defensiveGame", r)}
+                        />
+                      </>
+                    )}
+                    {currentReportType === 'goalie' && (
+                      <>
+                        <TraitRatingSelector
+                          title="Crease Mobility"
+                          rating={goalieTraitRatings.creaseMobility}
+                          onRatingChange={(r) => handleGoalieRatingChange("creaseMobility", r)}
+                        />
+                        <TraitRatingSelector
+                          title="Positioning & Angles"
+                          rating={goalieTraitRatings.positioningAngles}
+                          onRatingChange={(r) => handleGoalieRatingChange("positioningAngles", r)}
+                        />
+                        <TraitRatingSelector
+                          title="Puck Tracking"
+                          rating={goalieTraitRatings.puckTracking}
+                          onRatingChange={(r) => handleGoalieRatingChange("puckTracking", r)}
+                        />
+                        <TraitRatingSelector
+                          title="Save Execution"
+                          rating={goalieTraitRatings.saveExecution}
+                          onRatingChange={(r) => handleGoalieRatingChange("saveExecution", r)}
+                        />
+                        <TraitRatingSelector
+                          title="Mental Toughness"
+                          rating={goalieTraitRatings.mentalToughness}
+                          onRatingChange={(r) => handleGoalieRatingChange("mentalToughness", r)}
+                        />
+                        <TraitRatingSelector
+                          title="Puck Handling"
+                          rating={goalieTraitRatings.puckHandling}
+                          onRatingChange={(r) => handleGoalieRatingChange("puckHandling", r)}
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
               )}
@@ -3396,7 +3460,7 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
             onLanguageChange={setActiveLanguage}
             translatedReports={translatedReports}
             translatingLanguages={translatingLanguages}
-            onReTranslateAll={handleReTranslateAll} // <-- PASS THE NEW HANDLER
+            onReTranslateAll={handleReTranslateAll}
           />
           {editor && (
             <>

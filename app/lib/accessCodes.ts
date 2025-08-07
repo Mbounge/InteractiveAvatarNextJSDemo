@@ -1,5 +1,6 @@
 const validCodes = new Set([
     "IvanGRT48S2A",
+    "VillemRTC78A5T",
     "KroniSC9T3B7K",
     "Kroni",
     "DanRPT2C1V8",

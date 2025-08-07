@@ -6,6 +6,7 @@
   "heightLabel": "Height",
   "weightLabel": "Weight",
   "shootsLabel": "Shoots",
+  "catchesLabel": "Catches",
   "qrCheckProfile": "Check {playerName}'s Profile on Graet",
   "qrViewProfile": "View Profile",
   "bioFooter": "BIO",

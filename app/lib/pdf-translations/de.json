@@ -6,6 +6,7 @@
   "heightLabel": "Größe",
   "weightLabel": "Gewicht",
   "shootsLabel": "Schießt",
+  "catchesLabel": "Fänger",
   "qrCheckProfile": "Überprüfe das Profil von {playerName} auf Graet",
   "qrViewProfile": "Profil anzeigen",
   "bioFooter": "BIO",

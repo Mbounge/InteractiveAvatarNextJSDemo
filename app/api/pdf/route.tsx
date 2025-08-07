@@ -99,12 +99,20 @@ type GameDetails = {
 };
 
 type TraitRatings = {
+  // Skater
   skating: number;
   puckSkills: number;
   hockeyIq: number;
   shot: number;
   competeLevel: number;
   defensiveGame: number;
+  // Goalie
+  creaseMobility: number;
+  positioningAngles: number;
+  puckTracking: number;
+  saveExecution: number;
+  mentalToughness: number;
+  puckHandling: number;
 };
 
 type ReportSection = {
@@ -501,7 +509,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tableBodyRowLast: { borderBottomWidth: 0 },
-  tableCol: { padding: 12, justifyContent: "center" },
+  tableCol: { padding: 12, justifyContent: "center", flex: 1 },
   tableCell: {
     fontSize: 11,
     color: "#374151",
@@ -518,12 +526,6 @@ const styles = StyleSheet.create({
     lineHeight: 1.1,
     letterSpacing: 0.3,
   },
-  seasonCol: { width: 80 },
-  teamCol: { flex: 1 },
-  gpCol: { width: 40 },
-  gCol: { width: 40 },
-  aCol: { width: 40 },
-  tpCol: { width: 40 },
   teamIcon: {
     width: 42,
     height: 42,
@@ -534,24 +536,7 @@ const styles = StyleSheet.create({
   },
   teamNameContainer: { flexDirection: "row", alignItems: "center" },
   teamName: { fontSize: 11, color: "#374151", fontWeight: "normal" },
-  numericCol: { alignItems: "center", justifyContent: "center" },
-  numericCell: {
-    textAlign: "center",
-    fontSize: 11,
-    color: "#374151",
-    fontWeight: "normal",
-    width: "100%",
-  },
-  numericHeaderCell: {
-    textAlign: "center",
-    fontSize: 9,
-    color: "#6B7280",
-    textTransform: "uppercase",
-    fontWeight: "bold",
-    letterSpacing: 0.3,
-    width: "100%",
-  },
-
+  
   // --- MODIFICATION START: Unifying Info/Summary Page Styles ---
   summaryPageContainer: {
     display: "flex",
@@ -568,7 +553,7 @@ const styles = StyleSheet.create({
     color: "#161160",
     textAlign: "center",
     textTransform: "uppercase",
-    marginBottom: 45, // CHANGED: Was 40, now matches traitPageTitle
+    marginBottom: 45,
   },
   summaryContentWrapper: {
     width: "90%",
@@ -583,7 +568,7 @@ const styles = StyleSheet.create({
   infoPageTitle: {
     fontWeight: "bold",
     fontStyle: "italic",
-    fontSize: 32, // Matched to traitPageTitle
+    fontSize: 32,
     color: "#161160",
     textAlign: "center",
     textTransform: "uppercase",
@@ -595,16 +580,16 @@ const styles = StyleSheet.create({
     color: "#374151",
     marginBottom: 40,
     textAlign: "justify",
-    width: "99%", // Increased width for better flow
+    width: "99%",
     alignSelf: "center",
   },
   infoPageIntroEmphasized: {
     fontWeight: 'bold',
-    fontSize: 12, // Slightly larger than the base 11pt for emphasis
+    fontSize: 12,
   },
   introHighlightText: {
     fontWeight: 'bold',
-    fontSize: 13, // A bit larger than the base 11pt font for emphasis
+    fontSize: 13,
   },
 
   // Scaling System Page Styles
@@ -639,7 +624,6 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
   scoutName: {
-    // Matched to subSectionTitle
     fontWeight: "bold",
     fontStyle: "italic",
     fontSize: 14,
@@ -955,12 +939,21 @@ const splitReportByHeadings = (
     contentMainRoot.innerHTML.match(/<h3[\s\S]*?(?=<h3|$)/g) || [];
 
   const keyMap: { [key: string]: string } = {
+    // Skater Keys
     skating: "skating",
     "puck skills": "puckSkills",
     "hockey iq": "hockeyIq",
     shot: "shot",
     "compete level": "competeLevel",
     "defensive game": "defensiveGame",
+    // Goalie Keys
+    "crease mobility": "creaseMobility",
+    "positioning & angles": "positioningAngles",
+    "puck tracking": "puckTracking",
+    "save execution": "saveExecution",
+    "mental toughness": "mentalToughness",
+    "puck handling": "puckHandling",
+    // Common Keys
     "overall summary": "overallSummary",
     recommendation: "recommendation",
   };
@@ -1008,11 +1001,9 @@ const parseTraitHtml = (html: string | null) => {
   const root = parse(html);
   const subSections: { title: string | null; content: string }[] = [];
   
-  // Find all potential subheadings (strong tags)
   const subheadings = root.querySelectorAll('strong');
 
   if (subheadings.length === 0) {
-    // If no strong tags, treat the whole block as one section with no title
     if (root.innerHTML.trim()) {
       subSections.push({ title: null, content: root.innerHTML.trim() });
     }
@@ -1033,7 +1024,6 @@ const parseTraitHtml = (html: string | null) => {
       endIndex = currentHtml.indexOf(nextHeadingNode.outerHTML, startIndex + 1);
     }
 
-    // The content is everything between this heading and the next one
     const contentHtml = currentHtml.substring(startIndex + headingOuterHtml.length, endIndex).trim();
     
     subSections.push({
@@ -1307,14 +1297,13 @@ const PlaystylePage = ({
   );
 };
 
+// --- MODIFIED: StatsTable component is now dynamic ---
 const StatsTable = ({
   html,
   teamLogosMap,
-  t,
 }: {
   html: string;
   teamLogosMap: Map<string, string>;
-  t: any;
 }) => {
   if (!html) return null;
 
@@ -1322,31 +1311,33 @@ const StatsTable = ({
   const table = root.querySelector("table");
   if (!table) return null;
 
-  const rows = table.querySelectorAll("tr");
-  const dataRows = Array.from(rows).slice(1);
+  const headerRow = table.querySelector("tr");
+  const headers = headerRow
+    ? Array.from(headerRow.querySelectorAll("th")).map((th) =>
+        th.innerText.trim()
+      )
+    : [];
+
+  const dataRows = Array.from(table.querySelectorAll("tr")).slice(1);
 
   const statsData = dataRows
     .map((row) => {
       const cells = row.querySelectorAll("td");
-      if (cells.length < 7) return null;
-
-      return {
-        team: cells[0]?.innerText?.trim() || "",
-        league: cells[1]?.innerText?.trim() || "",
-        season: cells[2]?.innerText?.trim() || "",
-        gamesPlayed: cells[3]?.innerText?.trim() || "0",
-        goals: cells[4]?.innerText?.trim() || "0",
-        assists: cells[5]?.innerText?.trim() || "0",
-        points: cells[6]?.innerText?.trim() || "0",
-      };
+      if (cells.length < headers.length) return null;
+      const rowData: { [key: string]: string } = {};
+      headers.forEach((header, index) => {
+        rowData[header] = cells[index]?.innerText?.trim() || "";
+      });
+      return rowData;
     })
     .filter(Boolean);
 
   const groupedBySeason = statsData.reduce((acc: any, row: any) => {
-    if (!acc[row.season]) {
-      acc[row.season] = [];
+    const seasonKey = row["Season"] || "Unknown Season";
+    if (!acc[seasonKey]) {
+      acc[seasonKey] = [];
     }
-    acc[row.season].push(row);
+    acc[seasonKey].push(row);
     return acc;
   }, {});
 
@@ -1362,29 +1353,16 @@ const StatsTable = ({
   return (
     <View style={styles.table}>
       <View style={styles.tableHeader}>
-        <View style={[styles.tableCol, styles.seasonCol]}>
-          <Text style={styles.tableHeaderCell}>{t.statsSeason}</Text>
-        </View>
-        <View style={[styles.tableCol, styles.teamCol]}>
-          <Text style={styles.tableHeaderCell}>{t.statsTeam}</Text>
-        </View>
-        <View style={[styles.tableCol, styles.gpCol, styles.numericCol]}>
-          <Text style={styles.numericHeaderCell}>{t.statsGP}</Text>
-        </View>
-        <View style={[styles.tableCol, styles.gCol, styles.numericCol]}>
-          <Text style={styles.numericHeaderCell}>{t.statsG}</Text>
-        </View>
-        <View style={[styles.tableCol, styles.aCol, styles.numericCol]}>
-          <Text style={styles.numericHeaderCell}>{t.statsA}</Text>
-        </View>
-        <View style={[styles.tableCol, styles.tpCol, styles.numericCol]}>
-          <Text style={styles.numericHeaderCell}>{t.statsTP}</Text>
-        </View>
+        {headers.map((header) => (
+          <View key={header} style={styles.tableCol}>
+            <Text style={styles.tableHeaderCell}>{header}</Text>
+          </View>
+        ))}
       </View>
       <View style={styles.tableBody}>
         {allRows.map((row: any, index: number) => {
           const isLastRow = index === allRows.length - 1;
-          const logoSrc = teamLogosMap.get(row.team);
+          const logoSrc = teamLogosMap.get(row["Team"]);
 
           return (
             <View
@@ -1395,35 +1373,26 @@ const StatsTable = ({
                   : styles.tableRow
               }
             >
-              <View style={[styles.tableCol, styles.seasonCol]}>
-                <Text style={styles.tableCell}>
-                  {row.isFirstInSeason
-                    ? row.season.replace("-", "/").slice(2)
-                    : ""}
-                </Text>
-              </View>
-              <View style={[styles.tableCol, styles.teamCol]}>
-                <View style={styles.teamNameContainer}>
-                  {logoSrc ? (
-                    <Image style={styles.teamIcon} src={logoSrc} />
+              {headers.map((header) => (
+                <View key={header} style={styles.tableCol}>
+                  {header === "Team" ? (
+                    <View style={styles.teamNameContainer}>
+                      {logoSrc ? (
+                        <Image style={styles.teamIcon} src={logoSrc} />
+                      ) : (
+                        <View style={styles.teamIcon} />
+                      )}
+                      <Text style={styles.teamName}>{row[header]}</Text>
+                    </View>
                   ) : (
-                    <View style={styles.teamIcon} />
+                    <Text style={styles.tableCell}>
+                      {header === "Season" && !row.isFirstInSeason
+                        ? ""
+                        : row[header]}
+                    </Text>
                   )}
-                  <Text style={styles.teamName}>{row.team}</Text>
                 </View>
-              </View>
-              <View style={[styles.tableCol, styles.gpCol, styles.numericCol]}>
-                <Text style={styles.numericCell}>{row.gamesPlayed}</Text>
-              </View>
-              <View style={[styles.tableCol, styles.gCol, styles.numericCol]}>
-                <Text style={styles.numericCell}>{row.goals}</Text>
-              </View>
-              <View style={[styles.tableCol, styles.aCol, styles.numericCol]}>
-                <Text style={styles.numericCell}>{row.assists}</Text>
-              </View>
-              <View style={[styles.tableCol, styles.tpCol, styles.numericCol]}>
-                <Text style={styles.numericCell}>{row.points}</Text>
-              </View>
+              ))}
             </View>
           );
         })}
@@ -1454,7 +1423,6 @@ interface HtmlRendererProps {
   baseStyle?: Style;
   styleOverrides?: Partial<Record<StyleKey, Style>>;
   teamLogosMap?: Map<string, string>;
-  t?: any;
 }
 
 const HtmlRenderer = ({
@@ -1463,16 +1431,15 @@ const HtmlRenderer = ({
   baseStyle = {},
   styleOverrides = {},
   teamLogosMap,
-  t,
 }: HtmlRendererProps) => {
   if (isStatsTable) {
-    if (!teamLogosMap || !t) {
+    if (!teamLogosMap) {
       console.error(
-        "HtmlRenderer: 'teamLogosMap' and 't' are required when 'isStatsTable' is true."
+        "HtmlRenderer: 'teamLogosMap' is required when 'isStatsTable' is true."
       );
       return null;
     }
-    return <StatsTable html={html} teamLogosMap={teamLogosMap} t={t} />;
+    return <StatsTable html={html} teamLogosMap={teamLogosMap} />;
   }
 
   if (!html) {
@@ -1578,7 +1545,7 @@ const OverallSummaryPage = ({
       <View style={styles.summaryPageContainer}>
         <Text style={styles.summaryPageTitle}>{title}</Text>
         <View style={styles.summaryContentWrapper}>
-          <HtmlRenderer html={html} t={t} styleOverrides={{ p: styles.p }} />
+          <HtmlRenderer html={html} styleOverrides={{ p: styles.p }} />
         </View>
       </View>
       <View style={styles.footer} fixed>
@@ -1660,7 +1627,7 @@ const StructuredSummaryPage = ({
                 {escapeForPdf(decodeHtmlEntities(section.title))}
               </Text>
             )}
-            <HtmlRenderer html={section.content} t={t} baseStyle={styles.p} />
+            <HtmlRenderer html={section.content} baseStyle={styles.p} />
           </View>
         ))}
       </View>
@@ -1743,7 +1710,7 @@ const TraitPage = ({
             <Text style={styles.subSectionTitle}>
               {escapeForPdf(decodeHtmlEntities(section.title))}
             </Text>
-            <HtmlRenderer html={section.content} t={t} baseStyle={styles.p} />
+            <HtmlRenderer html={section.content} baseStyle={styles.p} />
           </View>
         ))}
       </View>
@@ -1797,7 +1764,6 @@ const StatsPage = ({
               html={html}
               isStatsTable={true}
               teamLogosMap={teamLogosMap}
-              t={t}
             />
           </View>
         </View>
@@ -2077,6 +2043,7 @@ const ReportDocument = ({
   gamePageLogos,
   t,
   locale,
+  reportType, // <-- Receive reportType
 }: any) => (
   <Document>
     <CoverPage
@@ -2139,7 +2106,10 @@ const ReportDocument = ({
             </View>
             <View style={styles.infoRow}>
               <View style={styles.infoBlock}>
-                <Text style={styles.infoLabel}>{t.shootsLabel}</Text>
+                {/* --- MODIFIED: Conditional Label for Shoots/Catches --- */}
+                <Text style={styles.infoLabel}>
+                  {reportType === 'goalie' ? (t.catchesLabel || 'Catches') : t.shootsLabel}
+                </Text>
                 <Text style={styles.infoValue}>
                   {playerContext?.bio?.handedness
                     ? t.handedness[
@@ -2216,48 +2186,98 @@ const ReportDocument = ({
       t={t}
     />
 
-    {reportSections.skating && <TraitPage
-      title={reportSections.skating.title}
-      html={reportSections.skating.html}
-      rating={traitRatings.skating}
-      footerLogoBuffer2={footerLogoBuffer2}
-      t={t}
-    />}
-    {reportSections.puckSkills && <TraitPage
-      title={reportSections.puckSkills.title}
-      html={reportSections.puckSkills.html}
-      rating={traitRatings.puckSkills}
-      footerLogoBuffer2={footerLogoBuffer2}
-      t={t}
-    />}
-    {reportSections.hockeyIq && <TraitPage
-      title={reportSections.hockeyIq.title}
-      html={reportSections.hockeyIq.html}
-      rating={traitRatings.hockeyIq}
-      footerLogoBuffer2={footerLogoBuffer2}
-      t={t}
-    />}
-    {reportSections.shot && <TraitPage
-      title={reportSections.shot.title}
-      html={reportSections.shot.html}
-      rating={traitRatings.shot}
-      footerLogoBuffer2={footerLogoBuffer2}
-      t={t}
-    />}
-    {reportSections.competeLevel && <TraitPage
-      title={reportSections.competeLevel.title}
-      html={reportSections.competeLevel.html}
-      rating={traitRatings.competeLevel}
-      footerLogoBuffer2={footerLogoBuffer2}
-      t={t}
-    />}
-    {reportSections.defensiveGame && <TraitPage
-      title={reportSections.defensiveGame.title}
-      html={reportSections.defensiveGame.html}
-      rating={traitRatings.defensiveGame}
-      footerLogoBuffer2={footerLogoBuffer2}
-      t={t}
-    />}
+    {/* --- MODIFIED: Conditional Trait Page Rendering --- */}
+    {reportType === 'goalie' ? (
+      <>
+        {reportSections.creaseMobility && <TraitPage
+          title={reportSections.creaseMobility.title}
+          html={reportSections.creaseMobility.html}
+          rating={traitRatings.creaseMobility}
+          footerLogoBuffer2={footerLogoBuffer2}
+          t={t}
+        />}
+        {reportSections.positioningAngles && <TraitPage
+          title={reportSections.positioningAngles.title}
+          html={reportSections.positioningAngles.html}
+          rating={traitRatings.positioningAngles}
+          footerLogoBuffer2={footerLogoBuffer2}
+          t={t}
+        />}
+        {reportSections.puckTracking && <TraitPage
+          title={reportSections.puckTracking.title}
+          html={reportSections.puckTracking.html}
+          rating={traitRatings.puckTracking}
+          footerLogoBuffer2={footerLogoBuffer2}
+          t={t}
+        />}
+        {reportSections.saveExecution && <TraitPage
+          title={reportSections.saveExecution.title}
+          html={reportSections.saveExecution.html}
+          rating={traitRatings.saveExecution}
+          footerLogoBuffer2={footerLogoBuffer2}
+          t={t}
+        />}
+        {reportSections.mentalToughness && <TraitPage
+          title={reportSections.mentalToughness.title}
+          html={reportSections.mentalToughness.html}
+          rating={traitRatings.mentalToughness}
+          footerLogoBuffer2={footerLogoBuffer2}
+          t={t}
+        />}
+        {reportSections.puckHandling && <TraitPage
+          title={reportSections.puckHandling.title}
+          html={reportSections.puckHandling.html}
+          rating={traitRatings.puckHandling}
+          footerLogoBuffer2={footerLogoBuffer2}
+          t={t}
+        />}
+      </>
+    ) : (
+      <>
+        {reportSections.skating && <TraitPage
+          title={reportSections.skating.title}
+          html={reportSections.skating.html}
+          rating={traitRatings.skating}
+          footerLogoBuffer2={footerLogoBuffer2}
+          t={t}
+        />}
+        {reportSections.puckSkills && <TraitPage
+          title={reportSections.puckSkills.title}
+          html={reportSections.puckSkills.html}
+          rating={traitRatings.puckSkills}
+          footerLogoBuffer2={footerLogoBuffer2}
+          t={t}
+        />}
+        {reportSections.hockeyIq && <TraitPage
+          title={reportSections.hockeyIq.title}
+          html={reportSections.hockeyIq.html}
+          rating={traitRatings.hockeyIq}
+          footerLogoBuffer2={footerLogoBuffer2}
+          t={t}
+        />}
+        {reportSections.shot && <TraitPage
+          title={reportSections.shot.title}
+          html={reportSections.shot.html}
+          rating={traitRatings.shot}
+          footerLogoBuffer2={footerLogoBuffer2}
+          t={t}
+        />}
+        {reportSections.competeLevel && <TraitPage
+          title={reportSections.competeLevel.title}
+          html={reportSections.competeLevel.html}
+          rating={traitRatings.competeLevel}
+          footerLogoBuffer2={footerLogoBuffer2}
+          t={t}
+        />}
+        {reportSections.defensiveGame && <TraitPage
+          title={reportSections.defensiveGame.title}
+          html={reportSections.defensiveGame.html}
+          rating={traitRatings.defensiveGame}
+          footerLogoBuffer2={footerLogoBuffer2}
+          t={t}
+        />}
+      </>
+    )}
 
     {reportSections.overallSummary && <OverallSummaryPage
       title={reportSections.overallSummary.title}
@@ -2539,6 +2559,7 @@ export async function POST(request: Request) {
       traitRatings,
       targetLang,
       gameContext,
+      reportType, // <-- Destructure reportType
     } = await request.json();
     if (!reportHtml || !reportHtmlBlueprint || !traitRatings) {
       return new NextResponse(
@@ -2665,6 +2686,7 @@ export async function POST(request: Request) {
         gamePageLogos={gamePageLogos}
         t={t}
         locale={locale}
+        reportType={reportType} // <-- Pass reportType to the document
       />
     );
 

@@ -72,21 +72,22 @@ const formatDateOfBirth = (isoString: string | null | undefined): string => {
   }
 };
 
-const formatGameDate = (dateString: string | null | undefined): string => {
+const formatGameDateForAI = (dateString: string | null | undefined): string => {
     if (!dateString) return 'N/A';
     try {
-      // The 'new Date()' constructor correctly interprets 'yyyy-MM-dd' as UTC.
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-        timeZone: 'UTC', // Explicitly format in UTC to be safe
-      }).toUpperCase();
+        const [year, month, day] = dateString.split('-').map(Number);
+        const date = new Date(Date.UTC(year, month - 1, day));
+        return date.toLocaleDateString('en-US', {
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
+            timeZone: 'UTC', 
+        }).toUpperCase();
     } catch (error) {
-      return 'N/A';
+        console.error("Error formatting game date:", error);
+        return 'N/A';
     }
-  };
+};
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -113,7 +114,7 @@ export async function POST(request: Request) {
     const weight = formatWeight(playerContext.bio?.weight);
     
     const teamName = teamContext.name ?? 'N/A';
-    const gameDate = formatGameDate(gameContext?.gameDate);
+    const gameDate = formatGameDateForAI(gameContext?.gameDate);
 
     let standingsInfo = "No league standings data available.";
     if (standingsContext && standingsContext.groups) {
@@ -127,8 +128,8 @@ export async function POST(request: Request) {
     To ensure your reports sound like they were written by a top-tier human scout, you MUST study the vocabulary, and action-oriented language in the following list of hockey jargon and technical language. Your task is to **fuse** this vivid, language with the structured, positive, developmental framework defined in your primary mission. remember to stay away from negative language and how you frame your sentences - also notice how they are no em dashes - do not use them when making your report.  Do not copy these examples directly, but use them as a guide to enrich your own writing and incorporate authentic hockey jargon. Stay true to making the reports positive
     
     1-on-1, 1-on-2, 1-on-4, 2-on-0, 2-on-1, 2-on-2, 3-on-0, 3-on-1, 3-on-2, 3-on-3, 4-on-2, 4-on-3, 4-on-4, 5-on-3, 5-on-5, 5-on-6, 6-on-5, A1 (Primary Assist), Above the puck, Absorb contact, Absorb rushes, Acceleration, Active feet, Active stick, Active stick read, Activation, Adaptability, Advantage creation, Aerial breakout, Aerial outlet, Aerial pass, Aggression, Agility, AHL, Anchor defenseman, Angle, Angle entry, Angle of attack, Angle-changing shot, Angle-changing wrister, Angling, Ankle flexion, Anticipation, Apple, Area pass, Assist, Attack, Attacker, Awareness, Babysitter, Back of the net, Back post, Back pressure, Back-check, Backcheck, Backchecking, Backdoor, Backdoor play, Backdoor tap-in, Backdoor feed, Backdoor pass, Backhand, Backhand sauce, Backhand deke, Backhand dish,
-     Backhand feed, Backhand pass, Backhand saucer pass, Backhand shot, Backpedal, Backpressure reads, Backside coverage, Backside entry, Bag skate, Balance, Bank pass, Bank shot, Barn, Barnburner, Bar down, Basket, Battle, Battle level, Battles, BCHL, Beauty, Beaver tap/tail , Behind-the-net cycle, Bench, Bench minor, Benchwarmer, Bender, Between-the-legs, Between-the-legs deke, Biscuit, Blind pass, Blindside hit, Block, Blocker, Blocker save, Blocker side, Blocked shot, Blocking shots, Blow a gasket/tire, Blue line, Blue line keep-in, Blueline, Blueliner, Board battle, Board breakout, Board chip, Board play, Boarding, Boarding penalty, Boards, Body check, Body position, Body positioning, Body-check timing, Bottom corner, Bottom six, Bottom-pair, Bottom-six, Box out, Box plus one, Box outs, Breakaway, Breakaway goal, Breakaway lane, Breakout, Breakout coverage,
-      Breakout delay, Breakout execution, Breakout fake, Breakout facilitator, Breakout lane, Breakout pass, Breakout read, Breakout-lane read, Breakout-support routes, Breakouts, Breezers, Bucket, Bumper, Bumper activation, Bumper pass, Bumper role, Bumper spot, Bump-and-go touch, Butt-ending, Butterfly, C-cuts, C-step, Can opener, Captain, Carom, Carry, Carry-and-dish ability, Carry-out, Carryout, Catch-and-release, Catch-and-release shot, Catch-and-release wrister, CCHL, Celly, Center, Center (Position), Centre, Centre pass, Centering feed, Centring feed, Centring pass, Change of pace, Change of possession, Change-of-direction skill, Change-of-pace game, Check, Checker, Checking, Checking line, Cheese, Chel, CHL, Chiclets, Chip and chase, Chip pass, Chip-and-chase, Chip-by-play, Chip-out, Chirp, Chirping, Clamping, Clapper, Clear, Clear the zone, Clearing attempt, Close out, Close support, Close-out, Closing speed, Clutch, Clutch-and-grab era, Coast to coast, Collapsing defense, Collision, Compete level, Composure, Connector, Contact balance, Contact skills, Control contact, Controlled entry, Controlled entry mechanics,
+    Backhand feed, Backhand pass, Backhand saucer pass, Backhand shot, Backpedal, Backpressure reads, Backside coverage, Backside entry, Bag skate, Balance, Bank pass, Bank shot, Barn, Barnburner, Bar down, Basket, Battle, Battle level, Battles, BCHL, Beauty, Beaver tap/tail , Behind-the-net cycle, Bench, Bench minor, Benchwarmer, Bender, Between-the-legs, Between-the-legs deke, Biscuit, Blind pass, Blindside hit, Block, Blocker, Blocker save, Blocker side, Blocked shot, Blocking shots, Blow a gasket/tire, Blue line, Blue line keep-in, Blueline, Blueliner, Board battle, Board breakout, Board chip, Board play, Boarding, Boarding penalty, Boards, Body check, Body position, Body positioning, Body-check timing, Bottom corner, Bottom six, Bottom-pair, Bottom-six, Box out, Box plus one, Box outs, Breakaway, Breakaway goal, Breakaway lane, Breakout, Breakout coverage,
+    Breakout delay, Breakout execution, Breakout fake, Breakout facilitator, Breakout lane, Breakout pass, Breakout read, Breakout-lane read, Breakout-support routes, Breakouts, Breezers, Bucket, Bumper, Bumper activation, Bumper pass, Bumper role, Bumper spot, Bump-and-go touch, Butt-ending, Butterfly, C-cuts, C-step, Can opener, Captain, Carom, Carry, Carry-and-dish ability, Carry-out, Carryout, Catch-and-release, Catch-and-release shot, Catch-and-release wrister, CCHL, Celly, Center, Center (Position), Centre, Centre pass, Centering feed, Centring feed, Centring pass, Change of pace, Change of possession, Change-of-direction skill, Change-of-pace game, Check, Checker, Checking, Checking line, Cheese, Chel, CHL, Chiclets, Chip and chase, Chip pass, Chip-and-chase, Chip-by-play, Chip-out, Chirp, Chirping, Clamping, Clapper, Clear, Clear the zone, Clearing attempt, Close out, Close support, Close-out, Closing speed, Clutch, Clutch-and-grab era, Coast to coast, Collapsing defense, Collision, Compete level, Composure, Connector, Contact balance, Contact skills, Control contact, Controlled entry, Controlled entry mechanics,
     Controlled entry skill, Controlled exit, Controlled tempo, Controlled touch, Corner scrum, Corsi, Corsi Against (CA), Corsi For (CF), Corsi For % (CF%), Corsi For % Relative (CF% Rel), Counter-attack, Counter-attacks, Counterattack, Cover, Coverage, Crash and bang, Crashing the net, Crease, Crease battle, Crease control, Crease coverage, Crease crash, Crease entry, Crease invasion, Crease jam, Crease violation, Cross-body shot, Cross-check, Cross-crease, Cross-crease feed, Cross-crease pass, Cross ice seam, Cross-ice, Cross-ice feed, Cross-ice pass, Cross-seam pass, Cross-slot, Cross-slot creation, Cross-slot feed, Cross-slot pass, Crossbar, Crosscheck, Crosschecking, Crosschecks, Crossover, Crossover acceleration, Crossover agility, Crossover speed, Crossovers, Curl and drag, Curl-and-drag, Curl-and-drag execution, Curl-and-drag attempt, Curl-and-drag shot, Curl-and-drag wrister, Cutback, Cutback move, Cutbacks, Cycle, Cycle down low, Cycle game, Cycle plays, Cycle-read awareness, Cycling, D pinch, D-to-D pass, D-zone rotation, Dance, Dangle, Dangle move, Dasher, Deception, Deception in transition, Deception tools, Deception under pressure, Deception with the puck, Deception-layer passing, Deceptive carry, Deceptive pass weight, Deke, Dekes, Defensive awareness, Defensive close-out,
     Defensive collapse, Defensive commitment, Defensive layer, Defensive pinch, Defensive posture, Defensive read, Defensive reads, Defensive scanning, Defensive stick, Defensive stick detail, Defensive switch, Defensive zone, Defensive zone coverage, Defensive zone creation, Defenceman, Defender, Deflection, Deflections, DEL, Delay, Delay game, Delay mechanic, Delay of game, Delay play, Delay route execution, Delayed entry, Delayed entry play, Delayed penalty, Delayed touch release, Delayed-feed execution, Denied, Depth, Depth (control), Depth (skating), Diamond PK, Dirty, Dish, Disk, Disruption, Diving, Diving poke check, Dot lane, Double team, Downhill attack, Draft board, Draft-eligible, Draft-minus-one, Draft-plus-one, Draft-plus-two, Drag, Drag move, Draw (faceoff), Drive, Drive wide, Drop pass, Dual-threat, Dual-threat shooter-passer, Dump and chase, Dump-in, Dump-ins, Dump-out, Duster, Dynamism, Dynamic handling, DZ (Defensive Zone), DZ turnover, Edgework, Egg, ELC (Entry-Level Contract), Elusiveness, Embellishment, Empty net, Empty-netter, End boards, Energy forward, Enforcer, Engagement, Entry, Escape ability, Escape-read awareness, Even strength, Even-strength, Expected Goals (xG), Exit, Exits, Explosiveness, Extra Attacker, F1, F1 (first forechecker), F1 forechecker, F2, F2 (second forechecker), F2 support, F3, F3 (high forward), F3 high, Face wash
     ,Faceoff, Faceoff circle, Faceoff dot, Fadeaway slapper, Fake, Fake shot, Fakes, Fan, Far pad shot, Far side, Feints, Feel (for the game), Feed, Fenwick, Filthy, Finish, Finisher, First line, First-step quickness, First-touch control, Fishbowl, Fisticuffs, Five-hole, Flamingo, Flank, Flatfooted, Fleet of Foot, Fleet of foot, Flood, Floater, Flow, Fluidity, Foot race, Foot races, Footrace, Footspeed, Footwork, Forced turnover, Forecheck, Forecheck angle, Forecheck cycle, Forechecker, Forechecking, Forechecking lane, Forechecking pressure, Forehand, Forsberg-deke, Forward, Fourth line, Fourth-liner, Four-way mobility, Free agent, Free hand, Freeze the puck, Friction, Full strength, Funnel, Game management, Gap, Gap control, Gap fill, Gap reading, Gap closeness, Garbage goal, Get the jump, Gino, Give-and-go, Give-and-go drop, Give-and-go execution, Give-and-go routes, Give-and-go touch, Give-and-gos, Giveaway, Glass (the), Glass and out, Glass-and-out, Glassing the puck, Glide, Glove, Glove save, Glove side, Goal, Goal against, Goal line, Goal mouth, Goal scorer, Goalie, Goalie interference, Goalie screen, Goals against average, Goals against average (GAA), Goal-scorer, Goaltender, GOJHL, Goon, Gordie Howe Hat Trick, Greasy, Grinder, Grocery stick, Half wall, Half-wall, Half-wall control, Hand-eye coordination, Handling, Handling in traffic, Handling skill,
@@ -446,6 +447,8 @@ export async function POST(request: Request) {
       ---
       ${transcription}
       ---
+
+      **IMPORTANT:** Your entire response must be only the raw Markdown/HTML of the report, starting with the <h1> tag. Do not wrap it in a markdown code block or add any other text.
     `;
 
 

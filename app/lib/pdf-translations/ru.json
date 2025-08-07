@@ -6,6 +6,7 @@
   "heightLabel": "Рост",
   "weightLabel": "Вес",
   "shootsLabel": "Хват",
+  "catchesLabel": "Ловушка",
   "qrCheckProfile": "Проверить профиль {playerName} на Graet",
   "qrViewProfile": "Посмотреть профиль",
   "bioFooter": "БИО",

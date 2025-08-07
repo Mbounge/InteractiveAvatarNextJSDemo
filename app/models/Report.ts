@@ -2,7 +2,6 @@
 
 import mongoose, { Schema, Document, models, Model } from 'mongoose';
 
-// This is a TypeScript interface. It helps your code know the "shape" of a report object.
 export interface IReport extends Document {
   scoutIdentifier: string;
   reportType: 'skater' | 'goalie';
@@ -19,7 +18,6 @@ export interface IReport extends Document {
   updatedAt: Date;
 }
 
-// This is the actual Mongoose Schema. It defines the rules for the data stored in MongoDB.
 const ReportSchema: Schema<IReport> = new Schema({
 
   scoutIdentifier: { type: String, required: true, index: true },

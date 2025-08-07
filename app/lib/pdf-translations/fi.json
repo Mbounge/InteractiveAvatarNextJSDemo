@@ -6,6 +6,7 @@
   "heightLabel": "Pituus",
   "weightLabel": "Paino",
   "shootsLabel": "Kätisyys",
+  "catchesLabel": "Räpylä",
   "qrCheckProfile": "Tarkista pelaajan {playerName} profiili Graetissa",
   "qrViewProfile": "Näytä profiili",
   "bioFooter": "BIO",

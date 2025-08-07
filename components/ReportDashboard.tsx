@@ -193,7 +193,6 @@ const ReportDashboard: React.FC<ReportDashboardProps> = ({ accessCode, onSelectR
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Fixed background that extends beyond viewport */}
       <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 -z-10"></div>
       <Toaster position="top-center" />
       
@@ -329,7 +328,6 @@ const ReportDashboard: React.FC<ReportDashboardProps> = ({ accessCode, onSelectR
               ) : (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 auto-rows-fr">
                   {filteredReports.map((report) => {
-                    // --- FIX: Explicitly check the reportType. If it's missing, default to 'skater'. ---
                     const type = report.reportType || 'skater';
 
                     return (
@@ -384,7 +382,7 @@ const ReportDashboard: React.FC<ReportDashboardProps> = ({ accessCode, onSelectR
                             ) : (
                               <>
                                 <button
-                                  onClick={() => onSelectReport(report._id)}
+                                  onClick={() => onSelectReport(report._id, type)}
                                   className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-700 font-semibold rounded-xl hover:from-indigo-100 hover:to-blue-100 transition-all duration-200 group-hover:shadow-sm border border-indigo-200"
                                 >
                                   <Edit className="w-4 h-4" />
