@@ -1,5 +1,3 @@
-//api/pdf/
-
 import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
@@ -509,7 +507,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tableBodyRowLast: { borderBottomWidth: 0 },
-  tableCol: { padding: 12, justifyContent: "center", flex: 1 },
+  tableCol: { padding: 12, justifyContent: "center" },
   tableCell: {
     fontSize: 11,
     color: "#374151",
@@ -526,6 +524,17 @@ const styles = StyleSheet.create({
     lineHeight: 1.1,
     letterSpacing: 0.3,
   },
+  // --- RESTORED: Original column styles ---
+  seasonCol: { width: 80 },
+  teamCol: { flex: 1 },
+  gpCol: { width: 40 },
+  gCol: { width: 40 },
+  aCol: { width: 40 },
+  tpCol: { width: 40 },
+  wCol: { width: 40 },
+  lCol: { width: 40 },
+  gaaCol: { width: 50 },
+  svCol: { width: 55 },
   teamIcon: {
     width: 42,
     height: 42,
@@ -536,8 +545,24 @@ const styles = StyleSheet.create({
   },
   teamNameContainer: { flexDirection: "row", alignItems: "center" },
   teamName: { fontSize: 11, color: "#374151", fontWeight: "normal" },
+  numericCol: { alignItems: "center", justifyContent: "center" },
+  numericCell: {
+    textAlign: "center",
+    fontSize: 11,
+    color: "#374151",
+    fontWeight: "normal",
+    width: "100%",
+  },
+  numericHeaderCell: {
+    textAlign: "center",
+    fontSize: 9,
+    color: "#6B7280",
+    textTransform: "uppercase",
+    fontWeight: "bold",
+    letterSpacing: 0.3,
+    width: "100%",
+  },
   
-  // --- MODIFICATION START: Unifying Info/Summary Page Styles ---
   summaryPageContainer: {
     display: "flex",
     flexDirection: "column",
@@ -1297,25 +1322,54 @@ const PlaystylePage = ({
   );
 };
 
-// --- MODIFIED: StatsTable component is now dynamic ---
+// --- RESTORED: Original StatsTable component with goalie logic ---
 const StatsTable = ({
   html,
   teamLogosMap,
+  t,
+  reportType,
 }: {
   html: string;
   teamLogosMap: Map<string, string>;
+  t: any;
+  reportType: 'skater' | 'goalie';
 }) => {
   if (!html) return null;
+
+  const isGoalie = reportType === 'goalie';
+
+  const skaterDataMap = {
+    Team: { key: 'team', style: styles.teamCol },
+    League: { key: 'league', style: styles.teamCol },
+    Season: { key: 'season', style: styles.seasonCol },
+    GP: { key: 'gamesPlayed', style: [styles.gpCol, styles.numericCol] },
+    G: { key: 'goals', style: [styles.gCol, styles.numericCol] },
+    A: { key: 'assists', style: [styles.aCol, styles.numericCol] },
+    TP: { key: 'points', style: [styles.tpCol, styles.numericCol] },
+    P: { key: 'points', style: [styles.tpCol, styles.numericCol] },
+    PTS: { key: 'points', style: [styles.tpCol, styles.numericCol] },
+  };
+
+  const goalieDataMap = {
+    Team: { key: 'team', style: styles.teamCol },
+    League: { key: 'league', style: styles.teamCol },
+    Season: { key: 'season', style: styles.seasonCol },
+    GP: { key: 'gamesPlayed', style: [styles.gpCol, styles.numericCol] },
+    W: { key: 'wins', style: [styles.wCol, styles.numericCol] },
+    L: { key: 'losses', style: [styles.lCol, styles.numericCol] },
+    GAA: { key: 'gaa', style: [styles.gaaCol, styles.numericCol] },
+    'SV%': { key: 'svp', style: [styles.svCol, styles.numericCol] },
+  };
+
+  const dataMap = isGoalie ? goalieDataMap : skaterDataMap;
 
   const root = parse(html);
   const table = root.querySelector("table");
   if (!table) return null;
 
   const headerRow = table.querySelector("tr");
-  const headers = headerRow
-    ? Array.from(headerRow.querySelectorAll("th")).map((th) =>
-        th.innerText.trim()
-      )
+  const htmlHeaders = headerRow
+    ? Array.from(headerRow.querySelectorAll("th")).map((th) => th.innerText.trim())
     : [];
 
   const dataRows = Array.from(table.querySelectorAll("tr")).slice(1);
@@ -1323,17 +1377,21 @@ const StatsTable = ({
   const statsData = dataRows
     .map((row) => {
       const cells = row.querySelectorAll("td");
-      if (cells.length < headers.length) return null;
-      const rowData: { [key: string]: string } = {};
-      headers.forEach((header, index) => {
-        rowData[header] = cells[index]?.innerText?.trim() || "";
+      if (cells.length < 1) return null;
+      
+      const rowData: any = {};
+      htmlHeaders.forEach((htmlHeader, index) => {
+        const mapping = (dataMap as any)[htmlHeader];
+        if (mapping) {
+          rowData[mapping.key] = cells[index]?.innerText?.trim() || "";
+        }
       });
       return rowData;
     })
     .filter(Boolean);
 
   const groupedBySeason = statsData.reduce((acc: any, row: any) => {
-    const seasonKey = row["Season"] || "Unknown Season";
+    const seasonKey = row.season || "Unknown Season";
     if (!acc[seasonKey]) {
       acc[seasonKey] = [];
     }
@@ -1353,46 +1411,64 @@ const StatsTable = ({
   return (
     <View style={styles.table}>
       <View style={styles.tableHeader}>
-        {headers.map((header) => (
-          <View key={header} style={styles.tableCol}>
-            <Text style={styles.tableHeaderCell}>{header}</Text>
-          </View>
-        ))}
+        {isGoalie ? (
+          <>
+            <View style={[styles.tableCol, styles.seasonCol]}><Text style={styles.tableHeaderCell}>{t.statsSeason}</Text></View>
+            <View style={[styles.tableCol, styles.teamCol]}><Text style={styles.tableHeaderCell}>{t.statsTeam}</Text></View>
+            <View style={[styles.tableCol, styles.gpCol, styles.numericCol]}><Text style={styles.numericHeaderCell}>{t.statsGP}</Text></View>
+            <View style={[styles.tableCol, styles.wCol, styles.numericCol]}><Text style={styles.numericHeaderCell}>W</Text></View>
+            <View style={[styles.tableCol, styles.lCol, styles.numericCol]}><Text style={styles.numericHeaderCell}>L</Text></View>
+            <View style={[styles.tableCol, styles.gaaCol, styles.numericCol]}><Text style={styles.numericHeaderCell}>GAA</Text></View>
+            <View style={[styles.tableCol, styles.svCol, styles.numericCol]}><Text style={styles.numericHeaderCell}>SV%</Text></View>
+          </>
+        ) : (
+          <>
+            <View style={[styles.tableCol, styles.seasonCol]}><Text style={styles.tableHeaderCell}>{t.statsSeason}</Text></View>
+            <View style={[styles.tableCol, styles.teamCol]}><Text style={styles.tableHeaderCell}>{t.statsTeam}</Text></View>
+            <View style={[styles.tableCol, styles.gpCol, styles.numericCol]}><Text style={styles.numericHeaderCell}>{t.statsGP}</Text></View>
+            <View style={[styles.tableCol, styles.gCol, styles.numericCol]}><Text style={styles.numericHeaderCell}>{t.statsG}</Text></View>
+            <View style={[styles.tableCol, styles.aCol, styles.numericCol]}><Text style={styles.numericHeaderCell}>{t.statsA}</Text></View>
+            <View style={[styles.tableCol, styles.tpCol, styles.numericCol]}><Text style={styles.numericHeaderCell}>{t.statsTP}</Text></View>
+          </>
+        )}
       </View>
       <View style={styles.tableBody}>
         {allRows.map((row: any, index: number) => {
           const isLastRow = index === allRows.length - 1;
-          const logoSrc = teamLogosMap.get(row["Team"]);
+          const logoSrc = teamLogosMap.get(row.team);
 
           return (
-            <View
-              key={`${row.season}-${index}`}
-              style={
-                isLastRow
-                  ? [styles.tableRow, styles.tableBodyRowLast]
-                  : styles.tableRow
-              }
-            >
-              {headers.map((header) => (
-                <View key={header} style={styles.tableCol}>
-                  {header === "Team" ? (
+            <View key={`${row.season}-${index}`} style={isLastRow ? [styles.tableRow, styles.tableBodyRowLast] : styles.tableRow}>
+              {isGoalie ? (
+                <>
+                  <View style={[styles.tableCol, styles.seasonCol]}><Text style={styles.tableCell}>{row.isFirstInSeason ? row.season.replace("-", "/").slice(2) : ""}</Text></View>
+                  <View style={[styles.tableCol, styles.teamCol]}>
                     <View style={styles.teamNameContainer}>
-                      {logoSrc ? (
-                        <Image style={styles.teamIcon} src={logoSrc} />
-                      ) : (
-                        <View style={styles.teamIcon} />
-                      )}
-                      <Text style={styles.teamName}>{row[header]}</Text>
+                      {logoSrc ? <Image style={styles.teamIcon} src={logoSrc} /> : <View style={styles.teamIcon} />}
+                      <Text style={styles.teamName}>{row.team}</Text>
                     </View>
-                  ) : (
-                    <Text style={styles.tableCell}>
-                      {header === "Season" && !row.isFirstInSeason
-                        ? ""
-                        : row[header]}
-                    </Text>
-                  )}
-                </View>
-              ))}
+                  </View>
+                  <View style={[styles.tableCol, styles.gpCol, styles.numericCol]}><Text style={styles.numericCell}>{row.gamesPlayed}</Text></View>
+                  <View style={[styles.tableCol, styles.wCol, styles.numericCol]}><Text style={styles.numericCell}>{row.wins}</Text></View>
+                  <View style={[styles.tableCol, styles.lCol, styles.numericCol]}><Text style={styles.numericCell}>{row.losses}</Text></View>
+                  <View style={[styles.tableCol, styles.gaaCol, styles.numericCol]}><Text style={styles.numericCell}>{row.gaa}</Text></View>
+                  <View style={[styles.tableCol, styles.svCol, styles.numericCol]}><Text style={styles.numericCell}>{row.svp}</Text></View>
+                </>
+              ) : (
+                <>
+                  <View style={[styles.tableCol, styles.seasonCol]}><Text style={styles.tableCell}>{row.isFirstInSeason ? row.season.replace("-", "/").slice(2) : ""}</Text></View>
+                  <View style={[styles.tableCol, styles.teamCol]}>
+                    <View style={styles.teamNameContainer}>
+                      {logoSrc ? <Image style={styles.teamIcon} src={logoSrc} /> : <View style={styles.teamIcon} />}
+                      <Text style={styles.teamName}>{row.team}</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.tableCol, styles.gpCol, styles.numericCol]}><Text style={styles.numericCell}>{row.gamesPlayed}</Text></View>
+                  <View style={[styles.tableCol, styles.gCol, styles.numericCol]}><Text style={styles.numericCell}>{row.goals}</Text></View>
+                  <View style={[styles.tableCol, styles.aCol, styles.numericCol]}><Text style={styles.numericCell}>{row.assists}</Text></View>
+                  <View style={[styles.tableCol, styles.tpCol, styles.numericCol]}><Text style={styles.numericCell}>{row.points}</Text></View>
+                </>
+              )}
             </View>
           );
         })}
@@ -1423,6 +1499,8 @@ interface HtmlRendererProps {
   baseStyle?: Style;
   styleOverrides?: Partial<Record<StyleKey, Style>>;
   teamLogosMap?: Map<string, string>;
+  t?: any;
+  reportType?: 'skater' | 'goalie';
 }
 
 const HtmlRenderer = ({
@@ -1431,15 +1509,17 @@ const HtmlRenderer = ({
   baseStyle = {},
   styleOverrides = {},
   teamLogosMap,
+  t,
+  reportType = 'skater',
 }: HtmlRendererProps) => {
   if (isStatsTable) {
-    if (!teamLogosMap) {
+    if (!teamLogosMap || !t) {
       console.error(
-        "HtmlRenderer: 'teamLogosMap' is required when 'isStatsTable' is true."
+        "HtmlRenderer: 'teamLogosMap' and 't' are required when 'isStatsTable' is true."
       );
       return null;
     }
-    return <StatsTable html={html} teamLogosMap={teamLogosMap} />;
+    return <StatsTable html={html} teamLogosMap={teamLogosMap} t={t} reportType={reportType} />;
   }
 
   if (!html) {
@@ -1545,7 +1625,7 @@ const OverallSummaryPage = ({
       <View style={styles.summaryPageContainer}>
         <Text style={styles.summaryPageTitle}>{title}</Text>
         <View style={styles.summaryContentWrapper}>
-          <HtmlRenderer html={html} styleOverrides={{ p: styles.p }} />
+          <HtmlRenderer html={html} t={t} styleOverrides={{ p: styles.p }} />
         </View>
       </View>
       <View style={styles.footer} fixed>
@@ -1627,7 +1707,7 @@ const StructuredSummaryPage = ({
                 {escapeForPdf(decodeHtmlEntities(section.title))}
               </Text>
             )}
-            <HtmlRenderer html={section.content} baseStyle={styles.p} />
+            <HtmlRenderer html={section.content} t={t} baseStyle={styles.p} />
           </View>
         ))}
       </View>
@@ -1710,7 +1790,7 @@ const TraitPage = ({
             <Text style={styles.subSectionTitle}>
               {escapeForPdf(decodeHtmlEntities(section.title))}
             </Text>
-            <HtmlRenderer html={section.content} baseStyle={styles.p} />
+            <HtmlRenderer html={section.content} t={t} baseStyle={styles.p} />
           </View>
         ))}
       </View>
@@ -1744,11 +1824,13 @@ const StatsPage = ({
   footerLogoBuffer2,
   teamLogosMap,
   t,
+  reportType,
 }: {
   html: string | null;
   footerLogoBuffer2: Buffer | null;
   teamLogosMap: Map<string, string>;
   t: any;
+  reportType: 'skater' | 'goalie';
 }) => {
   if (!html) return null;
   return (
@@ -1764,6 +1846,8 @@ const StatsPage = ({
               html={html}
               isStatsTable={true}
               teamLogosMap={teamLogosMap}
+              t={t}
+              reportType={reportType}
             />
           </View>
         </View>
@@ -2043,7 +2127,7 @@ const ReportDocument = ({
   gamePageLogos,
   t,
   locale,
-  reportType, // <-- Receive reportType
+  reportType,
 }: any) => (
   <Document>
     <CoverPage
@@ -2106,7 +2190,6 @@ const ReportDocument = ({
             </View>
             <View style={styles.infoRow}>
               <View style={styles.infoBlock}>
-                {/* --- MODIFIED: Conditional Label for Shoots/Catches --- */}
                 <Text style={styles.infoLabel}>
                   {reportType === 'goalie' ? (t.catchesLabel || 'Catches') : t.shootsLabel}
                 </Text>
@@ -2174,6 +2257,7 @@ const ReportDocument = ({
       footerLogoBuffer2={footerLogoBuffer2}
       teamLogosMap={teamLogosMap}
       t={t}
+      reportType={reportType}
     />}
 
     <ScoutedGamePage
@@ -2186,7 +2270,6 @@ const ReportDocument = ({
       t={t}
     />
 
-    {/* --- MODIFIED: Conditional Trait Page Rendering --- */}
     {reportType === 'goalie' ? (
       <>
         {reportSections.creaseMobility && <TraitPage
@@ -2559,7 +2642,7 @@ export async function POST(request: Request) {
       traitRatings,
       targetLang,
       gameContext,
-      reportType, // <-- Destructure reportType
+      reportType,
     } = await request.json();
     if (!reportHtml || !reportHtmlBlueprint || !traitRatings) {
       return new NextResponse(
@@ -2686,7 +2769,7 @@ export async function POST(request: Request) {
         gamePageLogos={gamePageLogos}
         t={t}
         locale={locale}
-        reportType={reportType} // <-- Pass reportType to the document
+        reportType={reportType}
       />
     );
 

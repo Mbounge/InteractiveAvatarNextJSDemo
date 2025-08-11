@@ -238,6 +238,7 @@ export async function POST(request: Request) {
       **THE SCOUT'S MINDSET: YOUR GUIDING PHILOSOPHY**
 
       1.  **The Prime Directive: You Are a Developmental Filter.** Your most important function is to transform raw, sometimes negative, observations into constructive, empowering feedback. Even if a transcript is overwhelmingly negative, your output must NEVER reflect that negative tone. You must find the kernel of truth in the observation and reframe it entirely.
+          - Make sure you write the report as if your the scout who made the transcript - you are not writing this report as a third person perspective of the scout like this "Across the first period the scout tracked one explosive" - it must be written as if the scout made it - but don't use I in the report - because this is a professional type of report
 
       2.  **Adopt a Direct, Technical Voice (CRUCIAL):** The report must sound like it was written by an experienced scout, not a generic analyst.
           -   **AVOID PASSIVE, DESCRIPTIVE "AI-ISMS":** Do not use phrases like "is characterized by," "showcases a promising foundation," "demonstrates an impressive ability," "exhibits strong...", "His deep, powerful strides are a testament to his potential", -- testament is the real problem here!!! - here are more "there are opportunities to enhance", "characterized by", do not use em dashes for example "passes—both"
@@ -451,42 +452,36 @@ export async function POST(request: Request) {
       **IMPORTANT:** Your entire response must be only the raw Markdown/HTML of the report, starting with the <h1> tag. Do not wrap it in a markdown code block or add any other text.
     `;
 
-
-    const response = await openai.chat.completions.create({
-      model: 'chatgpt-4o-latest',
-      messages: [
-        {
-          role: "system",
-          content: systemPrompt,
-        },
-        {
-          role: "user",
-          content: userPrompt,
-        },
-      ],
-      temperature: 0.3,
-      max_tokens: 4096
-    });
-
-    const report = response.choices[0].message.content;
-
-    if (!response.usage) {
-      console.error("No usage data returned");
-      return;
+    const response = await openai.responses.create({
+        model: "chatgpt-4o-latest",
+        instructions: systemPrompt,   
+        input: userPrompt,            
+        max_output_tokens: 10000,
+ 
+      });
+  
+      const report =
+        (response as any).output_text ??
+        response.output?.map((item: any) =>
+          item.content?.map((c: any) => c.text ?? "").join("")
+        ).join("") ??
+        "";
+  
+      if (!response.usage) {
+        console.error("No usage data returned");
+      } else {
+        const { input_tokens, output_tokens, total_tokens } = response.usage as any;
+        console.log(`Input tokens:      ${input_tokens}`);
+        console.log(`Output tokens:     ${output_tokens}`);
+        console.log(`Total tokens:      ${total_tokens}`);
+      }
+  
+      return NextResponse.json({ report });
+    } catch (error) {
+      console.error("Error generating report with OpenAI:", error);
+      return new NextResponse(
+        JSON.stringify({ error: "Failed to generate report with OpenAI." }),
+        { status: 500 }
+      );
     }
-    
-    const { prompt_tokens, completion_tokens, total_tokens } = response.usage;
-    
-    console.log(`Prompt tokens:     ${prompt_tokens}`);
-    console.log(`Completion tokens: ${completion_tokens}`);
-    console.log(`Total tokens:      ${total_tokens}`);
-
-    return NextResponse.json({ report });
-  } catch (error) {
-    console.error("Error generating report with OpenAI:", error);
-    return new NextResponse(
-      JSON.stringify({ error: "Failed to generate report with OpenAI." }),
-      { status: 500 }
-    );
   }
-}

@@ -392,7 +392,7 @@ export async function POST(request: Request) {
 
 
     const response = await openai.chat.completions.create({
-      model: 'chatgpt-4o-latest',
+      model: "chatgpt-4o-latest",
       messages: [
         {
           role: "system",
