@@ -453,11 +453,10 @@ export async function POST(request: Request) {
     `;
 
     const response = await openai.responses.create({
-        model: "gpt-5",
+        model: "chatgpt-4o-latest",
         instructions: systemPrompt,   
         input: userPrompt,            
         max_output_tokens: 10000,
-        reasoning: {effort: "medium"}
       });
   
       const report =
