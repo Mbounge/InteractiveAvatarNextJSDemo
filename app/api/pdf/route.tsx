@@ -2758,26 +2758,21 @@ export async function POST(request: Request) {
       : null;
 
 
-      let displayTeamContext = teamContext; 
+      let displayTeamContext;
 
-      const isGameTeamUnknown = !gameContext?.teamA?.name || 
-                                gameContext.teamA.name.toLowerCase() === 'unknown' || 
-                                gameContext.teamA.name.toLowerCase() === 'n/a';
-  
-      if (isGameTeamUnknown) {
-        if (playerContext?.currentTeam?.name) {
-          
-          displayTeamContext = playerContext.currentTeam;
-          console.log(`INFO: Game team is unknown. Falling back to player's current team: "${displayTeamContext.name}"`);
-        } else {
-          
-          displayTeamContext = { name: 'N/A' };
-          console.log("INFO: No valid game team or current team found. Using 'N/A' for display.");
-        }
-      } else {
-        
-        displayTeamContext = gameContext.teamA;
-      }
+    if (playerContext?.currentTeam?.name) {
+      // Primary: Use the player's official current team if it exists.
+      displayTeamContext = playerContext.currentTeam;
+      //console.log(`INFO: Using player's current team for display: "${displayTeamContext.name}"`);
+    } else if (gameContext?.teamA?.name && gameContext.teamA.name.toLowerCase() !== 'unknown' && gameContext.teamA.name.toLowerCase() !== 'n/a') {
+      // Fallback 2: Use the scouted game's team ONLY if it's a valid name.
+      displayTeamContext = gameContext.teamA;
+      //console.log(`INFO: Player has no current team. Falling back to scouted game team: "${displayTeamContext.name}"`);
+    } else {
+      // Fallback 3: Use a blank placeholder if no valid team is found.
+      displayTeamContext = { name: 'N/A' };
+      //console.log("INFO: No valid current team or game team found. Using 'N/A' for display.");
+    }
 
     const gamePageLogos = await fetchGamePageImages(gameDetails);
 
