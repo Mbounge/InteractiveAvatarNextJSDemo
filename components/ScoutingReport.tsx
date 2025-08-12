@@ -2996,11 +2996,9 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
       return;
     }
     setIsExportMenuOpen(false);
-    const fileName = `${(
-      editor.state.doc.firstChild?.textContent || "Scouting Report"
-    )
-      .replace(/[^a-z0-9]/gi, "_")
-      .toLowerCase()}.${exportFormat}`;
+    const fileName = selectedPlayer
+      ? `${selectedPlayer.name.replace(/\s+/g, '_').toLowerCase()}_report.${exportFormat}`
+      : `scouting_report.${exportFormat}`;
     const downloadFile = (blob: Blob, name: string) => {
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
