@@ -2757,6 +2757,28 @@ export async function POST(request: Request) {
         }
       : null;
 
+
+      let displayTeamContext = teamContext; 
+
+      const isGameTeamUnknown = !gameContext?.teamA?.name || 
+                                gameContext.teamA.name.toLowerCase() === 'unknown' || 
+                                gameContext.teamA.name.toLowerCase() === 'n/a';
+  
+      if (isGameTeamUnknown) {
+        if (playerContext?.currentTeam?.name) {
+          
+          displayTeamContext = playerContext.currentTeam;
+          console.log(`INFO: Game team is unknown. Falling back to player's current team: "${displayTeamContext.name}"`);
+        } else {
+          
+          displayTeamContext = { name: 'N/A' };
+          console.log("INFO: No valid game team or current team found. Using 'N/A' for display.");
+        }
+      } else {
+        
+        displayTeamContext = gameContext.teamA;
+      }
+
     const gamePageLogos = await fetchGamePageImages(gameDetails);
 
     const formattedPlayerName = (playerContext?.name || "")
@@ -2772,7 +2794,7 @@ export async function POST(request: Request) {
       <ReportDocument
         reportSections={reportSections}
         playerContext={playerContext}
-        teamContext={teamContext}
+        teamContext={displayTeamContext}
         gameDetails={gameDetails}
         backgroundBuffer={backgroundBuffer}
         playerImageSrc={playerImageSrc}

@@ -457,6 +457,7 @@ export async function POST(request: Request) {
         instructions: systemPrompt,   
         input: userPrompt,            
         max_output_tokens: 10000,
+        
       });
   
       const report =
