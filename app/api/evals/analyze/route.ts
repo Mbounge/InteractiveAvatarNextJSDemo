@@ -1,5 +1,3 @@
-// app/api/evals/analyze/route.ts
-
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
@@ -41,22 +39,32 @@ const formatContextForLLM = (items: any[]) => {
       return `=== ITEM ${index + 1} (CONVERSATION) ===\n${formatTranscript(item.data)}`;
     } 
     
-    // 2. Statistic Pin (Now with Samples!)
+    // 2. Statistic Pin (Row or Slice)
     if (item.type === 'stat-row' || item.type === 'stat-slice') {
       let samplesText = "(No sample conversations provided)";
       
-      // Check if the frontend sent samples
       if (item.data.sampleConversations && item.data.sampleConversations.length > 0) {
         samplesText = item.data.sampleConversations.map((c: any, i: number) => 
           `--- Sample ${i + 1} for this Metric ---\n${formatTranscript(c)}`
         ).join("\n");
       }
 
+      // Handle Row Data (Object) vs Slice Data (Value)
+      let statsDisplay = "";
+      if (item.type === 'stat-row') {
+         // Format the row object nicely, excluding raw arrays
+         statsDisplay = Object.entries(item.data)
+           .filter(([k]) => !['durations', 'turns', 'sampleConversations'].includes(k))
+           .map(([k, v]) => `${k}: ${v}`).join('\n');
+      } else {
+         statsDisplay = `Value: ${item.data.value}`;
+      }
+
       return `
 === ITEM ${index + 1} (STATISTIC) ===
 Metric Name: ${item.label}
-Value: ${item.data.value}
-Filters Applied: ${JSON.stringify(item.data.filter)}
+${statsDisplay}
+Filters Applied: ${JSON.stringify(item.context?.filter || {})}
 
 RELEVANT CONVERSATION SAMPLES FOR THIS STAT:
 ${samplesText}
@@ -70,6 +78,7 @@ ${samplesText}
 export async function POST(req: Request) {
   try {
     const { messages, contextItems } = await req.json();
+    console.log(contextItems[0].data.sampleConversations)
 
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json({ error: "Missing GEMINI_API_KEY" }, { status: 500 });

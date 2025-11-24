@@ -28,15 +28,6 @@ const getMinAvgMax = (arr: number[]) => {
   return `${min} / ${avg.toFixed(1)} / ${max}`;
 };
 
-// Helper to extract the Average from "Min / Avg / Max" string for sorting
-const getAvgFromStr = (str: string) => {
-  try {
-    return parseFloat(str.split(' / ')[1]);
-  } catch {
-    return 0;
-  }
-};
-
 const getUserTurns = (transcript: Message[]) => {
   if (!transcript) return 0;
   return transcript.filter(t => t.role === 'user').length;
@@ -75,7 +66,6 @@ const sortData = (data: any[], config: SortConfig) => {
     let aVal = a[config.key];
     let bVal = b[config.key];
 
-    // Handle calculated fields that aren't direct properties
     if (config.key === 'abandonRate') {
       aVal = a.abandonedCount / a.count;
       bVal = b.abandonedCount / b.count;
@@ -176,7 +166,6 @@ export const Overview = ({
 }) => {
   const { addItem, removeItem, isPinned } = useWorkbench();
   
-  // Sort States for each table
   const [agentSort, setAgentSort] = useState<SortConfig>({ key: 'count', direction: 'desc' });
   const [modeSort, setModeSort] = useState<SortConfig>({ key: 'count', direction: 'desc' });
   const [typeSort, setTypeSort] = useState<SortConfig>({ key: 'count', direction: 'desc' });
@@ -329,17 +318,23 @@ export const Overview = ({
   const handleTypeSort = (key: string) => setTypeSort(prev => ({ key, direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc' }));
   const handlePromptSort = (key: string) => setPromptSort(prev => ({ key, direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc' }));
 
-  const handlePinRow = (e: React.MouseEvent, id: string, label: string, data: any) => {
+  // --- UPDATED: Handle Pin Row with Filter Context ---
+  const handlePinRow = (e: React.MouseEvent, id: string, label: string, data: any, filter: FilterState) => {
     e.stopPropagation();
     const fullId = `stat-${id}`;
     if (isPinned(fullId)) {
       removeItem(fullId);
     } else {
-      addItem({ id: fullId, type: 'stat-row', label, data });
+      addItem({ 
+        id: fullId, 
+        type: 'stat-row', 
+        label, 
+        data, 
+        context: { metric: label, value: "Row Data", filter } // Pass the filter here!
+      });
     }
   };
 
-  // --- Prepare Stats Object for Report Generator ---
   const reportStats = useMemo(() => ({
     kpis,
     agentStats,
@@ -357,13 +352,8 @@ export const Overview = ({
           <h2 className="text-3xl font-bold text-[#161160]">System Pulse</h2>
           <p className="text-slate-500">Real-time evaluation metrics. Click on names or colored metrics to filter the data.</p>
         </div>
-        
         <div className="flex items-center gap-3">
-          <ReportGenerator 
-            data={filteredData} 
-            stats={reportStats} 
-            dateRange={dateRangeLabel} 
-          />
+          <ReportGenerator data={filteredData} stats={reportStats} dateRange={dateRangeLabel} />
           <DateRangePicker startDate={dateRange.start} endDate={dateRange.end} onChange={(start, end) => setDateRange({ start, end })} />
         </div>
       </header>
@@ -379,14 +369,7 @@ export const Overview = ({
         <h3 className="text-lg font-semibold text-[#161160] mb-6">Volume vs. Engagement Trend</h3>
         <div className="h-80 w-full">
           <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-            <LineChart 
-              data={chartData} 
-              onClick={(e) => { 
-                // FIX: Call onDrillDown directly to avoid merging with global range
-                if (e && e.activeLabel) onDrillDown({ date: e.activeLabel }); 
-              }} 
-              className="cursor-pointer"
-            >
+            <LineChart data={chartData} onClick={(e) => { if (e && e.activeLabel) onDrillDown({ date: e.activeLabel }); }} className="cursor-pointer">
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
               <XAxis dataKey="date" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis yAxisId="left" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
@@ -422,7 +405,7 @@ export const Overview = ({
               <tr key={agent.name} className="group transition-colors hover:bg-slate-50">
                 <td className="px-6 py-4">
                   <button 
-                    onClick={(e) => handlePinRow(e, agent.id, `Stats: ${agent.name}`, agent)}
+                    onClick={(e) => handlePinRow(e, agent.id, `Stats: ${agent.name}`, agent, { agentId: agent.id, filterType: "All" })} // Pass Filter
                     className={`p-1.5 rounded hover:bg-indigo-100 transition-colors ${pinned ? 'text-indigo-600' : 'text-slate-300 hover:text-indigo-600'}`}
                   >
                     <Pin size={14} fill={pinned ? "currentColor" : "none"} />
@@ -472,7 +455,7 @@ export const Overview = ({
               <tr key={mode.name} className="group transition-colors hover:bg-slate-50">
                 <td className="px-6 py-4">
                   <button 
-                    onClick={(e) => handlePinRow(e, `mode-${mode.name}`, `Stats: ${mode.name}`, mode)}
+                    onClick={(e) => handlePinRow(e, `mode-${mode.name}`, `Stats: ${mode.name}`, mode, { interactionMode: modeKey, filterType: "All" })} // Pass Filter
                     className={`p-1.5 rounded hover:bg-indigo-100 transition-colors ${pinned ? 'text-indigo-600' : 'text-slate-300 hover:text-indigo-600'}`}
                   >
                     <Pin size={14} fill={pinned ? "currentColor" : "none"} />
@@ -519,7 +502,7 @@ export const Overview = ({
               <tr key={strat.type} className="group transition-colors hover:bg-slate-50">
                 <td className="px-6 py-4">
                   <button 
-                    onClick={(e) => handlePinRow(e, `type-${strat.type}`, `Stats: ${strat.type}`, strat)}
+                    onClick={(e) => handlePinRow(e, `type-${strat.type}`, `Stats: ${strat.type}`, strat, { contextType: strat.type, filterType: "All" })} // Pass Filter
                     className={`p-1.5 rounded hover:bg-indigo-100 transition-colors ${pinned ? 'text-indigo-600' : 'text-slate-300 hover:text-indigo-600'}`}
                   >
                     <Pin size={14} fill={pinned ? "currentColor" : "none"} />
@@ -566,7 +549,7 @@ export const Overview = ({
               <tr key={prompt.title} className="group transition-colors hover:bg-slate-50">
                 <td className="px-6 py-4">
                   <button 
-                    onClick={(e) => handlePinRow(e, `prompt-${prompt.title}`, `Stats: ${prompt.title}`, prompt)}
+                    onClick={(e) => handlePinRow(e, `prompt-${prompt.title}`, `Stats: ${prompt.title}`, prompt, { contextTitle: prompt.title, filterType: "All" })} // Pass Filter
                     className={`p-1.5 rounded hover:bg-indigo-100 transition-colors ${pinned ? 'text-indigo-600' : 'text-slate-300 hover:text-indigo-600'}`}
                   >
                     <Pin size={14} fill={pinned ? "currentColor" : "none"} />
