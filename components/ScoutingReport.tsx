@@ -1,5 +1,3 @@
-// app/components/ScoutingReport.tsx
-
 "use client";
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
@@ -2376,7 +2374,8 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
     const fetchPlayers = async () => {
       setIsSearching(true);
       try {
-        const response = await fetch("https://api.graet.com", {
+        // CHANGED: Use internal proxy route
+        const response = await fetch("/api/graet", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -2410,7 +2409,8 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
     const fetchTeams = async () => {
       setIsSearchingTeamA(true);
       try {
-        const response = await fetch("https://api.graet.com", {
+        // CHANGED: Use internal proxy route
+        const response = await fetch("/api/graet", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -2444,7 +2444,8 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
     const fetchTeams = async () => {
       setIsSearchingTeamB(true);
       try {
-        const response = await fetch("https://api.graet.com", {
+        // CHANGED: Use internal proxy route
+        const response = await fetch("/api/graet", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -2478,7 +2479,8 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
     const fetchLeagues = async () => {
       setIsSearchingLeagues(true);
       try {
-        const response = await fetch("https://api.graet.com", {
+        // CHANGED: Use internal proxy route
+        const response = await fetch("/api/graet", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -2518,7 +2520,8 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
         message: "Fetching league standings...",
       });
       try {
-        const response = await fetch("https://api.graet.com", {
+        // CHANGED: Use internal proxy route
+        const response = await fetch("/api/graet", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -2571,7 +2574,8 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
         message: "Fetching player stats...",
       });
       try {
-        const response = await fetch("https://api.graet.com", {
+        // CHANGED: Use internal proxy route
+        const response = await fetch("/api/graet", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -3508,3 +3512,5 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
 };
 
 export default ScoutingPlatform;
+
+
