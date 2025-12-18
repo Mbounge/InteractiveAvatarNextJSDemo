@@ -2823,9 +2823,9 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
           )
         ).join(", ")}.`
       : "";
-    const promptText = `You are a highly specialized hockey transcription assistant. Your primary goal is to produce a clean, accurate transcript of a scout's audio notes. **Transcription Rules:** 1. **Accuracy First:** Focus on clarity and accuracy. 2. **Team & League Names:** Correctly identify and spell the full names of teams and leagues. Use proper capitalization for these proper nouns (e.g., "Leksands IF", "SHL"). ${standingsContext} 3. **Hockey Terminology (Crucial):** Do NOT capitalize common hockey-specific technical terms, even if they are also proper nouns in other contexts. Treat them as common nouns. - **Correct Examples:** mohawk turn, texas hockey, michigan goal, slapshot, crossover, backcheck. - **Incorrect Examples:** Mohawk Turn, Texas Hockey, Michigan Goal. 4. Only provide the transcript in your response - no other additional comments. **Audio for Player:** ${player.name} of ${team.name}.`;
+    const promptText = `You are a highly specialized hockey transcription assistant. Your primary goal is to produce a clean, accurate transcript of a scout's audio notes. **Transcription Rules:** 1. **Accuracy First:** Focus on clarity and accuracy. 2. **Team & League Names:** Correctly identify and spell the full names of teams and leagues. Use proper capitalization for these proper nouns (e.g., "Leksands IF", "SHL"). ${standingsContext} 3. **Hockey Terminology (Crucial):** Do NOT capitalize common hockey-specific technical terms, even if they are also proper nouns in other contexts. Treat them as common nouns. - **Correct Examples:** mohawk turn, texas hockey, michigan goal, slapshot, crossover, backcheck. - **Incorrect Examples:** Mohawk Turn, Texas Hockey, Michigan Goal. 4. Only provide the transcript in your response - no other additional comments or openers just the transcript word for word. **Audio for Player:** ${player.name} of ${team.name}.`;
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -2838,7 +2838,9 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
               ],
             },
           ],
-          generationConfig: { temperature: 0 },
+          generationConfig: { temperature: 1.0, "thinkingConfig": {
+        "thinkingLevel": "low"
+      } },
         }),
       }
     );
@@ -2897,9 +2899,9 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
             )
           ).join(", ")}.`
         : "";
-      const promptText = `You are a highly specialized hockey transcription assistant. Your primary goal is to produce a clean, accurate transcript of a scout's audio notes. **Transcription Rules:** 1. **Accuracy First:** Focus on clarity and accuracy. 2. **Team & League Names:** Correctly identify and spell the full names of teams and leagues. Use proper capitalization for these proper nouns (e.g., "Leksands IF", "SHL"). ${standingsContext} 3. **Hockey Terminology (Crucial):** Do NOT capitalize common hockey-specific technical terms, even if they are also proper nouns in other contexts. Treat them as common nouns. - **Correct Examples:** mohawk turn, texas hockey, michigan goal, slapshot, crossover, backcheck. - **Incorrect Examples:** Mohawk Turn, Texas Hockey, Michigan Goal. 4. Only provide the transcript in your response - no other additional comments. **Audio for Player:** ${player.name} of ${team.name}.`;
+      const promptText = `You are a highly specialized hockey transcription assistant. Your primary goal is to produce a clean, accurate transcript of a scout's audio notes. **Transcription Rules:** 1. **Accuracy First:** Focus on clarity and accuracy. 2. **Team & League Names:** Correctly identify and spell the full names of teams and leagues. Use proper capitalization for these proper nouns (e.g., "Leksands IF", "SHL"). ${standingsContext} 3. **Hockey Terminology (Crucial):** Do NOT capitalize common hockey-specific technical terms, even if they are also proper nouns in other contexts. Treat them as common nouns. - **Correct Examples:** mohawk turn, texas hockey, michigan goal, slapshot, crossover, backcheck. - **Incorrect Examples:** Mohawk Turn, Texas Hockey, Michigan Goal. 4. Only provide the transcript in your response - no other additional comments or openers just the transcript word for word. **Audio for Player:** ${player.name} of ${team.name}.`;
       const genRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -2912,7 +2914,9 @@ const ScoutingPlatform: React.FC<ScoutingPlatformProps> = ({
                 ],
               },
             ],
-            generationConfig: { temperature: 0 },
+            generationConfig: { temperature: 1.0, "thinkingConfig": {
+        "thinkingLevel": "low"
+      } },
           }),
         }
       );
