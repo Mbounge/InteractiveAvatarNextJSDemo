@@ -1,3 +1,5 @@
+//api/report-openai-goalie
+
 import OpenAI from 'openai';
 import { NextResponse } from "next/server";
 
@@ -370,7 +372,7 @@ export async function POST(request: Request) {
       [Provide a holistic, multi-paragraph evaluation using the "Hybrid Narrative Structure" defined in your principles. Create 2-4 relevant subheadings based on the transcript. with a **Notes:** section at the end]
 
       ### PUCK HANDLING
-      [Provide a holistic, multi-paragraph evaluation using the "Hybrid Narrative Structure" defined in your principles. Create 2-4 relevant subheadings based on the transcript. with a **Notes:** section at theend]
+      [Provide a holistic, multi-paragraph evaluation using the "Hybrid Narrative Structure" defined in your principles. Create 2-4 relevant subheadings based on the transcript. with a **Notes:** section at the end]
 
       ---
 
@@ -392,7 +394,7 @@ export async function POST(request: Request) {
 
 
     const response = await openai.chat.completions.create({
-      model: "chatgpt-4o-latest",
+      model: "gpt-4o-2024-11-20",
       messages: [
         {
           role: "system",
@@ -407,18 +409,22 @@ export async function POST(request: Request) {
       max_tokens: 4096
     });
 
-    const report = response.choices[0].message.content;
+    let report = response.choices[0].message.content || "";
+
+    // CLEANUP: New model tends to wrap response in markdown code blocks.
+    // Removing any starting ```html or ```markdown and ending ```
+    report = report.replace(/^```(?:html|markdown)?\s*/i, "");
+    report = report.replace(/\s*```$/, "");
+    report = report.trim();
 
     if (!response.usage) {
       console.error("No usage data returned");
-      return;
+    } else {
+      const { prompt_tokens, completion_tokens, total_tokens } = response.usage;
+      console.log(`Prompt tokens:     ${prompt_tokens}`);
+      console.log(`Completion tokens: ${completion_tokens}`);
+      console.log(`Total tokens:      ${total_tokens}`);
     }
-    
-    const { prompt_tokens, completion_tokens, total_tokens } = response.usage;
-    
-    console.log(`Prompt tokens:     ${prompt_tokens}`);
-    console.log(`Completion tokens: ${completion_tokens}`);
-    console.log(`Total tokens:      ${total_tokens}`);
 
     return NextResponse.json({ report });
   } catch (error) {
