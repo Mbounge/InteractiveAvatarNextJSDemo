@@ -2400,6 +2400,8 @@ const getPositionImageFilename = (
       return "left-defend.png";
     case "RIGHT_DEFENSIVE":
       return "right-defend.png";
+    case "DEFENDER":
+      return "left-defend.png";
     case "CENTER":
       return "center.png";
     case "LEFT_WING":
